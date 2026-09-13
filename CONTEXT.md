@@ -18,7 +18,8 @@ The single most important distinction in this codebase, because the two look ali
 | Kind | Where | Status |
 |---|---|---|
 | Engineering constraints | `src/domain/validation.ts`, bend geometry, tube stock length | **Authoritative.** Derived from the real PTS system spec. Do not loosen, round, or "simplify" without a cited source. See ADR-0001. |
-| Part numbers / names | `partNo`, `name` in `src/data/parts.json` | **Placeholder.** Will be replaced as the catalog grows. |
+| Part numbers | `partNo` in `src/data/parts.json` | **Mixed.** Real KTS numbers for the blower, tube and split sleeve. Still invented for the terminal, the pedestal blower and the bend. See [ADR-0029](docs/adr/0029-real-part-numbers-arrive-in-part.md). |
+| Part names | `name` in `src/data/parts.json` | **Ours.** Viewport labels, not catalog entries; the KTS catalog names are in ADR-0029. |
 | Product scope limits | the exactly-2-terminals rule | **Provisional.** A v1 fence, not a physical truth. See ADR-0002. |
 
 ## Glossary

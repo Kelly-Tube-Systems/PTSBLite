@@ -33,8 +33,12 @@ Every PR must leave `pnpm run check` green.
 without a cited source. Terminal 1 flush against the blower was on this list and should not have
 been — the client withdrew it
 ([ADR-0019](docs/adr/0019-a-valid-system-has-a-blower-at-each-end.md)), which is the process working:
-the rule was flagged, questioned, and sourced rather than quietly edited. Part names and numbers are
-placeholders. See [ADR-0001](docs/adr/0001-engineering-constraints-are-authoritative.md).
+the rule was flagged, questioned, and sourced rather than quietly edited. The 3 ft bend radius is in
+that same state right now — the bend KTS shipped is a 4 ft radius, the question is with the client,
+and the app has not moved
+([ADR-0029](docs/adr/0029-real-part-numbers-arrive-in-part.md)). Part *names* are ours; part
+*numbers* are now mixed, real for the blower, tube and split sleeve and invented for the other
+three. See [ADR-0001](docs/adr/0001-engineering-constraints-are-authoritative.md).
 
 User-facing copy must interpolate engineering constants rather than restating them.
 
