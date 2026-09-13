@@ -12,7 +12,7 @@ describe("PartRegistry", () => {
   it("returns typed catalog entries by key", () => {
     const blower = partRegistry.get("blower");
     expect(blower.type).toBe("blower");
-    expect(blower.partNo).toBe("BL-2020-A");
+    expect(blower.partNo).toBe("A444200");
   });
 
   it("throws on unknown keys", () => {

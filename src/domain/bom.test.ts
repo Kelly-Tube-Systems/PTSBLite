@@ -66,7 +66,7 @@ describe("BOM derivation", () => {
     expect(byKey.tube6.qty).toBe(Math.ceil(15 / 6));
     expect(byKey.tube6.note).toMatch(/15\.0ft total/);
     expect(byKey.tube6.note).toMatch(/1 cut on-site/);
-    expect(byKey.blower.partNo).toBe("BL-2020-A");
+    expect(byKey.blower.partNo).toBe("A444200");
   });
 
   it("bomRows counts the split sleeves the joins imply", () => {

@@ -42,6 +42,12 @@ function of the part and lets a design saved before a size change be re-read aga
 **One bend geometry: 90°, 3 ft radius.** A second radius or a 45° bend needs new catalog entries and
 new footprint generation. See [ADR-0005](adr/0005-defer-the-bend-geometry-model.md).
 
+**And the 3 ft radius itself is now in question.** The bend KTS shipped on 2026-09-10, `ALP08404`,
+is a 4 ft centreline radius in its CAD. The app's 3 ft is authoritative under ADR-0001 and has not
+been changed, but one of the two figures is wrong and the client has been asked which
+([ADR-0029](adr/0029-real-part-numbers-arrive-in-part.md)). If the answer is 4 ft, the footprint,
+the pathfinder's turning room and every saved design's routing change with it.
+
 **One room per design, in a fixed build area.** The build area is always 300 × 300 × 100 ft
 ([ADR-0017](adr/0017-the-build-area-is-fixed-designs-have-rooms.md)); the welcome screen sizes a
 single rectangular room centered in it, with penetrable 1 ft walls that claim no grid cells. A
@@ -126,18 +132,30 @@ worth asking about early.
 
 ## Published catalog
 
-**Part numbers and names** in `src/data/parts.json` are invented and will be replaced when the real
-catalog arrives. The `partNo` values in particular look authoritative and are not. **They are now
-published**: PTSBLite prints them into a BOM PDF that any member of the public can download
-and keep. That is a deliberate decision, recorded in
+**Three part numbers in `src/data/parts.json` are still invented, and three are now real.** KTS
+delivered part numbers on 2026-09-10: the blower is `A444200`, the tube `ALP78403` and the split
+sleeve `ALP64401`. The terminal, the pedestal blower and the bend still carry numbers made up for
+the build — two because the drop was ambiguous, the bend because its real number describes a 4 ft
+radius part the app cannot route. See
+[ADR-0029](adr/0029-real-part-numbers-arrive-in-part.md).
+
+**A mixed catalog is easier to misread than an invented one.** `A444200` and `TM-2020-S` sit four
+lines apart and look alike, so which is which lives in ADR-0029 rather than in a reader's memory.
+The invented numbers are still **published**: PTSBLite prints them into a BOM PDF that any member of
+the public can download and keep, and nothing in the document marks the three that identify nothing.
+That is a deliberate decision, recorded in
 [ADR-0013](adr/0013-lite-publishes-placeholder-part-numbers.md), and it is the one place invented
 data reaches a customer-facing artifact on purpose. Issue #94.
 
-**The parts now look real, and are still named wrong.** The blower and terminal are modelled from
-the Kel2020 marketing media rather than from CAD, accepted by the client as the final Lite
-appearance ([ADR-0026](adr/0026-parts-are-modelled-from-marketing-media.md)). Their *shape* is
-sourced; their names and numbers are not, which makes the gap above easier to overlook than it was
-when both were obviously placeholders.
+**Part `name` values are ours, not KTS's.** They label the parts palette, the active-tool bar and
+the BOM rows. The KTS catalog names are recorded in ADR-0029 and are what to quote when ordering.
+
+**The parts look real, and the terminal is still numbered wrong.** The blower and terminal are
+modelled from the Kel2020 marketing media rather than from CAD, accepted by the client as the final
+Lite appearance ([ADR-0026](adr/0026-parts-are-modelled-from-marketing-media.md)). Their *shape* is
+sourced, and the blower's number now is too; the terminal's is not, which makes the gap above easier
+to overlook than it was when nothing in the file was real. STEP files for both arrived on 2026-09-10
+and do **not** reopen the appearance — ADR-0026 stands, and nothing is re-modelled from them.
 
 **The exported PDF carries pictures.** Five rendered views are captured from the live scene and
 embedded after the parts list ([ADR-0018](adr/0018-the-exported-bom-carries-rendered-views.md)).

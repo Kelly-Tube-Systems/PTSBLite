@@ -1,7 +1,10 @@
 # ADR-0013: PTSBLite publishes placeholder part numbers
 
-- **Status:** Accepted
+- **Status:** Superseded in part by [ADR-0029](0029-real-part-numbers-arrive-in-part.md)
 - **Date:** 2026-08-03
+
+Real numbers arrived for the blower, the tube and the split sleeve on 2026-09-10. This ADR still
+governs the three entries that remain invented — the terminal, the pedestal blower and the bend.
 
 ## Context
 
@@ -42,6 +45,11 @@ decision and remain absent entirely — see
 When issue #94 delivers the real catalog. At that point this ADR is superseded rather than amended:
 `parts.json` is replaced, `CONTEXT.md`'s "Placeholder" row for part numbers becomes obsolete, and
 the risk this records disappears.
+
+That happened in part on 2026-09-10 — see
+[ADR-0029](0029-real-part-numbers-arrive-in-part.md). The catalog arrived piecemeal rather than
+whole, so `parts.json` is now mixed, `CONTEXT.md`'s row names the three entries still invented, and
+the risk above shrank to those three instead of disappearing.
 
 If the real catalog turns out to be further away than expected, the notice on the PDF is the cheap
 middle option and remains available. It is roughly one line of `bom-pdf.ts`.
