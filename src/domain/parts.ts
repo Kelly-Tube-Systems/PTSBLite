@@ -64,11 +64,11 @@ export type BomRow = {
  */
 export function bomRows(input: readonly Part[] | DesignState): BomRow[] {
   const parts = isDesignState(input) ? input.parts : input;
-  // The two blowers are separate catalog items, so they are separate rows. The
-  // mast under a pedestal blower is not a row of its own and adds nothing to
-  // the tube footage: it is how the unit is mounted, not part of the run (see
-  // pedestal.ts and ADR-0020).
-  const blowers = parts.filter((p) => p.type === "blower" && !hasPedestal(p)).length;
+  // A pedestal blower is the same KTS part as a plain one (ADR-0030), so the
+  // two share a row; the pedestal count rides along as a note. The mast under
+  // it is not a row of its own and adds nothing to the tube footage: it is how
+  // the unit is mounted, not part of the run (see pedestal.ts and ADR-0020).
+  const blowers = parts.filter((p) => p.type === "blower").length;
   const pedestalBlowers = parts.filter(hasPedestal).length;
   const terminals = parts.filter((p) => p.type === "terminal").length;
   const bends = parts.filter((p) => p.type === "bend").length;
@@ -85,8 +85,7 @@ export function bomRows(input: readonly Part[] | DesignState): BomRow[] {
   };
 
   return [
-    row("blower", blowers),
-    row("blowerPedestal", pedestalBlowers),
+    row("blower", blowers, pedestalBlowers ? `${pedestalBlowers} on a pedestal` : undefined),
     row("terminal", terminals),
     row(
       "tube6",

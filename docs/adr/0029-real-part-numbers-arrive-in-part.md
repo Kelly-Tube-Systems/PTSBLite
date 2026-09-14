@@ -1,6 +1,6 @@
 # ADR-0029: Real part numbers arrive in part, and the bend is held back
 
-- **Status:** Accepted
+- **Status:** Accepted; both open questions answered in [ADR-0030](0030-the-terminal-and-pedestal-blower-take-their-real-numbers.md)
 - **Date:** 2026-09-13
 
 Kelly Tube Systems delivered a parts folder on 2026-09-10: seven STEP files and six logo images,

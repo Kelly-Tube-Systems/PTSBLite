@@ -130,16 +130,18 @@ describe("the mast is drawn but not counted", () => {
     expect(MAX_CENTERLINE_FEET).toBe(300);
   });
 
-  it("adds no tube footage or stock to the BOM, and counts as its own part", () => {
+  it("adds no tube footage or stock to the BOM, and counts as a blower", () => {
     const placed = placePedestalBlower(emptyDesign(), [0, 20, 0]);
     expect(placed.ok).toBe(true);
     if (!placed.ok) return;
 
     const rows = bomRows(placed.design);
     const row = (key: string) => rows.find((r) => r.key === key);
-    expect(row("blowerPedestal")?.qty).toBe(1);
-    // The plain blower is a different catalog item and stays at zero.
-    expect(row("blower")?.qty).toBe(0);
+    // The same KTS part as a plain blower, so the same row (ADR-0030); the
+    // pedestal is a note on it, not a catalog item.
+    expect(row("blower")?.qty).toBe(1);
+    expect(row("blower")?.note).toBe("1 on a pedestal");
+    expect(row("blowerPedestal")).toBeUndefined();
     expect(row("tube6")?.qty).toBe(0);
     expect(row("tube6")?.note).toBe("0.0ft total");
   });
