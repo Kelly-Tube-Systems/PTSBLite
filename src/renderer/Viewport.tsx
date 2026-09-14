@@ -15,9 +15,9 @@ import {
   createViewportDragState,
   endViewportDrag,
   isViewportClick,
-  landingCellForObject,
   moveViewportDrag,
-  partIdForObject
+  partIdForObject,
+  pickPointerCell
 } from "@/renderer/interaction";
 import {
   buildFloorShadow,
@@ -218,6 +218,8 @@ type ViewportState = {
   portsGroup?: THREE.Group;
   groundGroup?: THREE.Group;
   hoverPlane?: THREE.Mesh;
+  /** Re-picks the cell under the pointer and reports it if it changed. */
+  rehover?: () => void;
   requestRender?: () => void;
   /** How far the camera may pull back, derived from the current build area. */
   maxDistance?: number;
@@ -385,6 +387,22 @@ export function Viewport({
       distance: DEFAULT_CAMERA_FRAMING.distance,
       target: new THREE.Vector3(...DEFAULT_CAMERA_FRAMING.target)
     };
+    // Where the pointer last was, in normalised device coordinates, the cell it
+    // was last reported over, and what it is cast against. Ahead of the camera
+    // helpers because `applyCamera` re-picks from here; nothing is picked until
+    // the first move.
+    const mouse = new THREE.Vector2();
+    let pointerKnown = false;
+    let lastHoverCell: Vec3 | null = null;
+    const ray = new THREE.Raycaster();
+    const hoverPlane = new THREE.Mesh(
+      // Comfortably past the largest legal footprint. Sized to match it exactly,
+      // a pointer at the far edge would land on the plane's own boundary.
+      new THREE.PlaneGeometry(1200, 1200),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+    hoverPlane.rotation.x = -Math.PI / 2;
+    scene3.add(hoverPlane);
     /**
      * Draw one frame, coalescing every invalidation raised before it runs.
      *
@@ -436,6 +454,10 @@ export function Viewport({
 
     function applyCamera() {
       positionCamera();
+      // The scene under a still pointer has just changed, so what it points
+      // at has too. Without this a zoom or a view snap followed by a click
+      // placed on a cell the ghost had not been drawn on.
+      rehover();
       requestRender();
     }
     applyCamera();
@@ -466,17 +488,6 @@ export function Viewport({
     scene3.add(planeGroup);
     const portsGroup = new THREE.Group();
     scene3.add(portsGroup);
-
-    const ray = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-    const hoverPlane = new THREE.Mesh(
-      // Comfortably past the largest legal footprint. Sized to match it exactly,
-      // a pointer at the far edge would land on the plane's own boundary.
-      new THREE.PlaneGeometry(1200, 1200),
-      new THREE.MeshBasicMaterial({ visible: false })
-    );
-    hoverPlane.rotation.x = -Math.PI / 2;
-    scene3.add(hoverPlane);
 
     /**
      * Render the design from each standard angle and hand back the pictures.
@@ -569,11 +580,11 @@ export function Viewport({
       hoverPlane,
       requestRender,
       syncMarkers,
-      capture
+      capture,
+      rehover
     };
 
     let drag = createViewportDragState();
-    let lastHoverCell: Vec3 | null = null;
     // Right-drag pans the camera rig: we translate cam.target (and therefore the
     // camera with it) along the camera's screen-space right/up axes.
     let panning = false;
@@ -594,6 +605,9 @@ export function Viewport({
     };
     const onMove = (e: MouseEvent) => {
       const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      pointerKnown = true;
       if (panning && e.buttons & 2) {
         const dx = e.clientX - panX;
         const dy = e.clientY - panY;
@@ -615,22 +629,9 @@ export function Viewport({
       if (moved.delta) {
         cam.yaw -= moved.delta.x * 0.008;
         cam.pitch = Math.max(0.12, Math.min(1.45, cam.pitch + moved.delta.y * 0.005));
-        applyCamera();
-      }
-      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      ray.setFromCamera(mouse, camera);
-      const cell = pickCell(ray);
-      if (cell) {
-        if (
-          !lastHoverCell ||
-          cell[0] !== lastHoverCell[0] ||
-          cell[1] !== lastHoverCell[1] ||
-          cell[2] !== lastHoverCell[2]
-        ) {
-          lastHoverCell = cell;
-          callbacksRef.current.onHover?.(cell);
-        }
+        applyCamera(); // re-picks for the pointer's new position as it goes
+      } else {
+        rehover();
       }
     };
     const onUp = (e: MouseEvent) => {
@@ -645,7 +646,7 @@ export function Viewport({
         ray.setFromCamera(mouse, camera);
         const pickedPart = ray.intersectObjects(partsGroup.children, true)[0];
         const partId = pickedPart ? partIdForObject(pickedPart.object) : undefined;
-        const cell = clickCellForTool(toolRef.current, pickCell(ray), pickedPart?.point);
+        const cell = clickCellForTool(toolRef.current, pickCell(), pickedPart?.point);
         if (cell) {
           callbacksRef.current.onPlace?.(cell, partId ? { partId } : undefined);
         }
@@ -653,21 +654,31 @@ export function Viewport({
       drag = endViewportDrag(drag);
     };
 
-    function pickCell(rayInstance: THREE.Raycaster): Vec3 | null {
-      const landingHit = rayInstance.intersectObjects(overlayGroup.children, true)[0];
-      if (landingHit) {
-        const landing = landingCellForObject(landingHit.object);
-        if (landing) return landing;
+    /** The cell under the pointer right now, on the current plane and camera. */
+    function pickCell(): Vec3 | null {
+      ray.setFromCamera(mouse, camera);
+      return pickPointerCell(ray, overlayGroup.children, hoverPlane);
+    }
+
+    /**
+     * Re-pick under the pointer and report the cell if it is a new one. The
+     * click above picks the same way, so whatever the ghost was last drawn on
+     * is where a click lands — whether the pointer moved, the plane rose under
+     * it, or the camera turned.
+     */
+    function rehover() {
+      if (!pointerKnown) return;
+      const cell = pickCell();
+      if (!cell) return;
+      if (
+        !lastHoverCell ||
+        cell[0] !== lastHoverCell[0] ||
+        cell[1] !== lastHoverCell[1] ||
+        cell[2] !== lastHoverCell[2]
+      ) {
+        lastHoverCell = cell;
+        callbacksRef.current.onHover?.(cell);
       }
-      const planeHit = rayInstance.intersectObject(hoverPlane)[0];
-      if (planeHit) {
-        return [
-          Math.floor(planeHit.point.x),
-          Math.floor(hoverPlane.position.y),
-          Math.floor(planeHit.point.z)
-        ];
-      }
-      return null;
     }
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -940,6 +951,11 @@ export function Viewport({
     if (!s.planeGroup || !s.hoverPlane) return;
     clearGroup(s.planeGroup);
     s.hoverPlane.position.y = activeElevation;
+    // The plane has moved under a pointer that has not: an elevation key
+    // pressed while aiming. The session lifts the hovered cell straight up as
+    // its first answer; this replaces it with the cell the pointer actually
+    // rests on at the new height, which is the one a click would place on.
+    s.rehover?.();
     for (const marker of heightMarkers) {
       const sprite = buildHeightMarker(marker.at, marker.feet, { label: marker.label });
       if (sprite) s.planeGroup.add(sprite);

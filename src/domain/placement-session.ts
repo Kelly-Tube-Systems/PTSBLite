@@ -170,6 +170,13 @@ export function rotationKeysApply(tool: ToolId): boolean {
  * from it — along. Without this, pressing an elevation key changed nothing on
  * screen until the pointer happened to move again, which read as the key doing
  * nothing at all.
+ *
+ * This is the immediate answer, not the final one. The cell straight above
+ * the old hover is not what the pointer rests on at the new height: seen from
+ * the camera, the raised plane meets the same pointer nearer than the floor
+ * did. The viewport re-picks under the pointer once the plane has moved and
+ * reports that cell as a fresh hover, so the ghost ends up exactly where a
+ * click would place — which is what a click does, since it picks the same way.
  */
 function withElevation(session: PlacementSession, activeElevation: number): PlacementSession {
   return {

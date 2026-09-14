@@ -103,6 +103,37 @@ export function cellFromWorldPoint(point: Pick<THREE.Vector3, "x" | "y" | "z">):
   return [Math.floor(point.x), Math.floor(point.y), Math.floor(point.z)];
 }
 
+/**
+ * The cell a pointer ray lands on: a landing marker if it crosses one, else
+ * the placement plane, whose height is the active elevation.
+ *
+ * The plane is what makes this a function of the elevation and the camera as
+ * much as of the pointer. A pointer that has not moved lands on a different
+ * cell once the plane rises under it or the camera turns, so the viewport
+ * re-picks on both rather than only on pointer movement — otherwise the ghost
+ * shows one cell and the click, which picks afresh, lands on another.
+ */
+export function pickPointerCell(
+  ray: THREE.Raycaster,
+  landings: THREE.Object3D[],
+  plane: THREE.Mesh
+): Vec3 | null {
+  const landingHit = ray.intersectObjects(landings, true)[0];
+  if (landingHit) {
+    const landing = landingCellForObject(landingHit.object);
+    if (landing) return landing;
+  }
+  const planeHit = ray.intersectObject(plane)[0];
+  if (planeHit) {
+    return [
+      Math.floor(planeHit.point.x),
+      Math.floor(plane.position.y),
+      Math.floor(planeHit.point.z)
+    ];
+  }
+  return null;
+}
+
 export function clickCellForTool(
   tool: ToolId,
   fallbackCell: Vec3 | null,

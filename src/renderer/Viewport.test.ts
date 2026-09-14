@@ -15,7 +15,8 @@ import {
   clickCellForTool,
   createViewportDragState,
   moveViewportDrag,
-  partIdForObject
+  partIdForObject,
+  pickPointerCell
 } from "@/renderer/interaction";
 import { clearGroup, VP } from "@/renderer/three-utils";
 import {
@@ -39,6 +40,47 @@ describe("Viewport click cell resolution", () => {
 
   it("floors world hit coordinates to grid cells, including negative coordinates", () => {
     expect(cellFromWorldPoint({ x: -1.05, y: 4.99, z: -0.01 })).toEqual([-2, 4, -1]);
+  });
+});
+
+describe("pickPointerCell", () => {
+  /** The viewport's placement plane: a horizontal sheet at `y`. */
+  function planeAt(y: number): THREE.Mesh {
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200));
+    plane.rotation.x = -Math.PI / 2;
+    plane.position.y = y;
+    plane.updateMatrixWorld();
+    return plane;
+  }
+
+  /** A pointer ray from 6 ft up, looking down and along +x/+z at 45°. */
+  function pointerRay(): THREE.Raycaster {
+    return new THREE.Raycaster(
+      new THREE.Vector3(0.5, 6, 0.5),
+      new THREE.Vector3(1, -1, 1).normalize()
+    );
+  }
+
+  it("lands the same still pointer on a nearer cell once the plane rises", () => {
+    // Aim at (6, 0, 6) on the floor, then press ] three times without moving.
+    // The 3 ft plane meets the same ray half-way there, so the ghost has to be
+    // re-picked to (3, 3, 3): lifting (6, 0, 6) to (6, 3, 6) would draw it on a
+    // cell the click, which picks this same way, would not land on.
+    expect(pickPointerCell(pointerRay(), [], planeAt(0))).toEqual([6, 0, 6]);
+    expect(pickPointerCell(pointerRay(), [], planeAt(3))).toEqual([3, 3, 3]);
+  });
+
+  it("prefers a landing marker the ray crosses over the plane", () => {
+    const marker = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+    marker.position.set(3, 3.5, 3); // squarely on the ray
+    marker.userData.landingCell = [2, 3, 2];
+    marker.updateMatrixWorld();
+    expect(pickPointerCell(pointerRay(), [marker], planeAt(0))).toEqual([2, 3, 2]);
+  });
+
+  it("reports nothing when the ray misses the plane", () => {
+    const skyward = new THREE.Raycaster(new THREE.Vector3(0, 6, 0), new THREE.Vector3(0, 1, 0));
+    expect(pickPointerCell(skyward, [], planeAt(0))).toBeNull();
   });
 });
 
