@@ -67,6 +67,25 @@ describe("BOM derivation", () => {
     expect(byKey.tube6.note).toMatch(/15\.0ft total/);
     expect(byKey.tube6.note).toMatch(/1 cut on-site/);
     expect(byKey.blower.partNo).toBe("A444200");
+    expect(byKey.terminal.partNo).toBe("A444940");
+  });
+
+  it("bomRows counts a pedestal blower on the blower row, noting the pedestal", () => {
+    // One KTS part however it is mounted (ADR-0030): a parts list handed to
+    // KTS orders two of A444200, not one of each of two numbers.
+    const parts: Part[] = [
+      { id: "b1", type: "blower", cell: [0, 0, 0], dir: [1, 0, 0] },
+      { id: "b2", type: "blower", cell: [5, 2, 0], dir: [1, 0, 0], pedestalFeet: 2 }
+    ];
+    const byKey = Object.fromEntries(bomRows(designWith(parts)).map((r) => [r.key, r]));
+    expect(byKey.blower.qty).toBe(2);
+    expect(byKey.blower.note).toBe("1 on a pedestal");
+    expect(byKey.blowerPedestal).toBeUndefined();
+  });
+
+  it("bomRows leaves the blower row unannotated when nothing is on a pedestal", () => {
+    const byKey = Object.fromEntries(bomRows(designWith(sampleParts)).map((r) => [r.key, r]));
+    expect(byKey.blower.note).toBeUndefined();
   });
 
   it("bomRows counts the split sleeves the joins imply", () => {
@@ -84,7 +103,6 @@ describe("BOM derivation", () => {
     expect(rows.map((r) => r.key).sort()).toEqual([
       "bend90",
       "blower",
-      "blowerPedestal",
       "splitSleeve",
       "terminal",
       "tube6"
