@@ -42,8 +42,10 @@ export const VP = {
   terminalGlass: 0xd7e3f0,
   // The door cage over the barrel, tan-anodised on the real unit.
   terminalDoor: 0xa9a390,
-  // The green a Kel2020 signs itself with: the power light, the send button and
-  // the wordmark down the door.
+  // The green a Kel2020 signs itself with. It marked a power light and a send
+  // button too until the CAD replaced the hand-drawn units (ADR-0033); what is
+  // left is the wordmark across a blower's drum and a terminal's housing
+  // (ADR-0034), tinted from the artwork's white rasterisation.
   signal: 0x4ade80,
   tube: 0x8e96a5,
   tubeEdge: 0xb8bfcd,
@@ -121,9 +123,13 @@ export function disposeObject(object: THREE.Object3D): void {
 }
 
 function disposeMaterial(material: THREE.Material): void {
-  // Label sprites carry a CanvasTexture that has to go with the material.
+  // Label sprites carry a CanvasTexture that has to go with the material. The
+  // KEL2020 wordmark is the exception: one texture serves every blower and
+  // terminal in the scene, so freeing it with the first part erased would blank
+  // the mark on all the rest. Its own module owns it and never frees it —
+  // `userData.shared` is how that ownership is declared here.
   const { map } = material as THREE.Material & { map?: THREE.Texture | null };
-  map?.dispose();
+  if (!map?.userData.shared) map?.dispose();
   material.dispose();
 }
 

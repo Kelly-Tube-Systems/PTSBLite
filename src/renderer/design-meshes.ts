@@ -6,6 +6,7 @@ import { KEL2020_BLOWER, KEL2020_TERMINAL } from "@/data/kel2020-geometry";
 import { terminalAxisIsVertical, terminalBodyDir } from "@/domain/terminal";
 import { vEq } from "@/domain/vec3";
 import { buildBakedMesh } from "@/renderer/baked-geometry";
+import { buildKel2020Decal, type DecalPlacement } from "@/renderer/kel2020-decal";
 import { TUBE_R, v3, VP } from "@/renderer/three-utils";
 import type { Vec3 } from "@/types";
 
@@ -35,6 +36,24 @@ function buildTransportArrow(
 }
 
 /**
+ * Where the wordmark sits on a blower: across the drum, centred on the front,
+ * at the drum's own mid-height.
+ *
+ * `radius` is a measurement of the baked geometry, not a choice: rays cast
+ * outward from the port axis across this patch meet the drum at 0.2649 ft, and
+ * anything short of that leaves the mark cut to ribbons by the facets standing
+ * through it. The drum runs unbroken from the base at x = -0.5 to about
+ * x = 0.28, where the neck steps in. 0.42 ft of mark is 91° of it, five inches
+ * on the real six inch unit.
+ */
+const BLOWER_WORDMARK: DecalPlacement = {
+  radius: 0.2649,
+  width: 0.42,
+  axis: "x",
+  at: [-0.11, 0, 0]
+};
+
+/**
  * A blower: the power unit at the foot of a Kel2020 stack.
  *
  * The shape is Kelly Tube Systems' own CAD for the A444200 4 inch blower
@@ -51,7 +70,8 @@ function buildTransportArrow(
  *
  * The ring at the port is the app's, not the unit's: it says which way the
  * blower faces, which is a thing the viewport has to show and the hardware has
- * no reason to.
+ * no reason to. The wordmark across the drum is the other way round — it is the
+ * unit's own marking, which the CAD does not carry (ADR-0034).
  */
 export function buildBlowerMesh({ ghost = false } = {}): THREE.Group {
   const g = new THREE.Group();
@@ -68,6 +88,8 @@ export function buildBlowerMesh({ ghost = false } = {}): THREE.Group {
         })
     )
   );
+  const decal = buildKel2020Decal(BLOWER_WORDMARK, { ghost });
+  if (decal) g.add(decal);
   const ring = new THREE.Mesh(
     new THREE.TorusGeometry(TUBE_R * 1.35, 0.018, 8, 24),
     new THREE.MeshBasicMaterial({ color: VP.accent, transparent: true, opacity: ghost ? 0.5 : 0.9 })
@@ -119,6 +141,22 @@ export function buildPedestalMesh(feet: number, { ghost = false } = {}): THREE.G
 }
 
 /**
+ * Where the wordmark sits on a terminal: across the fabricated housing, at the
+ * height the hand-drawn model used to put it (ADR-0026) — the middle of the
+ * front, between the latch below it and the top collar above.
+ *
+ * Measured off the baked geometry like the blower's: rays cast across this
+ * patch meet the housing at 0.213 ft, about an axis offset 0.025 ft from the
+ * unit's own, which is why this is not centred on x = 0.
+ */
+const TERMINAL_WORDMARK: DecalPlacement = {
+  radius: 0.213,
+  width: 0.3,
+  axis: "y",
+  at: [-0.025, 0.7, 0]
+};
+
+/**
  * A terminal: a 1 ft square, 2 ft long unit, standing up or lying down.
  *
  * The shape is Kelly Tube Systems' own CAD for the A444940 4 inch terminal body
@@ -141,7 +179,9 @@ export function buildPedestalMesh(feet: number, { ghost = false } = {}): THREE.G
  * maps that +Y onto the body direction and keeps +Z horizontal, so the door ends
  * up across the run rather than into the floor — which is where it belongs,
  * since a carrier is loaded from the front while the tube leaves the end. The
- * group's origin is the centre of the cell the terminal was placed in.
+ * group's origin is the centre of the cell the terminal was placed in, and the
+ * wordmark rides on the housing with it (ADR-0034), so a terminal on its side
+ * wears its mark on its side.
  */
 export function buildTerminalMesh({
   axis = [0, 1, 0],
@@ -202,6 +242,8 @@ export function buildTerminalMesh({
       });
     })
   );
+  const decal = buildKel2020Decal(TERMINAL_WORDMARK, { ghost });
+  if (decal) g.add(decal);
   if (ghost) {
     // The arrow says which way the run leaves. The body already lies along the
     // axis, so in this frame that is simply one end or the other: +Y when the
