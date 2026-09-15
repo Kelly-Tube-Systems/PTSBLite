@@ -223,6 +223,71 @@ describe("attemptPlacement", () => {
     expect(next.freePlacementMemory).toEqual(attempted.freePlacementMemory);
   });
 
+  it("carries the live hover cell onto the plane the attempt left", () => {
+    // A blower placed at height sends the plane back to the floor. The pointer
+    // has not moved, so its cell stays put on the floor plan and drops with the
+    // plane — the same thing an elevation key does to it — rather than leaving
+    // the ghost hanging at the old height over a plane that is now at 0 ft.
+    const stale = session({ tool: "blower", activeElevation: 3, hoverCell: [0, 3, 0] });
+    const { session: attempted } = attemptPlacement(stale, emptyDesign(), [0, 3, 0], "pb");
+    const live = session({ tool: "blower", activeElevation: 3, hoverCell: [9, 3, 9] });
+
+    const next = placementSessionReducer(live, { type: "apply-attempt", session: attempted });
+
+    expect(next.activeElevation).toBe(0);
+    expect(next.hoverCell).toEqual([9, 0, 9]);
+  });
+
+  it("sends the height back to the floor once a blower or terminal is down", () => {
+    // The client's answer on the card: "Height should go back to 0 ft after
+    // placing a blower or a terminal." Chosen over leaving the setting where it
+    // was, knowing the first tube after a raised blower then needs it put back
+    // up to reach the port (ADR-0031).
+    for (const tool of ["blower", "blowerPedestal", "terminal"] as const) {
+      const raised = session({ tool, activeElevation: 3, hoverCell: [2, 3, 2] });
+      const { session: after, result } = attemptPlacement(raised, emptyDesign(), [2, 3, 2], "p");
+      expect(result.status).toBe("committed");
+      expect(after.activeElevation).toBe(0);
+      expect(after.hoverCell).toEqual([2, 0, 2]);
+    }
+  });
+
+  it("goes back to the storey's own floor upstairs, not to the ground", () => {
+    // Sending the plane to 0 ft from the second floor would change the active
+    // floor, and the camera with it. The floor is the one the part was placed
+    // from, which is where the floor selector would have put the plane.
+    const upstairs = emptyDesign({ multiFloor: true, room: { width: 60, depth: 40, height: 12 } });
+    const raised = session({ tool: "blower", activeElevation: 16, hoverCell: [5, 16, 5] });
+    const { session: after, result } = attemptPlacement(raised, upstairs, [5, 16, 5], "p");
+    expect(result.status).toBe("committed");
+    expect(after.activeElevation).toBe(13);
+    expect(after.hoverCell).toEqual([5, 13, 5]);
+  });
+
+  it("leaves the height where it is when the endpoint is refused", () => {
+    const design = designFromScene({
+      parts: [{ id: "b1", type: "blower", cell: [2, 3, 2], dir: [1, 0, 0] }],
+      obstacles: []
+    });
+    const raised = session({ tool: "blower", activeElevation: 3, hoverCell: [2, 3, 2] });
+    const { session: after, result } = attemptPlacement(raised, design, [2, 3, 2], "p");
+    expect(result.status).toBe("error");
+    expect(after).toBe(raised);
+  });
+
+  it("keeps the height a tube or bend is working at", () => {
+    // A run at height is built tube after tube on the same plane; resetting
+    // after each one would make every piece cost three key presses again.
+    const design = designFromScene({
+      parts: [{ id: "b1", type: "blower", cell: [0, 3, 0], dir: [1, 0, 0] }],
+      obstacles: []
+    });
+    const raised = session({ tool: "tube", activeElevation: 3, hoverCell: [1, 3, 0] });
+    const { session: after, result } = attemptPlacement(raised, design, [1, 3, 0], "tube", "b1");
+    expect(result.status).toBe("committed");
+    expect(after.activeElevation).toBe(3);
+  });
+
   it("walks the obstacle draft through its two clicks without touching the design", () => {
     const design = emptyDesign();
     const first = attemptPlacement(session({ tool: "obstacle" }), design, [0, 0, 0], "o1");

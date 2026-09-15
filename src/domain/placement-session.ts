@@ -27,6 +27,7 @@ import {
   type ObstacleKind,
   type ObstaclePlacementDraft
 } from "@/domain/obstacle-placement";
+import { floorBeneath } from "@/domain/floors";
 import { clampElevation } from "@/domain/sparse-grid";
 import { placeTube, tubeLandingCells, tubePlacementGhost } from "@/domain/tube-placement";
 import type { BuildArea, DesignMetadata, DesignState, Ghost, ToolId, Vec3 } from "@/types";
@@ -255,8 +256,13 @@ export function placementSessionReducer(
       // is a consequence of the click and should win, but where the pointer is
       // now is not something a placement gets a say in — keeping the live hover
       // cell stops a click from dragging the ghost back to where the pointer
-      // used to be.
-      return { ...action.session, hoverCell: session.hoverCell };
+      // used to be. The plane the attempt left is a consequence of the click,
+      // though, so the live cell is carried onto it the way an elevation key
+      // would carry it.
+      return withElevation(
+        { ...action.session, hoverCell: session.hoverCell },
+        action.session.activeElevation
+      );
   }
 }
 
@@ -326,16 +332,24 @@ export function attemptPlacement(
       );
       const placed = placeFreePart(design, { id: occupantId, type, cell, orientation });
       if (!placed.ok) return unchanged({ status: "error", message: placed.message });
+      // Once an endpoint is down the height setting goes back to the floor of
+      // the storey it was placed from. The client chose this over leaving the
+      // setting where it was, knowing the first tube after a raised blower
+      // needs the setting put back up to reach its port (ADR-0031). Tubes and
+      // bends keep the height they are working at.
       return {
-        session: {
-          ...session,
-          freePlacementMemory: rememberFreePlacementOrientation(
-            session.freePlacementMemory,
-            type,
-            orientation
-          ),
-          freePlacementRotation: DEFAULT_FREE_PLACEMENT_ROTATION
-        },
+        session: withElevation(
+          {
+            ...session,
+            freePlacementMemory: rememberFreePlacementOrientation(
+              session.freePlacementMemory,
+              type,
+              orientation
+            ),
+            freePlacementRotation: DEFAULT_FREE_PLACEMENT_ROTATION
+          },
+          floorBeneath(design.metadata, session.activeElevation)
+        ),
         result: { status: "committed", design: placed.design }
       };
     }
