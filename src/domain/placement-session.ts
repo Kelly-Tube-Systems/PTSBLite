@@ -73,10 +73,14 @@ export const INITIAL_PLACEMENT_SESSION: PlacementSession = {
 /**
  * Where the pointer's cell actually lands for the armed tool.
  *
- * A blower or terminal aimed at an impenetrable obstacle steps onto it. Tubes
- * and bends continue from a port, while the obstacle tool must be able to draw
- * over existing occupants. A pedestal blower stays put because its mast has to
- * reach the floor and must not pass through the obstacle holding it up.
+ * Either kind of blower, or a terminal, aimed at an impenetrable obstacle steps
+ * onto it. Tubes and bends continue from a port, while the obstacle tool must
+ * be able to draw over existing occupants.
+ *
+ * The pedestal blower was left out of this when the step-up shipped, on the
+ * grounds that its mast reached the floor and must not pass through whatever
+ * holds it up. It now stands on the obstacle instead (ADR-0032), so there is
+ * nothing to drive through and the tool steps up like the rest.
  */
 export function resolvePlacementCell(
   tool: ToolId,
@@ -86,10 +90,10 @@ export function resolvePlacementCell(
 ): Vec3 {
   switch (tool) {
     case "blower":
+    case "blowerPedestal":
     case "terminal":
       return restOnObstacles(design, cell, buildArea);
     case "cursor":
-    case "blowerPedestal":
     case "tube":
     case "bend":
     case "obstacle":

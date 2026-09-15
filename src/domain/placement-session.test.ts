@@ -136,13 +136,15 @@ describe("resolvePlacementCell", () => {
     obstacles: [{ id: "shelf", min: [1, 0, 1], max: [1, 2, 1] }]
   });
 
-  it("stands a plain blower or terminal on an impenetrable obstacle", () => {
+  it("stands a blower or terminal on an impenetrable obstacle", () => {
     expect(resolvePlacementCell("blower", design, [1, 0, 1], AREA)).toEqual([1, 3, 1]);
     expect(resolvePlacementCell("terminal", design, [1, 0, 1], AREA)).toEqual([1, 3, 1]);
   });
 
-  it("leaves a pedestal blower on the pointed cell so its mast cannot cross the obstacle", () => {
-    expect(resolvePlacementCell("blowerPedestal", design, [1, 0, 1], AREA)).toEqual([1, 0, 1]);
+  it("stands a pedestal blower on one too, since its mast now stands on the top", () => {
+    // The client asked for the step-up to cover the pedestal tool as well; the
+    // mast stands on the obstacle rather than passing through it (ADR-0032).
+    expect(resolvePlacementCell("blowerPedestal", design, [1, 0, 1], AREA)).toEqual([1, 3, 1]);
   });
 });
 
