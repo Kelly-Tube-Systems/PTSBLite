@@ -28,6 +28,8 @@ Deployment settings are in [docs/deploying.md](docs/deploying.md).
 | `src/renderer/` | Three.js viewport and interaction helpers |
 | `src/components/` | React UI and colocated stylesheets |
 | `src/platform/` | Browser storage and downloads |
+| `src/data/` | The part catalog, and the Kel2020 geometry baked out of KTS's CAD |
+| `tools/` | Hand-run authoring scripts, outside the app and its dependencies |
 | `web-public/` | Production headers copied into the static build |
 | `docs/adr/` | Decisions with lasting consequences |
 

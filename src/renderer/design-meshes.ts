@@ -2,8 +2,10 @@ import * as THREE from "three";
 import { LineSegments2 } from "three/examples/jsm/lines/LineSegments2.js";
 import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
+import { KEL2020_BLOWER, KEL2020_TERMINAL } from "@/data/kel2020-geometry";
 import { terminalAxisIsVertical, terminalBodyDir } from "@/domain/terminal";
 import { vEq } from "@/domain/vec3";
+import { buildBakedMesh } from "@/renderer/baked-geometry";
 import { TUBE_R, v3, VP } from "@/renderer/three-utils";
 import type { Vec3 } from "@/types";
 
@@ -35,76 +37,37 @@ function buildTransportArrow(
 /**
  * A blower: the power unit at the foot of a Kel2020 stack.
  *
- * Modelled from the photographs and drawings at kellytubesystems.com/kel2020 —
- * a squat drum, a stepped neck, a metal collar where the tube leaves it, and a
- * green power light on its side. Approximate rather than dimensioned, which is
- * what the client accepted as the final Lite build (ADR-0026); the foot it
- * occupies still comes from the app, not from the media.
+ * The shape is Kelly Tube Systems' own CAD for the A444200 4 inch blower
+ * assembly, baked out of the STEP file (ADR-0033) rather than drawn by eye as
+ * it was until 2026-09-15. The real unit is a 6 inch drum standing just under
+ * a foot tall with a 4 inch port on top, so it is scaled to exactly the cell
+ * it occupies and looks slimmer than the drum it replaces — that slimness is
+ * the unit's real proportions.
  *
- * The drum's axis is the port axis, because `dirToQuat` turns this whole group
+ * The port axis is the unit's axis, because `dirToQuat` turns this whole group
  * to map +X onto the direction the blower faces. A blower with its hole up
  * therefore stands on the floor the way the real unit does, with the tube
  * leaving its top, and one turned to a side lies along its own run.
+ *
+ * The ring at the port is the app's, not the unit's: it says which way the
+ * blower faces, which is a thing the viewport has to show and the hardware has
+ * no reason to.
  */
 export function buildBlowerMesh({ ghost = false } = {}): THREE.Group {
   const g = new THREE.Group();
-  const shell = new THREE.MeshStandardMaterial({
-    color: VP.blower,
-    roughness: 0.62,
-    metalness: 0.2,
-    transparent: ghost,
-    opacity: ghost ? 0.45 : 1
-  });
-  // A cylinder is built around +Y, so every piece of the unit turns a quarter
-  // turn about Z to stand along the port axis instead.
-  const drumGeom = new THREE.CylinderGeometry(0.45, 0.42, 0.56, 28);
-  const drum = new THREE.Mesh(drumGeom, shell);
-  drum.rotation.z = Math.PI / 2;
-  drum.position.x = -0.18;
-  g.add(drum);
-  const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.47, 0.47, 0.06, 28), shell);
-  foot.rotation.z = Math.PI / 2;
-  foot.position.x = -0.45;
-  g.add(foot);
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.31, 0.34, 0.35, 24), shell);
-  neck.rotation.z = Math.PI / 2;
-  neck.position.x = 0.27;
-  g.add(neck);
-  // The green power light, near the top of the drum on the real unit.
-  const light = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.05, 0.05, 0.04, 12),
-    new THREE.MeshBasicMaterial({ color: VP.signal, transparent: ghost, opacity: ghost ? 0.6 : 1 })
+  g.add(
+    buildBakedMesh(
+      KEL2020_BLOWER,
+      () =>
+        new THREE.MeshStandardMaterial({
+          color: VP.blower,
+          roughness: 0.62,
+          metalness: 0.2,
+          transparent: ghost,
+          opacity: ghost ? 0.45 : 1
+        })
+    )
   );
-  light.rotation.x = Math.PI / 2;
-  light.position.set(0.02, 0, 0.44);
-  g.add(light);
-  const flange = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.32, 0.32, 0.1, 24),
-    new THREE.MeshStandardMaterial({ color: VP.blowerEdge, roughness: 0.35, metalness: 0.3 })
-  );
-  flange.rotation.z = Math.PI / 2;
-  flange.position.set(0.5, 0, 0);
-  g.add(flange);
-  const hole = new THREE.Mesh(
-    new THREE.CylinderGeometry(TUBE_R + 0.02, TUBE_R + 0.02, 0.14, 20),
-    new THREE.MeshStandardMaterial({ color: 0x05080c, roughness: 1 })
-  );
-  hole.rotation.z = Math.PI / 2;
-  hole.position.set(0.52, 0, 0);
-  g.add(hole);
-  // Threshold well above the 13° between neighbouring side faces, so the rims
-  // are drawn and the seams down the barrel are not.
-  const edges = new THREE.LineSegments(
-    new THREE.EdgesGeometry(drumGeom, 30),
-    new THREE.LineBasicMaterial({
-      color: VP.blowerEdge,
-      transparent: ghost,
-      opacity: ghost ? 0.6 : 0.8
-    })
-  );
-  edges.rotation.z = Math.PI / 2;
-  edges.position.x = -0.18;
-  g.add(edges);
   const ring = new THREE.Mesh(
     new THREE.TorusGeometry(TUBE_R * 1.35, 0.018, 8, 24),
     new THREE.MeshBasicMaterial({ color: VP.accent, transparent: true, opacity: ghost ? 0.5 : 0.9 })
@@ -158,10 +121,13 @@ export function buildPedestalMesh(feet: number, { ghost = false } = {}): THREE.G
 /**
  * A terminal: a 1 ft square, 2 ft long unit, standing up or lying down.
  *
- * Modelled from the media at kellytubesystems.com/kel2020 (ADR-0026): a clear
- * barrel ribbed along its length, held between two brushed collars, with the
- * slatted door cage over the front and the green wordmark down it. The send
- * button sits on the lower collar, where it is on the real unit.
+ * The shape is Kelly Tube Systems' own CAD for the A444940 4 inch terminal body
+ * fabrication, baked out of the STEP file (ADR-0033) rather than drawn by eye
+ * as it was until 2026-09-15: a 4 inch carrier barrel running the unit's whole
+ * length with the fabricated housing, its door and its latch wrapped round the
+ * middle of it. The real unit is 20¾ inches end to end and the app gives it
+ * 1.9 ft between ports, so it is stretched by a tenth to meet the tubes where
+ * they already leave it.
  *
  * The whole unit turns with its ports: `R` on a terminal used to swing the two
  * fittings around a cabinet that stayed standing, and the client asked for the
@@ -169,18 +135,13 @@ export function buildPedestalMesh(feet: number, { ghost = false } = {}): THREE.G
  * a terminal whose ports run sideways lies on its side, taking two squares of
  * floor and one of height instead of the other way round.
  *
- * It is built upright and rotated, which is why every measurement below is in
- * the standing unit's own frame: the body runs up its local +Y from the floor
- * of the cell it was placed in to the top of the next one, a port fitting caps
- * each end of it, and the door faces local +Z. Laying it down maps that +Y onto
- * the body direction and keeps +Z horizontal, so the door ends up across the
- * run rather than into the floor — which is where it belongs, since a carrier
- * is loaded from the front while the tube leaves the end.
- *
- * The two fittings land where `terminalPortAnchor` says the ports leave from,
- * so the tube meets the fitting it is drawn leaving whichever way the unit is
- * turned. The group's origin is the centre of the cell the terminal was placed
- * in.
+ * The baked geometry is in the standing unit's frame: the body runs up local +Y
+ * from the floor of the cell it was placed in to the top of the next one, the
+ * barrel opens at each end of that, and the door faces local +Z. Laying it down
+ * maps that +Y onto the body direction and keeps +Z horizontal, so the door ends
+ * up across the run rather than into the floor — which is where it belongs,
+ * since a carrier is loaded from the front while the tube leaves the end. The
+ * group's origin is the centre of the cell the terminal was placed in.
  */
 export function buildTerminalMesh({
   axis = [0, 1, 0],
@@ -189,151 +150,58 @@ export function buildTerminalMesh({
   const g = new THREE.Group();
   const body = terminalBodyDir(axis);
   const vertical = terminalAxisIsVertical({ axis });
-  // Half a foot below the origin to the base, one and a half above it to the
-  // top: two cells of body, inset a little as the blower's drum is.
-  const topY = 1.45;
-  const baseY = -0.45;
-  const collarH = 0.2;
 
   // Metalness is kept low across the unit on purpose: the scene has no
   // environment map, so a metalness much above a third has nothing to reflect
   // and renders as near-black — which is how the brushed collars first came
   // out, indistinguishable from the barrel between them.
-  const collarMat = new THREE.MeshStandardMaterial({
-    color: VP.terminal,
-    roughness: 0.32,
-    metalness: 0.28,
-    transparent: ghost,
-    opacity: ghost ? 0.45 : 1
-  });
-  for (const y of [baseY + collarH / 2, topY - collarH / 2]) {
-    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, collarH, 28), collarMat);
-    collar.position.y = y;
-    g.add(collar);
-  }
-  // The barrel a carrier is loaded into: clear on the real unit, so nearly
-  // transparent here rather than tinted, which is what tells it apart from the
-  // blower at a glance.
-  const barrelGeom = new THREE.CylinderGeometry(0.34, 0.34, 1.5, 28);
-  const barrel = new THREE.Mesh(
-    barrelGeom,
-    new THREE.MeshStandardMaterial({
-      color: VP.terminalGlass,
-      roughness: 0.12,
-      metalness: 0.05,
-      // A little of its own light, or the barrel takes the colour of whatever is
-      // behind it — which in this scene is a nearly black floor, and a clear
-      // barrel that renders black is worse than no barrel at all.
-      emissive: VP.terminalGlass,
-      emissiveIntensity: 0.14,
-      transparent: true,
-      opacity: ghost ? 0.18 : 0.42
+  g.add(
+    buildBakedMesh(KEL2020_TERMINAL, (role) => {
+      if (role === "glass") {
+        // The barrel a carrier is loaded into: clear on the real unit, so nearly
+        // transparent here rather than tinted, which is what tells it apart from
+        // the blower at a glance. A little of its own light, or it takes the
+        // colour of whatever is behind it — in this scene a nearly black floor,
+        // and a clear barrel that renders black is worse than no barrel at all.
+        return new THREE.MeshStandardMaterial({
+          color: VP.terminalGlass,
+          roughness: 0.12,
+          metalness: 0.05,
+          emissive: VP.terminalGlass,
+          emissiveIntensity: 0.14,
+          transparent: true,
+          opacity: ghost ? 0.18 : 0.42
+        });
+      }
+      if (role === "door") {
+        return new THREE.MeshStandardMaterial({
+          color: VP.terminalDoor,
+          roughness: 0.5,
+          metalness: 0.3,
+          transparent: ghost,
+          opacity: ghost ? 0.5 : 1
+        });
+      }
+      // The CAD's dark fittings, in the graphite the blower is drawn in: they
+      // are the same hardware, and a true black disappears into the floor.
+      if (role === "trim") {
+        return new THREE.MeshStandardMaterial({
+          color: VP.blower,
+          roughness: 0.55,
+          metalness: 0.2,
+          transparent: ghost,
+          opacity: ghost ? 0.45 : 1
+        });
+      }
+      return new THREE.MeshStandardMaterial({
+        color: VP.terminal,
+        roughness: 0.32,
+        metalness: 0.28,
+        transparent: ghost,
+        opacity: ghost ? 0.45 : 1
+      });
     })
   );
-  barrel.position.y = 0.5;
-  g.add(barrel);
-  const ribMat = new THREE.MeshStandardMaterial({
-    color: VP.terminalEdge,
-    roughness: 0.4,
-    metalness: 0.22,
-    transparent: ghost,
-    opacity: ghost ? 0.5 : 1
-  });
-  for (const y of [-0.1, 0.28, 0.66, 1.04]) {
-    const rib = new THREE.Mesh(new THREE.TorusGeometry(0.345, 0.012, 8, 24), ribMat);
-    rib.rotation.x = Math.PI / 2;
-    rib.position.y = y;
-    g.add(rib);
-  }
-  // The hinged door over the barrel: two uprights and the slats between them.
-  // The door is a shell wrapped round the front of the barrel rather than a set
-  // of separate bars: at the size a terminal is actually looked at, bars read as
-  // a ladder leaning against the unit. Left part-transparent because the real
-  // door is slotted and the carrier shows through it.
-  const doorSpan = (100 * Math.PI) / 180;
-  const doorR = 0.375;
-  const door = new THREE.Mesh(
-    new THREE.CylinderGeometry(doorR, doorR, 1.34, 24, 1, true, -doorSpan / 2, doorSpan),
-    new THREE.MeshStandardMaterial({
-      color: VP.terminalDoor,
-      roughness: 0.5,
-      metalness: 0.3,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: ghost ? 0.35 : 0.72
-    })
-  );
-  door.position.y = 0.5;
-  g.add(door);
-  // The hinge and the latch, standing at the door's two edges.
-  const doorEdgeMat = new THREE.MeshStandardMaterial({
-    color: VP.terminalDoor,
-    roughness: 0.5,
-    metalness: 0.3,
-    transparent: ghost,
-    opacity: ghost ? 0.5 : 1
-  });
-  for (const side of [1, -1]) {
-    const edgeAngle = (side * doorSpan) / 2;
-    const stile = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.36, 0.06), doorEdgeMat);
-    stile.position.set(doorR * Math.sin(edgeAngle), 0.5, doorR * Math.cos(edgeAngle));
-    stile.rotation.y = edgeAngle;
-    g.add(stile);
-  }
-  const mark = new THREE.Mesh(
-    new THREE.BoxGeometry(0.3, 0.1, 0.02),
-    new THREE.MeshBasicMaterial({ color: VP.signal, transparent: ghost, opacity: ghost ? 0.6 : 1 })
-  );
-  mark.position.set(0, 0.62, 0.358);
-  g.add(mark);
-  // Send button, on the lower collar where the drawing puts it.
-  const send = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.045, 0.045, 0.03, 12),
-    new THREE.MeshBasicMaterial({ color: VP.signal, transparent: ghost, opacity: ghost ? 0.6 : 1 })
-  );
-  send.rotation.x = Math.PI / 2;
-  send.position.set(0, baseY + collarH / 2, 0.36);
-  g.add(send);
-
-  const mat = new THREE.MeshStandardMaterial({
-    color: VP.terminalEdge,
-    roughness: 0.4,
-    metalness: 0.5
-  });
-  // Where each port leaves the body: one fitting capping each end of the 2 ft
-  // barrel. In the standing frame that is the top and bottom faces, and laying
-  // the group down carries them onto the two ends of the unit wherever it
-  // points — the same two cells `terminalPortAnchor` anchors the ports to.
-  const fittings: { at: THREE.Vector3; out: THREE.Vector3 }[] = [
-    { at: new THREE.Vector3(0, topY, 0), out: new THREE.Vector3(0, 1, 0) },
-    { at: new THREE.Vector3(0, baseY, 0), out: new THREE.Vector3(0, -1, 0) }
-  ];
-  // Both cylinders are built along +Y, which is already the body's axis in this
-  // frame, so neither needs turning before the group is laid down.
-  for (const { at, out } of fittings) {
-    const flange = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.08, 24), mat);
-    flange.position.copy(at);
-    g.add(flange);
-    const hole = new THREE.Mesh(
-      new THREE.CylinderGeometry(TUBE_R + 0.01, TUBE_R + 0.01, 0.12, 18),
-      new THREE.MeshStandardMaterial({ color: 0x05080c, roughness: 1 })
-    );
-    hole.position.copy(at).addScaledVector(out, 0.02);
-    g.add(hole);
-  }
-
-  // Rims only: the threshold is well above the 13° between neighbouring side
-  // faces, so the barrel keeps its outline without a seam down every segment.
-  const edges = new THREE.LineSegments(
-    new THREE.EdgesGeometry(barrelGeom, 30),
-    new THREE.LineBasicMaterial({
-      color: VP.terminalEdge,
-      transparent: ghost,
-      opacity: ghost ? 0.6 : 0.75
-    })
-  );
-  edges.position.y = 0.5;
-  g.add(edges);
   if (ghost) {
     // The arrow says which way the run leaves. The body already lies along the
     // axis, so in this frame that is simply one end or the other: +Y when the

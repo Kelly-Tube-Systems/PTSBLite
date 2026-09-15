@@ -157,12 +157,15 @@ Nothing in the list describes the pedestal itself, because it is mounting rather
 **Part `name` values are ours, not KTS's.** They label the parts palette, the active-tool bar and
 the BOM rows. The KTS catalog names are recorded in ADR-0029 and are what to quote when ordering.
 
-**The parts look real, and are not modelled from the CAD.** The blower and terminal are modelled
-from the Kel2020 marketing media rather than from CAD, accepted by the client as the final Lite
-appearance ([ADR-0026](adr/0026-parts-are-modelled-from-marketing-media.md)). STEP files for both
-arrived on 2026-09-10 and do **not** reopen the appearance — ADR-0026 stands, and nothing is
-re-modelled from them; the 2026-09-14 answers were read as being about part numbers
-([ADR-0030](adr/0030-the-terminal-and-pedestal-blower-take-their-real-numbers.md)).
+**The blower and terminal are the real CAD; everything else is drawn by eye.** The client asked on
+2026-09-15 for exact models from the STEP files that arrived on 2026-09-10, and for them to keep the
+app's sizes — *"Real shape, app size"* — so those two units are now Kelly Tube Systems' own geometry
+scaled into the cell each occupies ([ADR-0033](adr/0033-the-blower-and-terminal-come-from-kts-cad.md)).
+Tubes, bends and split sleeves are still modelled from the Kel2020 marketing media, which is what
+[ADR-0026](adr/0026-parts-are-modelled-from-marketing-media.md) covers now. Three things the CAD
+carries are deliberately not drawn: the blower's power cord, the terminal's DC supply box, and
+fasteners under 0.8 in. The parts also lose about a fiftieth of an inch of position to quantisation,
+and their shapes go stale if KTS revises the CAD without anyone re-running the bake.
 
 **The exported PDF carries pictures.** Five rendered views are captured from the live scene and
 embedded after the parts list ([ADR-0018](adr/0018-the-exported-bom-carries-rendered-views.md)).
