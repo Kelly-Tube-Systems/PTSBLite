@@ -1,6 +1,7 @@
 import { bendFootprint, obstacleVolumeCells } from "@/domain/occupant-footprints";
 import {
   floorBaseElevation,
+  floorBeneath,
   floorSeparatorY,
   plenumBands,
   roomHeightFeet,
@@ -318,15 +319,6 @@ export function placedPartShadows(design: DesignState): FloorShadow[] {
       live: false,
       cells: [...columns.values()].map((cell): Vec3 => [cell[0], y, cell[2]])
     }));
-}
-
-/** The floor a part at this elevation stands over. */
-function floorBeneath(metadata: DesignMetadata, elevation: number): number {
-  if (metadata.multiFloor) {
-    const upper = floorBaseElevation(metadata, 2);
-    if (elevation >= upper) return upper;
-  }
-  return 0;
 }
 
 /** The cells a placed part occupies, whatever kind of part it is. */

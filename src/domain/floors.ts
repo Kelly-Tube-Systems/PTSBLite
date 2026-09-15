@@ -124,6 +124,19 @@ export function floorAtElevation(metadata: DesignMetadata, elevation: number): 1
   return elevation >= floorBaseElevation(metadata, 2) ? 2 : 1;
 }
 
+/**
+ * The elevation of the floor beneath a point: the ground, or the upstairs
+ * floor in a two-floor design once the point is above the slab. A single-floor
+ * design has only the ground, however high the point is.
+ */
+export function floorBeneath(metadata: DesignMetadata, elevation: number): number {
+  if (metadata.multiFloor) {
+    const upper = floorBaseElevation(metadata, 2);
+    if (elevation >= upper) return upper;
+  }
+  return 0;
+}
+
 /** One floor's plenum: the Y range between its drop ceiling and its top. */
 export type PlenumBand = { floor: 1 | 2; base: number; top: number };
 
