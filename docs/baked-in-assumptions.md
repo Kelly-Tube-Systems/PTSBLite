@@ -91,9 +91,10 @@ drawn and it claims grid cells, but it reaches no BOM row, no tube footage and n
 ([ADR-0020](adr/0020-a-pedestal-is-drawn-but-not-counted.md)). Nothing generalizes from it: there
 is no notion of an uncounted part, and a second piece of hardware that "does not count" — a hanger,
 a bracket, a wall mount — would be another property on another part rather than a category the
-model already has. The mast measures to the floor of the storey and is refused when something is in
-that column; it does not stand on an obstacle, and it does not follow a blower that is later
-re-elevated, because placed parts cannot be moved at all (see *Selection and move*).
+model already has. The mast measures to whatever the blower stands on — the floor of its storey, or the top of an
+impenetrable obstacle under it ([ADR-0032](adr/0032-a-pedestal-stands-on-what-is-under-it.md)) — and
+is refused when something is in the column between the two. It does not follow a blower that is
+later re-elevated, because placed parts cannot be moved at all (see *Selection and move*).
 
 **Split sleeves are derived on every read, and the rule that places them is in code.** Sleeves are
 not in `parts` and not in the saved design: `splitSleeves` recomputes them from the joints

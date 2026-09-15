@@ -1,6 +1,6 @@
 # ADR-0020: A pedestal is drawn but not counted
 
-- **Status:** Accepted
+- **Status:** Accepted; the surface a mast measures to is amended by [ADR-0032](0032-a-pedestal-stands-on-what-is-under-it.md)
 - **Date:** 2026-08-30
 
 The client asked for a fifth item in the Build drawer: a blower with a pedestal, which grows
@@ -47,3 +47,8 @@ The mast measures to the floor of the storey the blower stands on: the ground on
 on floor 2. It does not step down onto an obstacle beneath it — a pedestal stands on the floor, and
 that is why the pedestal tool is left out of `restOnObstacles`, which lets a plain blower or
 terminal climb onto a shelf.
+
+**Amended 2026-09-15.** That last paragraph is superseded by
+[ADR-0032](0032-a-pedestal-stands-on-what-is-under-it.md): at the client's request the pedestal tool
+steps onto an impenetrable obstacle like the other endpoints, and the mast measures to whatever it
+stands on — the storey's floor, or the top of that obstacle. Everything above it stands.

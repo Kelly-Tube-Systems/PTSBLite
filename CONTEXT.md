@@ -40,8 +40,8 @@ A complete system has one at **each** end; see ADR-0019. The catalog stocks two:
 one **with a pedestal**.
 
 **Pedestal** — the mast under a blower placed with the pedestal tool: straight tube from the
-underside of the unit down to the floor of the storey it stands on, its height stored as
-`pedestalFeet`. It is how the blower is mounted, not part of the run air travels through, so it is
+underside of the unit down to what it stands on — the floor of its storey, or the top of an
+impenetrable obstacle beneath it (ADR-0032) — its height stored as `pedestalFeet`. It is how the blower is mounted, not part of the run air travels through, so it is
 **drawn but not counted** — no BOM row, no tube footage, nothing against the 300 ft centerline. It
 does claim grid cells, unlike the room's own structure, because it is a physical column of tube
 that nothing may route through. See ADR-0020.

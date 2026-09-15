@@ -3,15 +3,7 @@ import { addPart } from "@/domain/design-state";
 import { pedestalCells, pedestalHeightAt } from "@/domain/pedestal";
 import { TERMINAL_HEIGHT_CELLS, terminalCells } from "@/domain/terminal";
 import { computeTopology } from "@/domain/topology";
-import type {
-  BlowerPart,
-  DesignMetadata,
-  DesignState,
-  Ghost,
-  Part,
-  TerminalPart,
-  Vec3
-} from "@/types";
+import type { BlowerPart, DesignState, Ghost, Part, TerminalPart, Vec3 } from "@/types";
 import { cellKey, vEq, vNeg } from "@/domain/vec3";
 
 /**
@@ -79,11 +71,11 @@ export const FREE_PLACEMENT_MESSAGES = {
   occupied: "That cell is already occupied.",
   outOfBounds: "Place inside the build area.",
   obstacle: "Place on an open grid cell, not an obstacle.",
-  // The mast has to reach the floor, so a pedestal blower is refused for
-  // something in the column beneath it as well as in its own cell. Said
+  // The mast has to reach what it stands on, so a pedestal blower is refused
+  // for something in the column beneath it as well as in its own cell. Said
   // separately because "that cell is already occupied" points at the wrong
   // cell — the one under the cursor is free, and the blocked one is below it.
-  pedestalBlocked: "The pedestal cannot reach the floor — something is in the way.",
+  pedestalBlocked: "The pedestal cannot reach the surface below — something is in the way.",
   // Same reasoning one cell in the other direction: a terminal stands 2 ft
   // tall, so the cell above the cursor has to be free — and out at the top of
   // the build area there is no cell above it at all.
@@ -186,21 +178,22 @@ export function validateFreePlacementCell(
 
 /**
  * The cells a free-placed part would claim: the one under the cursor, plus, for
- * a pedestal blower, the mast beneath it down to the floor.
+ * a pedestal blower, the mast beneath it down to what it stands on.
  *
- * `metadata` is what tells the mast where the floor is — the ground on floor 1,
- * the slab on floor 2 — so it is an argument rather than an assumption.
+ * The whole `design` is what tells the mast that — the ground on floor 1, the
+ * slab on floor 2, or the top of an obstacle under it — so it is an argument
+ * rather than an assumption.
  */
 export function freePlacementFootprint(
   type: FreePlacementType,
   cell: Vec3,
-  metadata: DesignMetadata,
+  design: DesignState,
   orientation: Vec3,
   registry: PartRegistry = partRegistry
 ): Vec3[] {
   const body = freePlacementBody(type, cell, orientation, registry);
   if (type !== "blowerPedestal") return body;
-  return [...body, ...pedestalCells(cell, pedestalHeightAt(metadata, cell))];
+  return [...body, ...pedestalCells(cell, pedestalHeightAt(design, cell))];
 }
 
 /**
@@ -257,7 +250,7 @@ function validateFreePlacementFootprint(
     }
     return { ok: true };
   }
-  const [, ...mast] = freePlacementFootprint(type, cell, design.metadata, orientation);
+  const [, ...mast] = freePlacementFootprint(type, cell, design, orientation);
   for (const mastCell of mast) {
     if (!validateFreePlacementCell(design, mastCell).ok) {
       return { ok: false, message: FREE_PLACEMENT_MESSAGES.pedestalBlocked };
@@ -290,7 +283,7 @@ export function freePlacementGhost({
     type: "blower",
     cell,
     dir: orientation,
-    pedestalFeet: pedestalHeightAt(design.metadata, cell)
+    pedestalFeet: pedestalHeightAt(design, cell)
   };
 }
 
@@ -320,7 +313,7 @@ export function placeFreePart(
             type: "blower",
             cell,
             dir: orientation,
-            pedestalFeet: pedestalHeightAt(design.metadata, cell)
+            pedestalFeet: pedestalHeightAt(design, cell)
           };
   return {
     ok: true,
