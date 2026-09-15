@@ -1,6 +1,6 @@
 import { floorAtElevation, floorBaseElevation } from "@/domain/floors";
 import { cellCenter } from "@/domain/vec3";
-import type { BlowerPart, DesignMetadata, Part, Vec3 } from "@/types";
+import type { BlowerPart, DesignState, Part, Vec3 } from "@/types";
 
 /**
  * The mast under a blower with a pedestal.
@@ -32,13 +32,40 @@ export function hasPedestal(part: Part): part is BlowerPart & { pedestalFeet: nu
 }
 
 /**
- * How tall the mast is for a blower placed at `cell`: the gap between it and
- * the floor of the storey it stands on. Zero when it sits on that floor, which
- * is a pedestal blower that simply has no tube under it yet.
+ * What the mast stands on: the floor of the storey, or the top of the highest
+ * impenetrable obstacle beneath the blower in its own column.
+ *
+ * A pedestal blower steps onto an impenetrable obstacle the way a plain blower
+ * does (ADR-0032), so the mast has to land on whatever is holding the blower up
+ * rather than run through it to the floor.
+ *
+ * Two things are not a surface. A penetrable volume claims no cells and exists
+ * to be built through (ADR-0016). A part beneath the blower is not one either:
+ * the mast is refused for it, as it always was, rather than resting on it —
+ * which is why this asks the obstacles rather than the grid, and why it is not
+ * `solidTopAt`, whose question is which volume covers a cell rather than what
+ * the highest one below it is.
  */
-export function pedestalHeightAt(metadata: DesignMetadata, cell: Vec3): number {
-  const base = floorBaseElevation(metadata, floorAtElevation(metadata, cell[1]));
-  return Math.max(0, cell[1] - base);
+export function pedestalBaseElevation(design: DesignState, cell: Vec3): number {
+  const { metadata } = design;
+  let base = floorBaseElevation(metadata, floorAtElevation(metadata, cell[1]));
+  for (const obstacle of design.obstacles) {
+    if (obstacle.penetrable) continue;
+    if (cell[0] < obstacle.min[0] || cell[0] > obstacle.max[0]) continue;
+    if (cell[2] < obstacle.min[2] || cell[2] > obstacle.max[2]) continue;
+    if (obstacle.max[1] >= cell[1]) continue;
+    base = Math.max(base, obstacle.max[1] + 1);
+  }
+  return base;
+}
+
+/**
+ * How tall the mast is for a blower placed at `cell`: the gap between it and
+ * whatever it stands on. Zero when it sits directly on that surface, which is a
+ * pedestal blower that simply has no tube under it yet.
+ */
+export function pedestalHeightAt(design: DesignState, cell: Vec3): number {
+  return Math.max(0, cell[1] - pedestalBaseElevation(design, cell));
 }
 
 /**

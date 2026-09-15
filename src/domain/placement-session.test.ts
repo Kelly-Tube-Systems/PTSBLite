@@ -136,13 +136,12 @@ describe("resolvePlacementCell", () => {
     obstacles: [{ id: "shelf", min: [1, 0, 1], max: [1, 2, 1] }]
   });
 
-  it("stands a plain blower or terminal on an impenetrable obstacle", () => {
+  it("stands a blower, a pedestal blower or a terminal on an impenetrable obstacle", () => {
     expect(resolvePlacementCell("blower", design, [1, 0, 1], AREA)).toEqual([1, 3, 1]);
     expect(resolvePlacementCell("terminal", design, [1, 0, 1], AREA)).toEqual([1, 3, 1]);
-  });
-
-  it("leaves a pedestal blower on the pointed cell so its mast cannot cross the obstacle", () => {
-    expect(resolvePlacementCell("blowerPedestal", design, [1, 0, 1], AREA)).toEqual([1, 0, 1]);
+    // The pedestal blower climbs with them: its mast stops at the obstacle's
+    // top rather than crossing it (ADR-0032).
+    expect(resolvePlacementCell("blowerPedestal", design, [1, 0, 1], AREA)).toEqual([1, 3, 1]);
   });
 });
 

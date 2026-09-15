@@ -47,3 +47,8 @@ The mast measures to the floor of the storey the blower stands on: the ground on
 on floor 2. It does not step down onto an obstacle beneath it — a pedestal stands on the floor, and
 that is why the pedestal tool is left out of `restOnObstacles`, which lets a plain blower or
 terminal climb onto a shelf.
+
+> **Superseded, 2026-09-15.** That last paragraph no longer holds: the client asked for the
+> pedestal blower to climb onto an impenetrable obstacle like the other two, so the mast now lands
+> on whatever is beneath the blower. See
+> [ADR-0032](0032-a-pedestal-stands-on-what-is-beneath-it.md). Everything above it stands.

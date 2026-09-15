@@ -5,7 +5,13 @@ import { eraseAtCell } from "@/domain/erase-placement";
 import { FREE_PLACEMENT_MESSAGES, placeFreePart } from "@/domain/free-placement";
 import { FLOOR_SEPARATOR_FEET } from "@/domain/floors";
 import { bomRows, totalPathLength } from "@/domain/parts";
-import { hasPedestal, pedestalCells, pedestalHeightAt, pedestalSpan } from "@/domain/pedestal";
+import {
+  hasPedestal,
+  pedestalBaseElevation,
+  pedestalCells,
+  pedestalHeightAt,
+  pedestalSpan
+} from "@/domain/pedestal";
 import { checkObstacleIntersections, MAX_CENTERLINE_FEET } from "@/domain/validation";
 import { expectGridMatchesDesign } from "@/test/design-invariants";
 import type { DesignState, Vec3 } from "@/types";
@@ -22,8 +28,8 @@ function placePedestalBlower(design: DesignState, cell: Vec3) {
 describe("pedestal geometry", () => {
   it("measures the mast from the floor of the storey the blower stands on", () => {
     const single = emptyDesign({ room: { width: 60, depth: 40, height: 12 } });
-    expect(pedestalHeightAt(single.metadata, [0, 0, 0])).toBe(0);
-    expect(pedestalHeightAt(single.metadata, [0, 2, 0])).toBe(2);
+    expect(pedestalHeightAt(single, [0, 0, 0])).toBe(0);
+    expect(pedestalHeightAt(single, [0, 2, 0])).toBe(2);
 
     // On floor 2 the mast stands on the slab, not on the ground 13 ft below.
     const two = emptyDesign({
@@ -31,8 +37,32 @@ describe("pedestal geometry", () => {
       multiFloor: true
     });
     const floor2 = 12 + FLOOR_SEPARATOR_FEET;
-    expect(pedestalHeightAt(two.metadata, [0, floor2, 0])).toBe(0);
-    expect(pedestalHeightAt(two.metadata, [0, floor2 + 3, 0])).toBe(3);
+    expect(pedestalHeightAt(two, [0, floor2, 0])).toBe(0);
+    expect(pedestalHeightAt(two, [0, floor2 + 3, 0])).toBe(3);
+  });
+
+  it("stands the mast on an impenetrable obstacle instead of running it to the floor", () => {
+    // The client asked for the pedestal blower to step onto a shelf the way a
+    // plain blower does, which only works if the mast lands on the shelf.
+    const design = designFromScene({
+      parts: [],
+      obstacles: [{ id: "shelf", min: [0, 0, 0], max: [0, 2, 0] }]
+    });
+    expect(pedestalBaseElevation(design, [0, 3, 0])).toBe(3);
+    // Resting on the 3 ft shelf, there is no tube under the blower at all.
+    expect(pedestalHeightAt(design, [0, 3, 0])).toBe(0);
+    // Raised two feet above it, two feet of tube — not the five to the floor.
+    expect(pedestalHeightAt(design, [0, 5, 0])).toBe(2);
+    // The next column along is unaffected; its mast still reaches the floor.
+    expect(pedestalHeightAt(design, [1, 5, 1])).toBe(5);
+  });
+
+  it("does not stand on a penetrable volume, which claims no cells", () => {
+    const design = designFromScene({
+      parts: [],
+      obstacles: [{ id: "curtain", min: [0, 0, 0], max: [0, 2, 0], penetrable: true }]
+    });
+    expect(pedestalHeightAt(design, [0, 5, 0])).toBe(5);
   });
 
   it("claims the column between the blower and the floor, and nothing else", () => {
@@ -77,7 +107,27 @@ describe("placing a blower with a pedestal", () => {
     }
   });
 
-  it("refuses to place where the mast cannot reach the floor", () => {
+  it("claims only the mast above the obstacle it stands on", () => {
+    const withShelf = designFromScene({
+      parts: [],
+      obstacles: [{ id: "shelf", min: [0, 0, 0], max: [0, 2, 0] }]
+    });
+    const placed = placePedestalBlower(withShelf, [0, 5, 0]);
+    expect(placed.ok).toBe(true);
+    if (!placed.ok) return;
+
+    // Three cells: the blower and the two feet of tube down to the shelf. The
+    // shelf's own cells stay the obstacle's.
+    expect(partCells(placed.part)).toEqual([
+      [0, 5, 0],
+      [0, 4, 0],
+      [0, 3, 0]
+    ]);
+    expectGridMatchesDesign(placed.design);
+    expect(placed.design.grid.query([0, 2, 0])).toBe("shelf");
+  });
+
+  it("refuses to place where a part is in the mast's way", () => {
     const design = emptyDesign();
     const under = placeFreePart(design, {
       id: "t1",
