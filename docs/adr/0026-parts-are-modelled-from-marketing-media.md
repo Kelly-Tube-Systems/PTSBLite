@@ -1,7 +1,13 @@
 # ADR-0026: Parts are modelled from marketing media, not from CAD
 
-- **Status:** Accepted
+- **Status:** Accepted; superseded for the blower and terminal by
+  [ADR-0033](0033-the-blower-and-terminal-come-from-kts-cad.md)
 - **Date:** 2026-08-31
+
+> Kelly Tube Systems sent CAD on 2026-09-10 and the client asked on 2026-09-15 for the blower and
+> terminal to be modelled from it. Those two units are now the real geometry; what remains in force
+> here is everything else — split sleeves, the palette, and the division below between what supplies
+> shape and what supplies size.
 
 The blower and terminal in the viewport were invented: a grey box with a motor drum on it, and a
 taller grey box with a display panel. They were placeholders for parts modelled from real geometry,

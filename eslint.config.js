@@ -105,6 +105,15 @@ export default tseslint.config(
     languageOptions: { globals: globals.node }
   },
 
+  // The CAD bake (ADR-0033) is a hand-run Node script, outside the app's
+  // TypeScript program and outside its dependencies, so the type-aware rules
+  // have nothing to work from.
+  {
+    files: ["tools/**/*.mjs"],
+    languageOptions: { globals: globals.node },
+    extends: [tseslint.configs.disableTypeChecked]
+  },
+
   {
     rules: {
       // Prefix deliberately unused bindings with an underscore.

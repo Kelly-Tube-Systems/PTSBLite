@@ -115,9 +115,14 @@ function Cylinder({
 const COLLAR = "#7a8598";
 
 // The Kel2020 power unit: a drum with a stepped neck, a metal collar where the
-// tube leaves it and a green power light on its side — mirrors buildBlowerMesh
-// in the viewport. Drawn standing with its port up, which is how a blower is
-// placed before anything turns it and how the real unit sits on the floor.
+// tube leaves it and a green power light on its side. Drawn standing with its
+// port up, which is how a blower is placed before anything turns it and how the
+// real unit sits on the floor.
+//
+// These are drawn by eye and no longer mirror the viewport, which took the real
+// KTS geometry in ADR-0033. A card is a quarter-inch icon and this file cannot
+// import Three.js, so the two are kept recognisably the same part rather than
+// the same shape.
 // The unit itself is drawn `y` feet up its own axis so the pedestal variant can
 // raise it without a second copy of the geometry.
 function BlowerBody({ color, y = 0 }: { color: string; y?: number }) {
@@ -202,9 +207,9 @@ function PedestalBlower({ color }: { color: string }) {
 
 // The Kel2020 terminal: a clear barrel ribbed along its length between two
 // brushed collars, the slatted door and its green wordmark across the front,
-// the send button on the lower collar and the port on top — mirrors
-// buildTerminalMesh, including its height: a terminal is 1 ft square and 2 ft
-// tall (ADR-0021).
+// the send button on the lower collar and the port on top. Drawn by eye like
+// the blower above, but to the height the app gives it: a terminal is 1 ft
+// square and 2 ft tall (ADR-0021).
 function Terminal({ color }: { color: string }) {
   const glass = "#d7e3f0";
   const door = "#a9a390";
