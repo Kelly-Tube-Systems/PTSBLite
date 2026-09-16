@@ -38,6 +38,7 @@ export function TopBar({
   return (
     <div className="topbar nosel">
       <div className="topbar__brand">{productName}</div>
+      <div className="topbar__spacer" />
       {/* "New" rather than a File menu that only ever held it: a menu with one
           item is a click in front of the thing it contains. */}
       <button className="topbtn topbar-no-drag" onClick={onNew}>
@@ -62,7 +63,6 @@ export function TopBar({
       >
         <Icons.Redo size={18} />
       </button>
-      <div className="topbar__spacer" />
       <button
         type="button"
         className="topbtn accent topbar-no-drag"
