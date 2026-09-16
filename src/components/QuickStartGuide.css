@@ -52,6 +52,9 @@
   width: 600px;
   padding: 4px 12px 10px;
   border-top: 1px solid var(--line);
+  /* The containing block for the tagline, whose padding box is the panel's
+     inner edge — so the tagline reaches the corner without negative offsets. */
+  position: relative;
 }
 
 /* `display: flex` outranks the `hidden` attribute's own `display: none`, so
@@ -106,4 +109,18 @@
 
 .quickstart__icon {
   color: var(--text-mut);
+}
+
+/* The KTS tagline, laid into the corner the first column leaves empty. Flush
+   left and bottom because the artwork is cut that way; the panel's
+   `overflow: hidden` takes the corner radius off it. As wide as the first
+   column and the padding beside it — half the box, less half the column gap —
+   so its right edge lands on the column boundary and never meets the second
+   column's text. */
+.quickstart__tagline {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: calc(50% - 8px);
+  height: auto;
 }

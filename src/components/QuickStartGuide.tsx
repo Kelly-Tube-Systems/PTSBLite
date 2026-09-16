@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Icons, type IconProps } from "@/components/Icons";
 import type { ComponentType } from "react";
+import taglineUrl from "@/assets/kelly-it-tagline.png";
 import "@/components/QuickStartGuide.css";
 
 type Step = {
@@ -26,7 +27,7 @@ type Step = {
  * the first column is the parts you lay down in order, the second is finishing,
  * the shortcut past it, and the two controls that are not part of the sequence.
  * The columns are read left to right, not balanced — the first is the shorter
- * of the two, and the space under it is the point rather than a fault.
+ * of the two, and the space under it now carries the KTS tagline.
  */
 const COLUMNS: Step[][] = [
   [
@@ -88,6 +89,13 @@ export function QuickStartGuide() {
             ))}
           </ol>
         ))}
+        {/* The tagline bleeds into the corner the shorter column leaves free.
+            Its own artwork is a green field with a straight left and bottom
+            edge and a slanted right one, so it is laid flush to the panel
+            rather than inset, and the panel's overflow clips it to the corner
+            radius. Decorative: the guide's instructions are the content, and a
+            brand line read out between the steps would only interrupt them. */}
+        <img className="quickstart__tagline" src={taglineUrl} alt="" />
       </div>
     </div>
   );
