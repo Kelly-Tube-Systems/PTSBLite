@@ -366,10 +366,13 @@ export function Viewport({
     const w = mount.clientWidth;
     const h = mount.clientHeight;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    // The canvas is transparent: the void behind the scene is the mount's own
+    // background, where the stylesheet tiles the Kelly Systems watermark
+    // (Viewport.css). Clearing to `VP.bg` here would paint over it.
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(w, h);
-    renderer.setClearColor(VP.bg, 1);
+    renderer.setClearColor(VP.bg, 0);
     mount.appendChild(renderer.domElement);
 
     const scene3 = new THREE.Scene();
@@ -528,6 +531,10 @@ export function Viewport({
 
       try {
         for (const group of transient) group.visible = false;
+        // The PDF's views are read back as JPEG, which has no alpha: the
+        // transparent void the screen shows the watermark through would come
+        // out black. Clear opaque for the shots and hand the void back after.
+        renderer.setClearColor(VP.bg, 1);
         renderer.setSize(SHOT_WIDTH, SHOT_HEIGHT, false);
         updateLineResolutions(scene3, SHOT_WIDTH, SHOT_HEIGHT);
         camera.aspect = SHOT_WIDTH / SHOT_HEIGHT;
@@ -552,6 +559,7 @@ export function Viewport({
         });
       } finally {
         transient.forEach((group, i) => (group.visible = wasVisible[i]));
+        renderer.setClearColor(VP.bg, 0);
         renderer.setSize(size.x, size.y, false);
         updateLineResolutions(scene3, size.x, size.y);
         camera.aspect = before.aspect;
