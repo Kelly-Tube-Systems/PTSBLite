@@ -113,14 +113,19 @@
 
 /* The KTS tagline, laid into the corner the first column leaves empty. Flush
    left and bottom because the artwork is cut that way; the panel's
-   `overflow: hidden` takes the corner radius off it. As wide as the first
-   column and the padding beside it — half the box, less half the column gap —
-   so its right edge lands on the column boundary and never meets the second
-   column's text. */
+   `overflow: hidden` takes the corner radius off it.
+
+   Sized by its height rather than its width: the height is what sets how big
+   the lettering reads, and letting the width follow means re-cropping the
+   artwork changes how far the band reaches without also changing the type
+   size. The green the file carries ahead of the "D" is the left margin, and
+   lands the word on the step text's gutter. The cap stops the band meeting the
+   second column's text if the artwork is ever replaced with a wider one. */
 .quickstart__tagline {
   position: absolute;
   left: 0;
   bottom: 0;
-  width: calc(50% - 8px);
-  height: auto;
+  height: 32px;
+  width: auto;
+  max-width: calc(50% - 8px);
 }
