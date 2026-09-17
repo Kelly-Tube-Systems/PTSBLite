@@ -238,12 +238,25 @@ export function buildTerminalMesh({
           opacity: ghost ? 0.45 : 1
         });
       }
+      // The housing, which is the door a carrier is loaded through: clear on the
+      // real unit, so it is drawn see-through here rather than as a solid shell
+      // and the barrel behind it reads through the KEL2020 mark. It keeps a
+      // little of its own light for the same reason the barrel does, and a
+      // touch more body than the barrel so the two still read as two pieces.
+      //
+      // `depthWrite` is off because the baked groups draw the housing before the
+      // barrel (src/data/kel2020-geometry.ts), and a transparent surface that
+      // writes depth hides whatever is drawn behind it afterwards — which would
+      // leave the housing looking see-through everywhere except over the barrel.
       return new THREE.MeshStandardMaterial({
         color: VP.terminal,
-        roughness: 0.32,
-        metalness: 0.28,
-        transparent: ghost,
-        opacity: ghost ? 0.45 : 1
+        roughness: 0.3,
+        metalness: 0.2,
+        emissive: VP.terminal,
+        emissiveIntensity: 0.1,
+        transparent: true,
+        depthWrite: false,
+        opacity: ghost ? 0.22 : 0.5
       });
     })
   );
