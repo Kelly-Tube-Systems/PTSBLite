@@ -7,9 +7,12 @@ import {
   bendRenderCurve,
   bendRenderPath,
   buildSplitSleeveMesh,
+  buildTerminalMesh,
   tubeRenderSpan,
   tubeSectionJointPoints
 } from "@/renderer/design-meshes";
+import { KEL2020_TERMINAL } from "@/data/kel2020-geometry";
+import type { BakedRole } from "@/renderer/baked-geometry";
 import {
   cellFromWorldPoint,
   clickCellForTool,
@@ -263,6 +266,38 @@ describe("Viewport tube and bend render alignment", () => {
       const point = curve.getPoint(t);
       expect(Math.hypot(point.x - 1.5, point.y - 0.5, point.z - 3.5)).toBeCloseTo(3, 5);
     }
+  });
+});
+
+describe("terminal materials", () => {
+  // The client asked for the door — the housing the KEL2020 mark is on — to be
+  // see-through like the real unit's, so the barrel behind it shows. Two things
+  // make that work and neither is visible in the shape of the mesh: the housing
+  // has to be transparent, and it has to stay out of the depth buffer, because
+  // the baked groups draw it before the barrel and a transparent surface that
+  // writes depth hides whatever is drawn behind it afterwards.
+  const materialFor = (role: BakedRole, ghost = false): THREE.MeshStandardMaterial => {
+    const mesh = buildTerminalMesh({ ghost }).children.find(
+      (child): child is THREE.Mesh => child instanceof THREE.Mesh
+    )!;
+    const at = KEL2020_TERMINAL.groups.findIndex((group) => group.role === role);
+    const slot = mesh.geometry.groups[at].materialIndex!;
+    return (mesh.material as THREE.Material[])[slot] as THREE.MeshStandardMaterial;
+  };
+
+  it("draws the door see-through, with the barrel behind it still reaching the screen", () => {
+    const door = materialFor("body");
+    expect(door.transparent).toBe(true);
+    expect(door.opacity).toBeLessThan(1);
+    expect(door.depthWrite).toBe(false);
+    const groups = KEL2020_TERMINAL.groups.map((group) => group.role);
+    expect(groups.indexOf("glass")).toBeGreaterThan(groups.indexOf("body"));
+  });
+
+  it("keeps the placement ghost fainter than a placed unit", () => {
+    // Both are see-through now, so the one cue that told them apart — solid
+    // versus not — is gone, and only the difference in opacity is left.
+    expect(materialFor("body", true).opacity).toBeLessThan(materialFor("body").opacity);
   });
 });
 
