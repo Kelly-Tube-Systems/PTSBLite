@@ -39,7 +39,8 @@ through the same process — the bend KTS shipped is a 4 ft radius, the client w
 Part *names* are ours; part *numbers* are real KTS numbers, every one of them, taken from the
 client's own list rather than from the parts drop where the two disagree
 ([ADR-0036](docs/adr/0036-the-client-corrects-the-tube-part-number.md),
-[ADR-0037](docs/adr/0037-the-bend-takes-the-clients-number-on-his-say-so.md)). See
+[ADR-0037](docs/adr/0037-the-bend-takes-the-clients-number-on-his-say-so.md),
+[ADR-0038](docs/adr/0038-the-control-box-is-a-parts-list-line-with-no-model.md)). See
 [ADR-0001](docs/adr/0001-engineering-constraints-are-authoritative.md).
 
 User-facing copy must interpolate engineering constants rather than restating them.

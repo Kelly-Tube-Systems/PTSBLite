@@ -1,9 +1,14 @@
 import { PDFDocument, StandardFonts, type PDFPage } from "pdf-lib";
+import taglineDataUrl from "@/assets/kelly-it-tagline.png?inline";
+import { KELLY_WORDMARK_BOX, KELLY_WORDMARK_PATHS } from "@/data/kelly-systems-wordmark";
 import { bomRows, totalPathLength } from "@/domain/parts";
 import {
+  ACCENT,
+  BAND,
   DIM,
   drawRightText,
   drawText,
+  drawWatermark,
   formatDocumentDate,
   HAIRLINE,
   MARGIN_TOP,
@@ -39,6 +44,31 @@ const VIEW_LABEL_GAP = 22;
 const VIEWS_PER_PAGE = 2;
 
 /**
+ * Stamped across the pages of pictures. The client asked for the mark on those
+ * pages only: the parts list is the page people work from, and it carries the
+ * branding its own way — the letterhead below.
+ */
+const WATERMARK = "KELLY SYSTEMS";
+
+/**
+ * The letterhead, in the client's words: "the logo at the top center, and the
+ * 'don't Carey' image as the footer, and maybe adding other elements to give it
+ * a very 'official' look".
+ *
+ * The mark prints narrower than the text column and the banner narrower still,
+ * so neither competes with the parts list — the page is a bill of materials
+ * that says who issued it, not a poster.
+ */
+const WORDMARK_WIDTH = 168;
+/** From the top of the sheet to the top of the mark. */
+const WORDMARK_TOP_GAP = 40;
+/** Between the mark and the rule under it. */
+const MASTHEAD_RULE_GAP = 13;
+/** Between the two lines of the masthead rule, thick over thin. */
+const MASTHEAD_RULE_SPACING = 3.5;
+const BANNER_WIDTH = 320;
+
+/**
  * Render a design's bill of materials to PDF bytes.
  *
  * `BomRow` cannot carry prices, so this document cannot expose commercial
@@ -61,7 +91,7 @@ export async function generateBomPdf(
   const p: Painter = { page, sans, sansBold, mono };
 
   const right = PAGE_WIDTH - MARGIN_X;
-  let y = PAGE_HEIGHT - MARGIN_TOP;
+  let y = drawMasthead(p) - 30;
 
   drawText(p, "Bill of Materials", MARGIN_X, y, { size: 20, font: sansBold });
   drawRightText(p, date, right, y, { size: 9, color: DIM });
@@ -92,6 +122,15 @@ export async function generateBomPdf(
 
   const qtyRight = right;
   const partNoX = MARGIN_X + 250;
+  // A washed band behind the column headings, bled past the text column on both
+  // sides so it reads as a ruled form rather than a shaded word.
+  page.drawRectangle({
+    x: MARGIN_X - 6,
+    y: y - 5,
+    width: right - MARGIN_X + 12,
+    height: 18,
+    color: BAND
+  });
   drawText(p, "DESCRIPTION", MARGIN_X, y, { size: 8, color: MUT });
   drawText(p, "PART NO.", partNoX, y, { size: 8, color: MUT });
   drawRightText(p, "QTY", qtyRight, y, { size: 8, color: MUT });
@@ -122,6 +161,8 @@ export async function generateBomPdf(
     color: HAIRLINE
   });
 
+  await drawTaglineBanner(doc, page);
+
   drawText(p, `Generated with ${productName}`, MARGIN_X, MARGIN_TOP - 20, {
     size: 8,
     color: MUT
@@ -133,11 +174,77 @@ export async function generateBomPdf(
 }
 
 /**
+ * The Kelly Systems mark centred at the head of the page, over a rule.
+ *
+ * Vector, from the same artwork the viewport's background watermark is drawn
+ * from (`src/data/kelly-systems-wordmark.ts`), so it stays sharp however far a
+ * reader zooms into the PDF or however finely it prints.
+ *
+ * Returns the y the document's own first line sits under.
+ */
+function drawMasthead(p: Painter): number {
+  const scale = WORDMARK_WIDTH / KELLY_WORDMARK_BOX.width;
+  const top = PAGE_HEIGHT - WORDMARK_TOP_GAP;
+  const x = (PAGE_WIDTH - WORDMARK_WIDTH) / 2;
+  for (const path of KELLY_WORDMARK_PATHS) {
+    p.page.drawSvgPath(path, { x, y: top, scale, color: ACCENT });
+  }
+
+  // Thick over thin: the pair of rules is what makes a sheet read as issued
+  // stationery rather than something typed up.
+  const rule = top - KELLY_WORDMARK_BOX.height * scale - MASTHEAD_RULE_GAP;
+  const right = PAGE_WIDTH - MARGIN_X;
+  p.page.drawLine({
+    start: { x: MARGIN_X, y: rule },
+    end: { x: right, y: rule },
+    thickness: 2.5,
+    color: ACCENT
+  });
+  p.page.drawLine({
+    start: { x: MARGIN_X, y: rule - MASTHEAD_RULE_SPACING },
+    end: { x: right, y: rule - MASTHEAD_RULE_SPACING },
+    thickness: 0.75,
+    color: ACCENT
+  });
+  return rule - MASTHEAD_RULE_SPACING;
+}
+
+/**
+ * The "Don't carry it... Kelly it." banner across the foot of the parts list —
+ * the artwork the Quick Start Guide shows, which is the one the client asked
+ * for here by name.
+ *
+ * The bytes are inlined at build time rather than fetched: this module is the
+ * document, and a PDF that has to wait on a network round trip for its
+ * letterhead is a PDF that can fail to download.
+ */
+async function drawTaglineBanner(doc: PDFDocument, page: PDFPage): Promise<void> {
+  const image = await doc.embedPng(assetBytes(taglineDataUrl));
+  const height = (image.height / image.width) * BANNER_WIDTH;
+  page.drawImage(image, {
+    x: (PAGE_WIDTH - BANNER_WIDTH) / 2,
+    y: MARGIN_TOP,
+    width: BANNER_WIDTH,
+    height
+  });
+}
+
+/** The bytes behind a `?inline` asset import, which arrives as a data URL. */
+function assetBytes(dataUrl: string): Uint8Array {
+  const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
+  return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+}
+
+/**
  * The pictures of the system, two to a page after the parts list.
  *
  * Each is captioned with the angle it was taken from, which is what makes a
  * page of five near-identical shaded boxes navigable — and the captions match
  * the View menu, so a reader can put the model on screen in the same pose.
+ *
+ * The watermark goes on last, so it lies over the pictures rather than behind
+ * them: a JPEG has no transparency, and a mark under one would only show in
+ * the margins around it.
  */
 async function drawViewPages(doc: PDFDocument, p: Painter, views: BomPdfView[]): Promise<void> {
   const x = (PAGE_WIDTH - VIEW_WIDTH) / 2;
@@ -153,5 +260,6 @@ async function drawViewPages(doc: PDFDocument, p: Painter, views: BomPdfView[]):
       page.drawImage(image, { x, y: y - height, width: VIEW_WIDTH, height });
       y -= height + VIEW_GAP;
     }
+    drawWatermark(painter, WATERMARK);
   }
 }
