@@ -167,6 +167,15 @@ carries are deliberately not drawn: the blower's power cord, the terminal's DC s
 fasteners under 0.8 in. The parts also lose about a fiftieth of an inch of position to quantisation,
 and their shapes go stale if KTS revises the CAD without anyone re-running the bake.
 
+**A baked part can only be coloured by the roles the bake gave it.** `roleOf` in
+`tools/bake-kel2020-parts.mjs` sorts the CAD's meshes into body, trim, door and glass by their own
+colours, and the bake merges each role into one buffer — so the renderer can style a role but not a
+single piece inside it. The terminal's door is the visible consequence: it is the front of the
+housing, baked as `body` along with the rest of the shell, so drawing the door see-through at the
+client's request (2026-09-17) draws the whole housing see-through. Singling the door out means
+giving it its own role in the bake and re-running it against the STEP files, which are not in the
+repository.
+
 **The exported PDF carries pictures.** Five rendered views are captured from the live scene and
 embedded after the parts list ([ADR-0018](adr/0018-the-exported-bom-carries-rendered-views.md)).
 A document is now on the order of a megabyte rather than a few kilobytes, and a browser with no

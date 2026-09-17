@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { TUBE_R, VP } from "@/renderer/three-utils";
+import { PORT_R, VP } from "@/renderer/three-utils";
 import { boundsFromBuildArea } from "@/domain/sparse-grid";
 import type { PortMarker } from "@/domain/renderer-affordances";
 import type { RoomRect } from "@/domain/floors";
@@ -527,13 +527,24 @@ export function buildLandingCellHighlight(cell: Vec3, tool: ToolId): THREE.Group
  * thickness. Call this after every resize for every fat line in the scene.
  */
 
+/**
+ * The glow on a port with nothing connected to it: where a tube or a bend can
+ * be joined on.
+ *
+ * Two rings around the mouth of the port rather than one on it, because the
+ * part already draws a ring at `PORT_R` on its own rim, in this same plane — a
+ * third at that radius would z-fight with it and say nothing the rim does not.
+ * So these stand outside it, at multiples of the real port, and read as light
+ * around the opening. They were multiples of `TUBE_R` until the client pointed
+ * at a blower and asked for the rings to fit its top.
+ */
 export function buildPortGlow(marker: PortMarker): THREE.Group {
   const g = new THREE.Group();
   const cx = marker.cell[0] + 0.5 + marker.dir[0] * 0.5;
   const cy = marker.cell[1] + 0.5 + marker.dir[1] * 0.5;
   const cz = marker.cell[2] + 0.5 + marker.dir[2] * 0.5;
 
-  const ringGeom = new THREE.TorusGeometry(TUBE_R * 1.55, 0.045, 10, 28);
+  const ringGeom = new THREE.TorusGeometry(PORT_R * 1.5, 0.036, 10, 28);
   const ringMat = new THREE.MeshBasicMaterial({
     color: VP.accent,
     transparent: true,
@@ -547,7 +558,7 @@ export function buildPortGlow(marker: PortMarker): THREE.Group {
   ring.position.set(cx, cy, cz);
   g.add(ring);
 
-  const haloGeom = new THREE.TorusGeometry(TUBE_R * 2.1, 0.025, 8, 28);
+  const haloGeom = new THREE.TorusGeometry(PORT_R * 2.0, 0.02, 8, 28);
   const haloMat = new THREE.MeshBasicMaterial({
     color: VP.accent,
     transparent: true,
