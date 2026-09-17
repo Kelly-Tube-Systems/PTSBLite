@@ -15,6 +15,12 @@ export type TopBarProps = {
    * where the BOM now sits — the client asked for the two to trade places. */
   onAutoBuild: () => void;
   autoBuilding: boolean;
+  /**
+   * Why Auto-Build cannot run, or null when it can. A reason greys the button
+   * out rather than letting it be pressed for an error, and is the button's
+   * tooltip so that hovering still says why.
+   */
+  autoBuildUnavailable: string | null;
   /** Point the camera at one of the named angles, or back at the default. */
   onView: (view: CameraView | null) => void;
   /** Whether height markers are pinned on rather than following the tool. */
@@ -31,6 +37,7 @@ export function TopBar({
   canRedo,
   onAutoBuild,
   autoBuilding,
+  autoBuildUnavailable,
   onView,
   markersOn,
   onToggleMarkers
@@ -66,8 +73,9 @@ export function TopBar({
       <button
         type="button"
         className="topbtn accent topbar-no-drag"
+        title={autoBuildUnavailable ?? "Route the open ports"}
         onClick={onAutoBuild}
-        disabled={autoBuilding}
+        disabled={autoBuilding || autoBuildUnavailable !== null}
       >
         <Icons.Auto size={16} /> {autoBuilding ? "Routing…" : "Auto-Build"}
       </button>

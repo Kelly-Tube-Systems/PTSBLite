@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { designFromScene } from "@/domain/design-state";
 import {
+  AUTO_BUILD_ALREADY_JOINED_MESSAGE,
+  AUTO_BUILD_NOTHING_PLACED_MESSAGE,
+  AUTO_BUILD_NO_PAIR_MESSAGE,
+  autoBuildAvailability,
   autoBuildOpenPortPair,
   MAX_RUN_HEIGHT_FEET,
   PATHFINDER_NO_ROUTE_MESSAGE,
@@ -873,5 +877,34 @@ describe("why Auto-Build failed", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason).toBe("search-limit");
+  });
+});
+
+describe("whether Auto-Build can run at all", () => {
+  // What the greyed-out button asks, so it can come alive on its own rather
+  // than being pressed for an error (the client, 2026-09-17).
+  it("is ready only while two open ports on different runs are left", () => {
+    expect(autoBuildAvailability(designWith([]))).toEqual({
+      ready: false,
+      message: AUTO_BUILD_NOTHING_PLACED_MESSAGE
+    });
+
+    const parts = basicParts([8, 0, 0]);
+    expect(autoBuildAvailability(designWith(parts.slice(0, 1)))).toEqual({
+      ready: false,
+      message: AUTO_BUILD_NO_PAIR_MESSAGE
+    });
+    expect(autoBuildAvailability(designWith(parts))).toEqual({ ready: true });
+
+    // Two terminals joined end to end still have an open port each, but both
+    // are ends of one run, and joining those would close a loop rather than
+    // extend the system -- the pair the search itself passes over.
+    const joined = autoBuildOpenPortPair(designWith(parts.slice(1)));
+    expect(joined.ok).toBe(true);
+    if (!joined.ok) return;
+    expect(autoBuildAvailability(joined.design)).toEqual({
+      ready: false,
+      message: AUTO_BUILD_ALREADY_JOINED_MESSAGE
+    });
   });
 });

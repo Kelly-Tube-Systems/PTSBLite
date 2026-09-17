@@ -493,9 +493,49 @@ describe("a two-floor design", () => {
   });
 });
 
+/** A blower and a terminal far enough apart to need a route between them. */
+function placeARoutablePair() {
+  fireEvent.click(screen.getByRole("button", { name: "Build" }));
+  fireEvent.click(screen.getByRole("button", { name: "Blower Unit" }));
+  clickCell([0, 0, 0]);
+  fireEvent.click(screen.getByRole("button", { name: "Terminal Station" }));
+  clickCell([12, 0, 0]);
+}
+
 describe("Auto-Build", () => {
+  it("is greyed out until there are two open ports to join, and says why", async () => {
+    // The client: "let's try making it grayed out until it is able to be used,
+    // instead of the current 'invalid' mechanic, which is to always allow it to
+    // be pressed but to return an error". The reason still has to be reachable,
+    // so it is the button's tooltip rather than nothing at all.
+    await renderApp();
+    const autoBuild = () => screen.getByRole<HTMLButtonElement>("button", { name: /^Auto-Build$/ });
+
+    expect(autoBuild().disabled).toBe(true);
+    expect(autoBuild().title).toMatch(/Nothing placed yet/);
+
+    // One part is still nothing to join: a lone blower's ports are its own.
+    fireEvent.click(screen.getByRole("button", { name: "Build" }));
+    fireEvent.click(screen.getByRole("button", { name: "Blower Unit" }));
+    clickCell([0, 0, 0]);
+    expect(autoBuild().disabled).toBe(true);
+
+    // The second part arms it, with nothing pressed in between.
+    fireEvent.click(screen.getByRole("button", { name: "Terminal Station" }));
+    clickCell([12, 0, 0]);
+    expect(autoBuild().disabled).toBe(false);
+
+    // And once the run is built there is nothing left to join, so it goes back.
+    fireEvent.click(autoBuild());
+    await waitFor(() => {
+      expect(screen.getByText(/Auto-Build complete/)).toBeTruthy();
+    });
+    expect(autoBuild().disabled).toBe(true);
+  });
+
   it("paints the routing state before the search blocks the thread", async () => {
     await renderApp();
+    placeARoutablePair();
 
     fireEvent.click(screen.getByRole("button", { name: /^Auto-Build$/ }));
 
