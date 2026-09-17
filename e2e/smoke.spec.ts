@@ -74,6 +74,18 @@ test("exports the BOM PDF through the real download path", async ({ page }) => {
   await placeBlower(page);
 
   await page.getByRole("button", { name: "Finalize" }).click();
+
+  // The dialog's body must actually be on screen. It once opened as a 33px
+  // strip — heading clipped, parts table scrolled out of sight — because its
+  // scroll region took a zero flex base size (Trello #84). Asserting the first
+  // part row sits inside the region's visible box is the cheapest statement of
+  // "the body is not blank"; it holds however long the BOM gets.
+  const body = await page.locator(".finalize__scroll").boundingBox();
+  const firstRow = await page.locator(".bom__table tbody tr").first().boundingBox();
+  expect(body).not.toBeNull();
+  expect(firstRow).not.toBeNull();
+  expect(firstRow!.y + firstRow!.height).toBeLessThanOrEqual(body!.y + body!.height);
+
   const downloadPromise = page.waitForEvent("download");
   // Exercises the WebGL view capture, pdf-lib, and the object-URL download.
   await page.getByRole("button", { name: "Download PDF" }).click();
