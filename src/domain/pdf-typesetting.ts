@@ -18,6 +18,8 @@ export const MUT = rgb(0.478, 0.502, 0.564);
 export const HAIRLINE = rgb(0.843, 0.824, 0.773);
 /** Kelly Tube Systems' green, the #00A261 the UI carries as `--accent-2`. */
 export const ACCENT = rgb(0, 0.635, 0.38);
+/** The same green behind the parts table's column headings, at a fifteenth strength. */
+export const BAND = rgb(0.933, 0.976, 0.957);
 
 const CP1252_EXTRAS = new Set([
   0x20ac, 0x201a, 0x0192, 0x201e, 0x2026, 0x2020, 0x2021, 0x02c6, 0x2030, 0x0160, 0x2039, 0x0152,

@@ -13,31 +13,8 @@ import { inflateSync } from "node:zlib";
  * for the wrong reason.
  */
 export function extractText(bytes: Uint8Array): string {
-  // Parse raw PDF bytes: locate every `stream ... endstream` segment, try to
-  // FlateDecode it if it looks compressed, then pull `(text) Tj` and
-  // `<hex> Tj` payloads. Bypasses pdf-lib's load path so the test stays
-  // independent of how the writer encoded streams.
-  const buf = Buffer.from(bytes);
   const collected: string[] = [];
-  let cursor = 0;
-  while (cursor < buf.length) {
-    const streamIdx = buf.indexOf("stream", cursor);
-    if (streamIdx < 0) break;
-    // stream keyword must be followed by \r\n or \n per PDF spec
-    let dataStart = streamIdx + "stream".length;
-    if (buf[dataStart] === 0x0d) dataStart++;
-    if (buf[dataStart] === 0x0a) dataStart++;
-    const endIdx = buf.indexOf("endstream", dataStart);
-    if (endIdx < 0) break;
-    cursor = endIdx + "endstream".length;
-    // `endstream` is preceded by an EOL that is not part of the data — but a
-    // Flate stream can itself end in 0x0A or 0x0D, and trimming those blindly
-    // corrupts it. inflate then throws, the body falls back to compressed
-    // bytes, no `Tj` matches, and this returns "" for a page full of text:
-    // exactly the silent emptiness the note above warns about. So try the
-    // longest slice first and give back only as many bytes as inflate needs.
-    const body = decodeStream(buf, dataStart, endIdx);
-    if (body === null) continue;
+  for (const body of extractStreams(bytes)) {
     const literalRe = /\((.*?)\)\s*Tj/g;
     const hexRe = /<([0-9A-Fa-f\s]+)>\s*Tj/g;
     let m: RegExpExecArray | null;
@@ -54,6 +31,39 @@ export function extractText(bytes: Uint8Array): string {
     }
   }
   return collected.join("\n");
+}
+
+/**
+ * Every decodable `stream ... endstream` in a PDF, as operator text.
+ *
+ * Bypasses pdf-lib's load path so the assertions stay independent of how the
+ * writer encoded its streams — which is what lets a test read the drawing
+ * operators, not only the text ones.
+ */
+export function extractStreams(bytes: Uint8Array): string[] {
+  const buf = Buffer.from(bytes);
+  const bodies: string[] = [];
+  let cursor = 0;
+  while (cursor < buf.length) {
+    const streamIdx = buf.indexOf("stream", cursor);
+    if (streamIdx < 0) break;
+    // stream keyword must be followed by \r\n or \n per PDF spec
+    let dataStart = streamIdx + "stream".length;
+    if (buf[dataStart] === 0x0d) dataStart++;
+    if (buf[dataStart] === 0x0a) dataStart++;
+    const endIdx = buf.indexOf("endstream", dataStart);
+    if (endIdx < 0) break;
+    cursor = endIdx + "endstream".length;
+    // `endstream` is preceded by an EOL that is not part of the data — but a
+    // Flate stream can itself end in 0x0A or 0x0D, and trimming those blindly
+    // corrupts it. inflate then throws, the body falls back to compressed
+    // bytes, no `Tj` matches, and `extractText` returns "" for a page full of
+    // text: exactly the silent emptiness the note above warns about. So try the
+    // longest slice first and give back only as many bytes as inflate needs.
+    const body = decodeStream(buf, dataStart, endIdx);
+    if (body !== null) bodies.push(body);
+  }
+  return bodies;
 }
 
 /**
