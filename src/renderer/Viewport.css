@@ -11,7 +11,10 @@
 /* The Kelly Systems wordmark, tiled faintly across the void. It sits in screen
    space, under the canvas, so it neither moves with the camera nor shows in
    the PDF's views — a watermark on the workspace, not on the design. Drawn as
-   a mask so the colour is a token rather than a fill baked into the artwork. */
+   a mask so the colour is a token rather than a fill baked into the artwork.
+
+   The tile is sized so a wordmark is small enough, and repeats often enough,
+   that an arbitrary crop of the viewport tends to contain a whole one. */
 .viewport-canvas::before {
   content: "";
   position: absolute;
@@ -20,7 +23,7 @@
   pointer-events: none;
   background: color-mix(in oklab, var(--text) 5%, transparent);
   mask-image: url("../assets/kelly-systems-watermark.svg");
-  mask-size: 480px auto;
+  mask-size: 240px auto;
   mask-repeat: repeat;
   mask-position: center;
 }
