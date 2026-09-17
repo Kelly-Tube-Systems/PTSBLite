@@ -1,7 +1,19 @@
 /* The dialog's one scrolling region: validation, then the design's numbers,
    then the parts table. `.bom__*` below styles that table. */
 .finalize__scroll {
-  flex: 1;
+  /* `flex: 1 1 auto` with `min-height: 0`, never the shorthand `flex: 1`.
+     The dialog is an auto-height flex column that only stops growing at
+     `max-height`, so this region's flex *base* size is what tells the dialog
+     how tall to be. `flex: 1` sets that base to 0: the dialog then sizes
+     itself to the header and the actions alone, and the body is left at its
+     own padding — a "VALIDATION" heading clipped mid-word and the parts table
+     scrolled out of sight. Chromium hides this by recovering the height from
+     the item's max-content contribution; engines that size strictly from the
+     flex base do not, which is what the client saw (Trello #84). An `auto`
+     base makes the content size the base in every engine, and `min-height: 0`
+     is what still lets the region shrink when the dialog hits `max-height`. */
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   padding: 16px 18px;
 }
