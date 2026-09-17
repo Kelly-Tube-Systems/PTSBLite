@@ -82,6 +82,23 @@ describe("pickPointerCell", () => {
     const skyward = new THREE.Raycaster(new THREE.Vector3(0, 6, 0), new THREE.Vector3(0, 1, 0));
     expect(pickPointerCell(skyward, [], planeAt(0))).toBeNull();
   });
+
+  it("looks past a nearer overlay that names no cell", () => {
+    // The overlay holds the floor shadows as well as the landing markers, and a
+    // shadow carries no landing cell. A raised port under a shadow — a run in
+    // the plenum, with the storey above shading it — put the shadow nearest the
+    // camera, and stopping there threw away the marker the ray went on to cross
+    // and dropped the placement back to the plane.
+    const shadow = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+    shadow.position.set(2, 4.5, 2);
+    shadow.updateMatrixWorld();
+    const marker = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+    marker.position.set(3, 3.5, 3);
+    marker.userData.landingCell = [2, 3, 2];
+    marker.updateMatrixWorld();
+
+    expect(pickPointerCell(pointerRay(), [shadow, marker], planeAt(0))).toEqual([2, 3, 2]);
+  });
 });
 
 describe("Viewport orbit drag handling", () => {

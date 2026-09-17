@@ -112,15 +112,20 @@ export function cellFromWorldPoint(point: Pick<THREE.Vector3, "x" | "y" | "z">):
  * cell once the plane rises under it or the camera turns, so the viewport
  * re-picks on both rather than only on pointer movement — otherwise the ghost
  * shows one cell and the click, which picks afresh, lands on another.
+ *
+ * The overlay the markers live in also holds the floor shadows, which carry no
+ * landing cell. Taking the nearest object and giving up when it turns out to be
+ * a shadow threw away a landing marker the ray had also crossed, dropping the
+ * placement back to the plane. So the search runs down the hits in distance
+ * order and stops at the first one that actually names a cell.
  */
 export function pickPointerCell(
   ray: THREE.Raycaster,
   landings: THREE.Object3D[],
   plane: THREE.Mesh
 ): Vec3 | null {
-  const landingHit = ray.intersectObjects(landings, true)[0];
-  if (landingHit) {
-    const landing = landingCellForObject(landingHit.object);
+  for (const hit of ray.intersectObjects(landings, true)) {
+    const landing = landingCellForObject(hit.object);
     if (landing) return landing;
   }
   const planeHit = ray.intersectObject(plane)[0];
