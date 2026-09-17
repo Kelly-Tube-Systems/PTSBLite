@@ -94,3 +94,35 @@ test("exports the BOM PDF through the real download path", async ({ page }) => {
 
   expect(errors).toEqual([]);
 });
+
+test("lets a short window scroll down to the rest of the setup form", async ({ page }) => {
+  // happy-dom has no layout, so this can only be caught in a real browser. The
+  // client opened the app in a window too short for the whole setup form and
+  // got it cut off at the bottom edge with "Create design" below the cut and
+  // no way to scroll to it, which left the app unstartable (Trello ui0X38fE).
+  const height = 320;
+  await page.setViewportSize({ width: 1000, height });
+  await page.goto("/");
+
+  const button = page.getByRole("button", { name: "Create design" });
+  const cutOff = await button.boundingBox();
+  expect(cutOff).not.toBeNull();
+  // The window really is short enough to cut the form: the assertion below
+  // would hold trivially in a window the form fits in.
+  expect(cutOff!.y + cutOff!.height).toBeGreaterThan(height);
+
+  // Scrolled with the wheel rather than `scrollIntoViewIfNeeded`, because that
+  // is the difference the fix makes: an `overflow: hidden` dialog still scrolls
+  // when a script asks it to, and never when the person at the window does.
+  await page.locator("dialog.modal-dialog").hover();
+  await page.mouse.wheel(0, 400);
+  await expect
+    .poll(async () => {
+      const box = await button.boundingBox();
+      return box ? box.y + box.height : Infinity;
+    })
+    .toBeLessThanOrEqual(height);
+
+  await button.click();
+  await expect(page.locator(".viewport-canvas canvas")).toBeVisible();
+});

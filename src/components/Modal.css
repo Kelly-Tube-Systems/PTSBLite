@@ -59,6 +59,18 @@
 .modal-dialog--md {
   width: min(460px, 92%);
 }
+
+/* The two short dialogs — the setup form and the confirm prompts — have no
+   scrolling body of their own: they lay out at their full height, and the UA's
+   own max-height is all that keeps them on screen. Against the shell's
+   `overflow: hidden` that cap was a guillotine rather than a fit: in a window
+   too short for the whole setup form, the form ended at the bottom of the
+   window with "Create design" below the cut and no way to scroll to it, so the
+   app could not be started at all. They scroll as one piece instead. */
+.modal-dialog--sm,
+.modal-dialog--md {
+  overflow-y: auto;
+}
 .modal-dialog--lg {
   width: min(620px, 92%);
   max-height: 88%;
