@@ -15,6 +15,11 @@
     "cells": 1,
     "ports": 1
   },
+  "controlBox": {
+    "type": "controlBox",
+    "name": "Control Box",
+    "partNo": "AEA751032"
+  },
   "terminal": {
     "type": "terminal",
     "name": "Terminal Station",

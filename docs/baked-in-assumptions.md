@@ -140,7 +140,9 @@ listed the catalog himself: the blower is `A444200` whether or not it stands on 
 terminal `A444940`, the tube `ALP78435`, the split sleeve `ALP64401` and the bend `ALP08401`. The
 last two changes are his corrections to what the parts folder carried
 ([ADR-0036](adr/0036-the-client-corrects-the-tube-part-number.md),
-[ADR-0037](adr/0037-the-bend-takes-the-clients-number-on-his-say-so.md)). The BOM PDF a stranger downloads no longer
+[ADR-0037](adr/0037-the-bend-takes-the-clients-number-on-his-say-so.md)), as is the control box's
+`AEA751032` over the folder's `AEA51032`
+([ADR-0038](adr/0038-the-control-box-is-a-parts-list-line-with-no-model.md)). The BOM PDF a stranger downloads no longer
 contains a number that identifies nothing, so the hazard
 [ADR-0013](adr/0013-lite-publishes-placeholder-part-numbers.md) was written for is gone rather
 than smaller, and with it the reason to consider a disclaimer on the PDF. Issue #94.
@@ -152,6 +154,14 @@ the 3 ft bend, the client answered "I don't know for now, but ship it with what 
 can change it later". So a parts list may be naming a 4 ft bend beside a drawing of a 3 ft one, the
 app cannot tell, and the risk is the client's own and knowingly taken. Putting it right is one
 string in `parts.json`.
+
+**The control box is a parts-list row for a part the app does not have.** Every other BOM row names
+something the viewport draws. The control box does not: the client asked for a line against every
+blower unit, 1:1, and said the part is "not shown visually"
+([ADR-0038](adr/0038-the-control-box-is-a-parts-list-line-with-no-model.md)). So `parts.json` holds
+a catalog entry with a name and a number and no colour, geometry, footprint or Build-drawer card,
+and `PartCatalogEntry.color` is optional to say so. A second unmodelled part would fit the same
+shape; a request to *draw* the box would not, and is new geometry.
 
 **A pedestal blower is one line on the parts list with the plain blower.** They are one KTS part,
 so a design with one of each orders two of `A444200`; the row notes how many stand on a pedestal.
