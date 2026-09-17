@@ -23,8 +23,8 @@ export const KEL2020_TERMINAL: BakedGeometry = {
   vertexCount: 7537,
   groups: [
     { role: "door", start: 0, count: 576 },
-    { role: "trim", start: 576, count: 1803 },
-    { role: "body", start: 2379, count: 16968 },
+    { role: "trim", start: 576, count: 1683 },
+    { role: "body", start: 2259, count: 17088 },
     { role: "glass", start: 19347, count: 1116 }
   ],
   position:
