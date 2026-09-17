@@ -63,6 +63,23 @@ export const VP = {
 export const TUBE_R = 0.22;
 
 /**
+ * The outside radius of a Kel2020 port, in feet.
+ *
+ * A measurement of the baked blower CAD, not a choice: at the port face — local
+ * x = 0.5, the top of the neck on a unit standing hole-up — the wall runs from
+ * 0.1757 ft to 0.1784 ft, a 4¼ inch outside diameter on the 4 inch port. It is
+ * quoted at the outside because the rings the app draws at a port are drawn
+ * around the neck, not down the bore.
+ *
+ * Deliberately not derived from `TUBE_R`, which every ring at a port used to be
+ * a multiple of. `TUBE_R` is the radius a tube is *drawn* at, and at 0.22 ft it
+ * is fatter than the hardware, so a ring sized off it stood a third wider than
+ * the neck it was marking and read as a halo around the unit rather than as the
+ * mouth of the port — which is what the client saw and asked about.
+ */
+export const PORT_R = 0.178;
+
+/**
  * How the camera is framed on open, and what "Reset view" returns to.
  *
  * One constant because these used to be two: the app opened at distance 38 and
