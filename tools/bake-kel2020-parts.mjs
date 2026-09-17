@@ -218,6 +218,40 @@ function roleOf(mesh, barrel) {
   return "body";
 }
 
+/**
+ * Where the CAD's own colours say the wrong thing, as boxes in the part's own
+ * frame, in feet.
+ *
+ * The terminal's moulded KEL2020 lettering is a solid per character raised off
+ * the housing, and the STEP finishes one of them — the first 0 of 2020 — in the
+ * dark colour the latch and the collars wear. `roleOf` reads colour, so that one
+ * character came out opaque near-black against a translucent housing and
+ * stopped reading as a letter at all: the client saw "a weird black circle that
+ * looks like an artifact" (Trello OdRGBlxB). The lettering is moulded into the
+ * housing, so all seven characters belong in the housing's material.
+ *
+ * Nothing in the file tells a character from a fitting except where it sits,
+ * which is why this is a box and not another rule in `roleOf`. The numbers are
+ * measured off the geometry the app already ships, and only a mesh that fits
+ * inside one is corrected — the housing and the full-height trim rail run
+ * straight through this box and are left alone.
+ */
+const ROLE_CORRECTIONS = {
+  terminal: [{ role: "body", box: [-0.22, 0.76, 0.06, 0.18, 0.87, 0.23] }]
+};
+
+/** `bbox`, which is in CAD millimetres, as a box in the part's own frame. */
+const localBox = (bbox, picks, toFeet, offset) => {
+  const ends = picks.map(({ index, sign }, local) => [
+    bbox[index] * sign * toFeet + offset[local],
+    bbox[index + 3] * sign * toFeet + offset[local]
+  ]);
+  return [...ends.map((e) => Math.min(...e)), ...ends.map((e) => Math.max(...e))];
+};
+
+const inside = (box, outer) =>
+  [0, 1, 2].every((a) => box[a] >= outer[a] && box[a + 3] <= outer[a + 3]);
+
 const AXIS_INDEX = { x: 0, y: 1, z: 2 };
 const axisPicker = (spec) =>
   spec.map((s) => ({ index: AXIS_INDEX[s.replace("-", "")], sign: s.startsWith("-") ? -1 : 1 }));
@@ -290,9 +324,12 @@ function bake(name, directory) {
     return spec.spanEnd - end * along.sign * toFeet;
   });
 
+  const corrections = ROLE_CORRECTIONS[name] ?? [];
   const byRole = new Map();
   for (const mesh of meshes) {
-    const role = roleOf(mesh, barrel);
+    const box = localBox(mesh.bbox, picks, toFeet, offset);
+    const correction = corrections.find((c) => inside(box, c.box));
+    const role = correction ? correction.role : roleOf(mesh, barrel);
     if (!byRole.has(role)) byRole.set(role, { position: [], normal: [], index: [] });
     const out = byRole.get(role);
     const base = out.position.length / 3;

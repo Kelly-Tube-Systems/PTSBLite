@@ -18,7 +18,7 @@ import type { Vec3 } from "@/types";
  *
  * The terminal wore one of these too until the moulded mark its own CAD carries
  * was found under it, which is a decal drawn on top of a decal; it now paints
- * the moulded one instead (ADR-0039).
+ * the moulded one instead (ADR-0040).
  */
 
 /** The box the artwork's ink actually fills, inside its 1575 x 366 viewBox. */

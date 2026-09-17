@@ -46,7 +46,7 @@ export const VP = {
   // button too until the CAD replaced the hand-drawn units (ADR-0033); what is
   // left is the wordmark across a blower's drum, tinted from the artwork's
   // white rasterisation (ADR-0034), and the mark moulded into the terminal's
-  // housing, painted in it (ADR-0039).
+  // housing, painted in it (ADR-0040).
   signal: 0x4ade80,
   tube: 0x8e96a5,
   tubeEdge: 0xb8bfcd,

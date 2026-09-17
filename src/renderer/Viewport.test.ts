@@ -330,7 +330,7 @@ describe("terminal materials", () => {
 describe("the KEL2020 mark on a terminal", () => {
   // The client saw two marks on the unit — the one moulded into the housing and
   // a decal laid over it — and asked for one, in the colour of a real sticker
-  // (ADR-0039). So the terminal carries no decal of its own, and the moulded
+  // (ADR-0040). So the terminal carries no decal of its own, and the moulded
   // mark is painted instead. What is worth holding is that the faces picked out
   // to paint are the mark: a re-bake that shifted the housing would otherwise
   // paint a stripe of plain plastic, or nothing at all, with no test to say so.

@@ -38,17 +38,16 @@ export type BakedGeometry = {
  * of it and drawn in another.
  *
  * The bake classifies a face by the colour the CAD gives it (ADR-0033), which
- * is all the STEP files say: most of the KEL2020 mark moulded into the
- * terminal's housing is the same plastic as the housing, and the one glyph the
- * CAD draws dark arrives with the unit's dark fittings. Rather than a second
- * bake with hand-edited roles — the data file is generated, and re-running the
- * bake needs STEP files that are not in the repository — the split names the
- * faces by where they sit on the part, which is a property of the shape rather
- * than of this particular bake.
+ * is all the STEP files say: the KEL2020 mark moulded into the terminal's
+ * housing is the same plastic as the housing and arrives in the same group.
+ * Rather than a second bake with hand-edited roles — the data file is
+ * generated, and re-running the bake needs STEP files that are not in the
+ * repository — the split names the faces by where they sit on the part, which
+ * is a property of the shape rather than of this particular bake.
  */
 export type BakedSplit = {
-  /** The roles the faces are taken out of. */
-  from: readonly BakedRole[];
+  /** The role the faces are taken out of. */
+  from: BakedRole;
   /** The role they are drawn in instead. */
   to: BakedRole;
   /**
@@ -129,7 +128,7 @@ export function drawnGeometry(baked: BakedGeometry, split?: BakedSplit): Drawn {
   const triangle = new Float32Array(9);
   let at = 0;
   for (const group of baked.groups) {
-    if (!split.from.includes(group.role)) {
+    if (group.role !== split.from) {
       out.set(index.subarray(group.start, group.start + group.count), at);
       groups.push({ role: group.role, start: at, count: group.count });
       at += group.count;

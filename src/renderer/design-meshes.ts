@@ -147,14 +147,13 @@ export function buildPedestalMesh(feet: number, { ghost = false } = {}): THREE.G
 
 /**
  * The KEL2020 mark the terminal already carries: moulded into the front of the
- * housing in the CAD itself, and picked out of the faces around it so it can be
- * painted rather than left in the plastic's own colour (ADR-0039).
+ * housing in the CAD itself, and picked out of the housing's faces so it can be
+ * painted rather than left in the plastic's own colour (ADR-0040).
  *
- * It comes out of two roles because the CAD draws it in two colours: the
- * strokes are the housing's own plastic and bake as `body`, while the first
- * zero of 2020 is a dark solid and bakes as `trim`, with the hinges and
- * latches. That zero is the "weird black circle" on the door the client
- * reported separately — a glyph of the mark, not an artefact.
+ * The whole mark bakes as `body` — the first zero of 2020 is a dark solid in
+ * the CAD and used to arrive with the hinges and latches, until the bake
+ * learned to correct that one colour (ADR-0039) — so the split has one role to
+ * take from.
  *
  * Every number is measured off the baked geometry. The housing is a cylinder of
  * radius 0.2119 ft about an axis offset 0.025 ft from the unit's own, and the
@@ -165,9 +164,9 @@ export function buildPedestalMesh(feet: number, { ghost = false } = {}): THREE.G
  * front of the housing stands above its surface in that band.
  *
  * A face is the mark's if it stands above the housing but no further than the
- * relief goes. The ceiling is what keeps the hinge and latch down the side of
- * the unit out of it: they are in the same group and the same band, and they
- * stand a good three inches off the housing's axis. The mark runs 45° either
+ * relief goes. The ceiling is what keeps the hinge rail down the side of the
+ * unit out of it: it bakes as `body` with the housing and crosses the same
+ * band, standing a good three inches off the housing's axis. The mark runs 45° either
  * side of the front, where the housing is still 0.15 ft forward of its axis, so
  * a face any closer to the side than that is the housing's own edge and stays
  * with it.
@@ -179,7 +178,7 @@ const MARK_BAND = { from: 0.75, to: 0.88 } as const;
 const MARK_FRONT_Z = 0.1;
 
 export const TERMINAL_MOULDED_MARK: BakedSplit = {
-  from: ["body", "trim"],
+  from: "body",
   to: "mark",
   pick: (triangle) => {
     let raised = false;
@@ -222,7 +221,7 @@ export const TERMINAL_MOULDED_MARK: BakedSplit = {
  * up across the run rather than into the floor — which is where it belongs,
  * since a carrier is loaded from the front while the tube leaves the end. The
  * group's origin is the centre of the cell the terminal was placed in, and the
- * KEL2020 mark is part of the housing (ADR-0039), so a terminal on its side
+ * KEL2020 mark is part of the housing (ADR-0040), so a terminal on its side
  * wears its mark on its side.
  */
 export function buildTerminalMesh({
@@ -279,7 +278,7 @@ export function buildTerminalMesh({
         }
         // The KEL2020 mark moulded into the housing, painted in the green a
         // Kel2020 signs itself with: on the real unit it is a colour sticker, not
-        // relief left in the plastic (ADR-0039).
+        // relief left in the plastic (ADR-0040).
         //
         // Unlit, like the wordmark on the blower's drum, so the mark holds its
         // colour wherever the unit stands; and opaque, so it reads as a sticker
