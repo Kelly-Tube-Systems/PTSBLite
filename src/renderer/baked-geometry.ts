@@ -13,7 +13,10 @@ import * as THREE from "three";
  */
 
 /** The viewport materials a baked face can be drawn in. */
-export type BakedRole = "body" | "trim" | "door" | "glass";
+export type BakedRole = "body" | "trim" | "door" | "glass" | "mark";
+
+/** One run of the index buffer, drawn in one material. */
+export type BakedGroup = { role: BakedRole; start: number; count: number };
 
 export type BakedGeometry = {
   /** The STEP file this came out of, for tracing a shape back to its source. */
@@ -23,11 +26,36 @@ export type BakedGeometry = {
   max: readonly [number, number, number];
   vertexCount: number;
   /** One run of the index buffer per material role, in draw order. */
-  groups: readonly { role: BakedRole; start: number; count: number }[];
+  groups: readonly BakedGroup[];
   /** Base64: three Uint16 per vertex, three Int8 per vertex, Uint16 indices. */
   position: string;
   normal: string;
   index: string;
+};
+
+/**
+ * Faces the bake could not tell apart from the rest of their role, lifted out
+ * of it and drawn in another.
+ *
+ * The bake classifies a face by the colour the CAD gives it (ADR-0033), which
+ * is all the STEP files say: most of the KEL2020 mark moulded into the
+ * terminal's housing is the same plastic as the housing, and the one glyph the
+ * CAD draws dark arrives with the unit's dark fittings. Rather than a second
+ * bake with hand-edited roles — the data file is generated, and re-running the
+ * bake needs STEP files that are not in the repository — the split names the
+ * faces by where they sit on the part, which is a property of the shape rather
+ * than of this particular bake.
+ */
+export type BakedSplit = {
+  /** The roles the faces are taken out of. */
+  from: readonly BakedRole[];
+  /** The role they are drawn in instead. */
+  to: BakedRole;
+  /**
+   * Whether this face belongs to `to`, from its three vertices in the part's
+   * own frame, as x, y, z triples.
+   */
+  pick: (triangle: Float32Array) => boolean;
 };
 
 function bytesOf(base64: string): Uint8Array {
@@ -67,17 +95,89 @@ function decode(baked: BakedGeometry): Decoded {
   return fresh;
 }
 
+type Drawn = { index: Uint16Array; groups: readonly BakedGroup[] };
+
+/**
+ * The index buffer a split rewrites, per split, alongside the decoded one.
+ *
+ * A split runs over every triangle of a group, so it is done once for the part
+ * rather than once per mesh: the ghost rebuilds on each cell the cursor
+ * crosses, and the buffer it hands out is the same one every time.
+ */
+const splitIndexes = new WeakMap<BakedGeometry, Map<BakedSplit, Drawn>>();
+
+/**
+ * The index buffer and groups a mesh built from `baked` draws, with `split`
+ * applied: the picked faces moved to the end of the group they came from, as a
+ * run of their own in the new role.
+ *
+ * Only the index is rewritten. Positions and normals are untouched and stay
+ * shared, so a split costs one more index buffer for the part and nothing per
+ * mesh.
+ */
+export function drawnGeometry(baked: BakedGeometry, split?: BakedSplit): Drawn {
+  const { index } = decode(baked);
+  if (!split) return { index, groups: baked.groups };
+  const forBaked = splitIndexes.get(baked) ?? new Map<BakedSplit, Drawn>();
+  splitIndexes.set(baked, forBaked);
+  const cached = forBaked.get(split);
+  if (cached) return cached;
+
+  const { position } = decode(baked);
+  const out = new Uint16Array(index.length);
+  const groups: BakedGroup[] = [];
+  const triangle = new Float32Array(9);
+  let at = 0;
+  for (const group of baked.groups) {
+    if (!split.from.includes(group.role)) {
+      out.set(index.subarray(group.start, group.start + group.count), at);
+      groups.push({ role: group.role, start: at, count: group.count });
+      at += group.count;
+      continue;
+    }
+    const picked: number[] = [];
+    const kept = at;
+    for (let face = group.start; face < group.start + group.count; face += 3) {
+      for (let corner = 0; corner < 3; corner++) {
+        const vertex = index[face + corner] * 3;
+        triangle[corner * 3] = position[vertex];
+        triangle[corner * 3 + 1] = position[vertex + 1];
+        triangle[corner * 3 + 2] = position[vertex + 2];
+      }
+      if (split.pick(triangle)) {
+        picked.push(face);
+        continue;
+      }
+      out[at++] = index[face];
+      out[at++] = index[face + 1];
+      out[at++] = index[face + 2];
+    }
+    groups.push({ role: group.role, start: kept, count: at - kept });
+    const marked = at;
+    for (const face of picked) {
+      out[at++] = index[face];
+      out[at++] = index[face + 1];
+      out[at++] = index[face + 2];
+    }
+    groups.push({ role: split.to, start: marked, count: at - marked });
+  }
+  const drawn: Drawn = { index: out, groups };
+  forBaked.set(split, drawn);
+  return drawn;
+}
+
 /**
  * One geometry carrying every role as its own draw group, in the order
- * `baked.groups` lists them.
+ * `drawnGeometry` lists them.
  */
-function bakedBufferGeometry(baked: BakedGeometry): THREE.BufferGeometry {
-  const { position, normal, index } = decode(baked);
+function bakedBufferGeometry(baked: BakedGeometry, split?: BakedSplit): THREE.BufferGeometry {
+  const { position, normal } = decode(baked);
+  const { index, groups } = drawnGeometry(baked, split);
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(position, 3));
   geometry.setAttribute("normal", new THREE.BufferAttribute(normal, 3, true));
   geometry.setIndex(new THREE.BufferAttribute(index, 1));
-  for (const group of baked.groups) geometry.addGroup(group.start, group.count, 0);
+  for (const group of groups) geometry.addGroup(group.start, group.count, 0);
   return geometry;
 }
 
@@ -88,12 +188,13 @@ function bakedBufferGeometry(baked: BakedGeometry): THREE.BufferGeometry {
  */
 export function buildBakedMesh(
   baked: BakedGeometry,
-  materialFor: (role: BakedRole) => THREE.Material
+  materialFor: (role: BakedRole) => THREE.Material,
+  split?: BakedSplit
 ): THREE.Mesh {
-  const geometry = bakedBufferGeometry(baked);
+  const geometry = bakedBufferGeometry(baked, split);
   const materials: THREE.Material[] = [];
   const byRole = new Map<BakedRole, number>();
-  baked.groups.forEach((group, at) => {
+  drawnGeometry(baked, split).groups.forEach((group, at) => {
     let slot = byRole.get(group.role);
     if (slot === undefined) {
       slot = materials.length;

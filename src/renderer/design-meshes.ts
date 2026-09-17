@@ -5,7 +5,7 @@ import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { KEL2020_BLOWER, KEL2020_TERMINAL } from "@/data/kel2020-geometry";
 import { terminalAxisIsVertical, terminalBodyDir } from "@/domain/terminal";
 import { vEq } from "@/domain/vec3";
-import { buildBakedMesh } from "@/renderer/baked-geometry";
+import { buildBakedMesh, type BakedSplit } from "@/renderer/baked-geometry";
 import { buildKel2020Decal, type DecalPlacement } from "@/renderer/kel2020-decal";
 import { PORT_R, TUBE_R, v3, VP } from "@/renderer/three-utils";
 import type { Vec3 } from "@/types";
@@ -146,19 +146,56 @@ export function buildPedestalMesh(feet: number, { ghost = false } = {}): THREE.G
 }
 
 /**
- * Where the wordmark sits on a terminal: across the fabricated housing, at the
- * height the hand-drawn model used to put it (ADR-0026) — the middle of the
- * front, between the latch below it and the top collar above.
+ * The KEL2020 mark the terminal already carries: moulded into the front of the
+ * housing in the CAD itself, and picked out of the faces around it so it can be
+ * painted rather than left in the plastic's own colour (ADR-0039).
  *
- * Measured off the baked geometry like the blower's: rays cast across this
- * patch meet the housing at 0.213 ft, about an axis offset 0.025 ft from the
- * unit's own, which is why this is not centred on x = 0.
+ * It comes out of two roles because the CAD draws it in two colours: the
+ * strokes are the housing's own plastic and bake as `body`, while the first
+ * zero of 2020 is a dark solid and bakes as `trim`, with the hinges and
+ * latches. That zero is the "weird black circle" on the door the client
+ * reported separately — a glyph of the mark, not an artefact.
+ *
+ * Every number is measured off the baked geometry. The housing is a cylinder of
+ * radius 0.2119 ft about an axis offset 0.025 ft from the unit's own, and the
+ * mark stands proud of it between y = 0.778 and y = 0.859 — reaching 0.218 ft
+ * at the top of its strokes, a sixteenth of an inch of relief. The band is
+ * opened to 0.75–0.88 so a face that starts on the housing and climbs the side
+ * of a stroke is caught with the rest of the mark, and nothing else on the
+ * front of the housing stands above its surface in that band.
+ *
+ * A face is the mark's if it stands above the housing but no further than the
+ * relief goes. The ceiling is what keeps the hinge and latch down the side of
+ * the unit out of it: they are in the same group and the same band, and they
+ * stand a good three inches off the housing's axis. The mark runs 45° either
+ * side of the front, where the housing is still 0.15 ft forward of its axis, so
+ * a face any closer to the side than that is the housing's own edge and stays
+ * with it.
  */
-const TERMINAL_WORDMARK: DecalPlacement = {
-  radius: 0.213,
-  width: 0.3,
-  axis: "y",
-  at: [-0.025, 0.7, 0]
+const HOUSING_AXIS_X = -0.025;
+const HOUSING_RADIUS = 0.2119;
+const MARK_RELIEF = { from: 0.0006, to: 0.01 } as const;
+const MARK_BAND = { from: 0.75, to: 0.88 } as const;
+const MARK_FRONT_Z = 0.1;
+
+export const TERMINAL_MOULDED_MARK: BakedSplit = {
+  from: ["body", "trim"],
+  to: "mark",
+  pick: (triangle) => {
+    let raised = false;
+    for (let corner = 0; corner < 3; corner++) {
+      const x = triangle[corner * 3];
+      const y = triangle[corner * 3 + 1];
+      const z = triangle[corner * 3 + 2];
+      // The mark is on the front of the housing, which is local +Z.
+      if (z < MARK_FRONT_Z) return false;
+      if (y < MARK_BAND.from || y > MARK_BAND.to) return false;
+      const relief = Math.hypot(x - HOUSING_AXIS_X, z) - HOUSING_RADIUS;
+      if (relief > MARK_RELIEF.to) return false;
+      if (relief > MARK_RELIEF.from) raised = true;
+    }
+    return raised;
+  }
 };
 
 /**
@@ -185,7 +222,7 @@ const TERMINAL_WORDMARK: DecalPlacement = {
  * up across the run rather than into the floor — which is where it belongs,
  * since a carrier is loaded from the front while the tube leaves the end. The
  * group's origin is the centre of the cell the terminal was placed in, and the
- * wordmark rides on the housing with it (ADR-0034), so a terminal on its side
+ * KEL2020 mark is part of the housing (ADR-0039), so a terminal on its side
  * wears its mark on its side.
  */
 export function buildTerminalMesh({
@@ -201,67 +238,83 @@ export function buildTerminalMesh({
   // and renders as near-black — which is how the brushed collars first came
   // out, indistinguishable from the barrel between them.
   g.add(
-    buildBakedMesh(KEL2020_TERMINAL, (role) => {
-      if (role === "glass") {
-        // The barrel a carrier is loaded into: clear on the real unit, so nearly
-        // transparent here rather than tinted, which is what tells it apart from
-        // the blower at a glance. A little of its own light, or it takes the
-        // colour of whatever is behind it — in this scene a nearly black floor,
-        // and a clear barrel that renders black is worse than no barrel at all.
+    buildBakedMesh(
+      KEL2020_TERMINAL,
+      (role) => {
+        if (role === "glass") {
+          // The barrel a carrier is loaded into: clear on the real unit, so nearly
+          // transparent here rather than tinted, which is what tells it apart from
+          // the blower at a glance. A little of its own light, or it takes the
+          // colour of whatever is behind it — in this scene a nearly black floor,
+          // and a clear barrel that renders black is worse than no barrel at all.
+          return new THREE.MeshStandardMaterial({
+            color: VP.terminalGlass,
+            roughness: 0.12,
+            metalness: 0.05,
+            emissive: VP.terminalGlass,
+            emissiveIntensity: 0.14,
+            transparent: true,
+            opacity: ghost ? 0.18 : 0.42
+          });
+        }
+        if (role === "door") {
+          return new THREE.MeshStandardMaterial({
+            color: VP.terminalDoor,
+            roughness: 0.5,
+            metalness: 0.3,
+            transparent: ghost,
+            opacity: ghost ? 0.5 : 1
+          });
+        }
+        // The CAD's dark fittings, in the graphite the blower is drawn in: they
+        // are the same hardware, and a true black disappears into the floor.
+        if (role === "trim") {
+          return new THREE.MeshStandardMaterial({
+            color: VP.blower,
+            roughness: 0.55,
+            metalness: 0.2,
+            transparent: ghost,
+            opacity: ghost ? 0.45 : 1
+          });
+        }
+        // The KEL2020 mark moulded into the housing, painted in the green a
+        // Kel2020 signs itself with: on the real unit it is a colour sticker, not
+        // relief left in the plastic (ADR-0039).
+        //
+        // Unlit, like the wordmark on the blower's drum, so the mark holds its
+        // colour wherever the unit stands; and opaque, so it reads as a sticker
+        // on the housing rather than another see-through layer of it.
+        if (role === "mark") {
+          return new THREE.MeshBasicMaterial({
+            color: VP.signal,
+            transparent: ghost,
+            opacity: ghost ? 0.45 : 1
+          });
+        }
+        // The housing, which is the door a carrier is loaded through: clear on the
+        // real unit, so it is drawn see-through here rather than as a solid shell
+        // and the barrel behind it reads through the KEL2020 mark. It keeps a
+        // little of its own light for the same reason the barrel does, and a
+        // touch more body than the barrel so the two still read as two pieces.
+        //
+        // `depthWrite` is off because the baked groups draw the housing before the
+        // barrel (src/data/kel2020-geometry.ts), and a transparent surface that
+        // writes depth hides whatever is drawn behind it afterwards — which would
+        // leave the housing looking see-through everywhere except over the barrel.
         return new THREE.MeshStandardMaterial({
-          color: VP.terminalGlass,
-          roughness: 0.12,
-          metalness: 0.05,
-          emissive: VP.terminalGlass,
-          emissiveIntensity: 0.14,
-          transparent: true,
-          opacity: ghost ? 0.18 : 0.42
-        });
-      }
-      if (role === "door") {
-        return new THREE.MeshStandardMaterial({
-          color: VP.terminalDoor,
-          roughness: 0.5,
-          metalness: 0.3,
-          transparent: ghost,
-          opacity: ghost ? 0.5 : 1
-        });
-      }
-      // The CAD's dark fittings, in the graphite the blower is drawn in: they
-      // are the same hardware, and a true black disappears into the floor.
-      if (role === "trim") {
-        return new THREE.MeshStandardMaterial({
-          color: VP.blower,
-          roughness: 0.55,
+          color: VP.terminal,
+          roughness: 0.3,
           metalness: 0.2,
-          transparent: ghost,
-          opacity: ghost ? 0.45 : 1
+          emissive: VP.terminal,
+          emissiveIntensity: 0.1,
+          transparent: true,
+          depthWrite: false,
+          opacity: ghost ? 0.22 : 0.5
         });
-      }
-      // The housing, which is the door a carrier is loaded through: clear on the
-      // real unit, so it is drawn see-through here rather than as a solid shell
-      // and the barrel behind it reads through the KEL2020 mark. It keeps a
-      // little of its own light for the same reason the barrel does, and a
-      // touch more body than the barrel so the two still read as two pieces.
-      //
-      // `depthWrite` is off because the baked groups draw the housing before the
-      // barrel (src/data/kel2020-geometry.ts), and a transparent surface that
-      // writes depth hides whatever is drawn behind it afterwards — which would
-      // leave the housing looking see-through everywhere except over the barrel.
-      return new THREE.MeshStandardMaterial({
-        color: VP.terminal,
-        roughness: 0.3,
-        metalness: 0.2,
-        emissive: VP.terminal,
-        emissiveIntensity: 0.1,
-        transparent: true,
-        depthWrite: false,
-        opacity: ghost ? 0.22 : 0.5
-      });
-    })
+      },
+      TERMINAL_MOULDED_MARK
+    )
   );
-  const decal = buildKel2020Decal(TERMINAL_WORDMARK, { ghost });
-  if (decal) g.add(decal);
   if (ghost) {
     // The arrow says which way the run leaves. The body already lies along the
     // axis, so in this frame that is simply one end or the other: +Y when the

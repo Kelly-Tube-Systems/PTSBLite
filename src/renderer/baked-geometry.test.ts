@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { KEL2020_BLOWER, KEL2020_TERMINAL } from "@/data/kel2020-geometry";
-import { buildBakedMesh, type BakedGeometry, type BakedRole } from "@/renderer/baked-geometry";
+import {
+  buildBakedMesh,
+  drawnGeometry,
+  type BakedGeometry,
+  type BakedRole,
+  type BakedSplit
+} from "@/renderer/baked-geometry";
 
 /**
  * The baked parts are generated, so there is nothing to test about how they were
@@ -74,6 +80,35 @@ describe("baked Kel2020 geometry", () => {
       expect(mesh.geometry.getAttribute("position").count).toBe(baked.vertexCount);
       expect(mesh.geometry.getAttribute("normal").count).toBe(baked.vertexCount);
     }
+  });
+
+  it("moves a split's faces into their own group without losing or repeating one", () => {
+    // The split is how a face the bake could not tell apart from its neighbours
+    // gets its own material — the mark moulded into the terminal's housing
+    // (ADR-0039). Whatever it picks, the part must still draw every triangle it
+    // had, exactly once, in contiguous groups.
+    const split: BakedSplit = {
+      from: ["body"],
+      to: "mark",
+      // The top half of the unit, which cuts across the housing's faces.
+      pick: (triangle) => triangle[1] > 0.5 && triangle[4] > 0.5 && triangle[7] > 0.5
+    };
+    const plain = drawnGeometry(KEL2020_TERMINAL);
+    const drawn = drawnGeometry(KEL2020_TERMINAL, split);
+    expect(drawn.index.length).toBe(plain.index.length);
+    expect([...drawn.index].sort()).toEqual([...plain.index].sort());
+    let at = 0;
+    for (const group of drawn.groups) {
+      expect(group.start).toBe(at);
+      at += group.count;
+    }
+    expect(at).toBe(drawn.index.length);
+    const marked = drawn.groups.filter((group) => group.role === "mark");
+    expect(marked.reduce((total, group) => total + group.count, 0)).toBeGreaterThan(0);
+    // One material for the new role, however many runs it ends up as.
+    const roles = new Set(drawn.groups.map((group) => group.role));
+    const mesh = buildBakedMesh(KEL2020_TERMINAL, () => new THREE.MeshBasicMaterial(), split);
+    expect((mesh.material as THREE.Material[]).length).toBe(roles.size);
   });
 
   it("decodes once and hands out a fresh geometry each time, so disposal is safe", () => {

@@ -8,11 +8,12 @@ import {
   bendRenderPath,
   buildSplitSleeveMesh,
   buildTerminalMesh,
+  TERMINAL_MOULDED_MARK,
   tubeRenderSpan,
   tubeSectionJointPoints
 } from "@/renderer/design-meshes";
 import { KEL2020_TERMINAL } from "@/data/kel2020-geometry";
-import type { BakedRole } from "@/renderer/baked-geometry";
+import { drawnGeometry, type BakedRole } from "@/renderer/baked-geometry";
 import {
   cellFromWorldPoint,
   clickCellForTool,
@@ -300,11 +301,12 @@ describe("terminal materials", () => {
   // has to be transparent, and it has to stay out of the depth buffer, because
   // the baked groups draw it before the barrel and a transparent surface that
   // writes depth hides whatever is drawn behind it afterwards.
+  const drawn = drawnGeometry(KEL2020_TERMINAL, TERMINAL_MOULDED_MARK);
   const materialFor = (role: BakedRole, ghost = false): THREE.MeshStandardMaterial => {
     const mesh = buildTerminalMesh({ ghost }).children.find(
       (child): child is THREE.Mesh => child instanceof THREE.Mesh
     )!;
-    const at = KEL2020_TERMINAL.groups.findIndex((group) => group.role === role);
+    const at = drawn.groups.findIndex((group) => group.role === role);
     const slot = mesh.geometry.groups[at].materialIndex!;
     return (mesh.material as THREE.Material[])[slot] as THREE.MeshStandardMaterial;
   };
@@ -322,6 +324,79 @@ describe("terminal materials", () => {
     // Both are see-through now, so the one cue that told them apart — solid
     // versus not — is gone, and only the difference in opacity is left.
     expect(materialFor("body", true).opacity).toBeLessThan(materialFor("body").opacity);
+  });
+});
+
+describe("the KEL2020 mark on a terminal", () => {
+  // The client saw two marks on the unit — the one moulded into the housing and
+  // a decal laid over it — and asked for one, in the colour of a real sticker
+  // (ADR-0039). So the terminal carries no decal of its own, and the moulded
+  // mark is painted instead. What is worth holding is that the faces picked out
+  // to paint are the mark: a re-bake that shifted the housing would otherwise
+  // paint a stripe of plain plastic, or nothing at all, with no test to say so.
+
+  /** The material the terminal draws its mark in. */
+  function markMaterial(): THREE.MeshBasicMaterial {
+    const mesh = buildTerminalMesh().children.find(
+      (child): child is THREE.Mesh => child instanceof THREE.Mesh
+    )!;
+    const drawn = drawnGeometry(KEL2020_TERMINAL, TERMINAL_MOULDED_MARK);
+    const at = drawn.groups.findIndex((group) => group.role === "mark");
+    const slot = mesh.geometry.groups[at].materialIndex!;
+    return (mesh.material as THREE.Material[])[slot] as THREE.MeshBasicMaterial;
+  }
+
+  /** The terminal's one mesh, and the faces its mark group draws. */
+  function markFaces(): { x: number; y: number; z: number }[][] {
+    const mesh = buildTerminalMesh().children.find(
+      (child): child is THREE.Mesh => child instanceof THREE.Mesh
+    )!;
+    const drawn = drawnGeometry(KEL2020_TERMINAL, TERMINAL_MOULDED_MARK);
+    const position = mesh.geometry.getAttribute("position");
+    const index = mesh.geometry.getIndex()!;
+    const faces: { x: number; y: number; z: number }[][] = [];
+    for (const group of drawn.groups) {
+      if (group.role !== "mark") continue;
+      for (let face = group.start; face < group.start + group.count; face += 3)
+        faces.push(
+          [0, 1, 2].map((corner) => {
+            const vertex = index.getX(face + corner);
+            return { x: position.getX(vertex), y: position.getY(vertex), z: position.getZ(vertex) };
+          })
+        );
+    }
+    return faces;
+  }
+
+  it("paints the moulded mark rather than laying a decal over it", () => {
+    // One mesh and nothing else: the decal used to be a second child here.
+    expect(buildTerminalMesh().children).toHaveLength(1);
+    const mark = markMaterial();
+    expect(mark).toBeInstanceOf(THREE.MeshBasicMaterial);
+    expect(mark.color.getHex()).toBe(VP.signal);
+    // A sticker on the housing, not another see-through layer of it.
+    expect(mark.transparent).toBe(false);
+    expect(mark.opacity).toBe(1);
+  });
+
+  it("picks out the whole mark and only the mark", () => {
+    const faces = markFaces();
+    expect(faces.length).toBeGreaterThan(100);
+    const corners = faces.flat();
+    const across = corners.map((corner) => corner.x);
+    const up = corners.map((corner) => corner.y);
+    // The mark runs about 0.3 ft across the front of the housing and 0.08 ft
+    // up it: wide enough that this is the wordmark and not a face of plastic
+    // that happened to stand proud.
+    expect(Math.max(...across) - Math.min(...across)).toBeGreaterThan(0.25);
+    expect(Math.max(...up) - Math.min(...up)).toBeGreaterThan(0.05);
+    // And all of it on the front of the housing, in the band it was measured
+    // in, standing off the surface rather than sunk into it.
+    for (const corner of corners) {
+      expect(corner.z).toBeGreaterThan(0.1);
+      expect(corner.y).toBeGreaterThan(0.75);
+      expect(corner.y).toBeLessThan(0.88);
+    }
   });
 });
 
