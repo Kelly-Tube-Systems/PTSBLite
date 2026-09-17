@@ -106,6 +106,24 @@ describe("the views appended to a BOM", () => {
     expect(withViews.getPageCount()).toBe(3);
   });
 
+  it("stamps a Kelly Systems watermark across every page of pictures", async () => {
+    // Three views make two pages, and the client asked for the mark on each of
+    // them rather than once in the document.
+    const text = extractText(
+      await generateBomPdf(designWith(sampleParts), {
+        views: [shot("North-west"), shot("North-east"), shot("Top-down")]
+      })
+    );
+    expect([...text.matchAll(/KELLY SYSTEMS/g)]).toHaveLength(2);
+  });
+
+  it("leaves the parts list page unstamped", async () => {
+    // The first page carries the branding its own way; a document with no
+    // pictures in it gets no watermark at all.
+    const text = extractText(await generateBomPdf(designWith(sampleParts)));
+    expect(text).not.toContain("KELLY SYSTEMS");
+  });
+
   it("captions each view with the angle it was taken from", async () => {
     const bytes = await generateBomPdf(designWith(sampleParts), {
       views: [shot("North-west"), shot("Top-down")]
