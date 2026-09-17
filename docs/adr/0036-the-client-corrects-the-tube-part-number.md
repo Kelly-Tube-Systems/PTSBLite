@@ -1,6 +1,6 @@
 # ADR-0036: The client corrects the tube part number
 
-- **Status:** Accepted
+- **Status:** Accepted; the bend it held back followed the same day in [ADR-0037](0037-the-bend-takes-the-clients-number-on-his-say-so.md)
 - **Date:** 2026-09-17
 
 [ADR-0029](0029-real-part-numbers-arrive-in-part.md) took `ALP78403` for the straight tube from the
