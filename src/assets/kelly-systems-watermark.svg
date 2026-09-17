@@ -5,8 +5,9 @@
     course rather than a table. Drawn in black and used as a mask, so the
     colour comes from the stylesheet.
 
-    kelly-systems-wordmark.svg carries the same artwork as a single mark, for
-    the welcome screen's logo. Replace both when the artwork is.
+    This is the artwork itself; the PDF's path data and the welcome screen's
+    logo are both baked out of it by tools/bake-kelly-wordmark.mjs. Re-run that
+    bake when this file changes.
   -->
   <symbol id="mark" viewBox="0 0 1316 158" width="1316" height="158">
     <path d="M0 0H332V47L375 1H408L363 51L410 122H377L341 69L332 79V122H0Z" />
