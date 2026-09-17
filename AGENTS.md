@@ -36,8 +36,9 @@ been — the client withdrew it
 the rule was flagged, questioned, and sourced rather than quietly edited. The 3 ft bend radius went
 through the same process — the bend KTS shipped is a 4 ft radius, the client was asked, and kept
 3 ft ([ADR-0030](docs/adr/0030-the-terminal-and-pedestal-blower-take-their-real-numbers.md)).
-Part *names* are ours; part *numbers* are real KTS numbers for everything except the bend, which
-still carries an invented one. See
+Part *names* are ours; part *numbers* are real KTS numbers, every one of them, taken from the
+client's own list rather than from the parts drop where the two disagree
+([ADR-0036](docs/adr/0036-the-clients-list-supersedes-the-drop-and-nothing-is-invented.md)). See
 [ADR-0001](docs/adr/0001-engineering-constraints-are-authoritative.md).
 
 User-facing copy must interpolate engineering constants rather than restating them.

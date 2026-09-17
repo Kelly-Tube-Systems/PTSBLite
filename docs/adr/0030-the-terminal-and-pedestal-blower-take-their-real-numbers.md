@@ -1,6 +1,7 @@
 # ADR-0030: The terminal and pedestal blower take their real numbers, and the bend stays at 3 ft
 
-- **Status:** Accepted
+- **Status:** Accepted; the bend's number arrived on 2026-09-17, see
+  [ADR-0036](0036-the-clients-list-supersedes-the-drop-and-nothing-is-invented.md)
 - **Date:** 2026-09-14
 
 [ADR-0029](0029-real-part-numbers-arrive-in-part.md) put three of the seven KTS part numbers from

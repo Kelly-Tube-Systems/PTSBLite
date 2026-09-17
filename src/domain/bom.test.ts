@@ -68,6 +68,11 @@ describe("BOM derivation", () => {
     expect(byKey.tube6.note).toMatch(/1 cut on-site/);
     expect(byKey.blower.partNo).toBe("A444200");
     expect(byKey.terminal.partNo).toBe("A444940");
+    // Every row carries a real KTS number since ADR-0036; the bend was the last
+    // invented one, and a BOM the public downloads is where that would show.
+    expect(byKey.tube6.partNo).toBe("ALP78435");
+    expect(byKey.bend90.partNo).toBe("ALP08401");
+    expect(byKey.splitSleeve.partNo).toBe("ALP64401");
   });
 
   it("bomRows counts a pedestal blower on the blower row, noting the pedestal", () => {

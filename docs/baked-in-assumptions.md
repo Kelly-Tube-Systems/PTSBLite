@@ -133,21 +133,20 @@ worth asking about early.
 
 ## Published catalog
 
-**One part number in `src/data/parts.json` is still invented; the rest are real.** KTS delivered
-part numbers on 2026-09-10 and answered the questions they raised on 2026-09-14: the blower is
-`A444200` whether or not it stands on a pedestal, the terminal `A444940`, the tube `ALP78403` and
-the split sleeve `ALP64401`. The bend still carries `BN-90-3R`, made up for the build, because the
-number KTS supplied describes a 4 ft radius part and the client kept the 3 ft radius the app draws.
-See [ADR-0029](adr/0029-real-part-numbers-arrive-in-part.md) and
-[ADR-0030](adr/0030-the-terminal-and-pedestal-blower-take-their-real-numbers.md).
+**Every part number in `src/data/parts.json` is real.** KTS delivered numbers on 2026-09-10, the
+client answered the questions they raised on 2026-09-14, and on 2026-09-17 he posted a corrected
+list of his own: the blower is `A444200` whether or not it stands on a pedestal, the terminal
+`A444940`, the tube `ALP78435`, the split sleeve `ALP64401` and the bend `ALP08401`. Nothing in the
+catalog is invented any more, so the BOM PDF a stranger downloads no longer carries a made-up
+number — the hazard ADR-0013 was written for is gone, not merely smaller. See
+[ADR-0036](adr/0036-the-clients-list-supersedes-the-drop-and-nothing-is-invented.md).
 
-**A mostly real catalog is easier to misread than an invented one.** `BN-90-3R` sits among real
-numbers and looks like one, so which line is invented lives in ADR-0030 rather than in a reader's
-memory. That number is still **published**: PTSBLite prints it into a BOM PDF that any member of the
-public can download and keep, and nothing in the document marks it as identifying nothing. That is
-a deliberate decision, recorded in
-[ADR-0013](adr/0013-lite-publishes-placeholder-part-numbers.md), and it is the one place invented
-data reaches a customer-facing artifact on purpose. Issue #94.
+**The bend's number rests on the client's word alone.** `ALP08404`, the bend in the parts drop, was
+provably a 4 ft radius part from the STEP file's own geometry. `ALP08401` arrived as a line on a
+Trello card with no file and no catalog name behind it, and is read as the 3 ft variant of the same
+family because he gave it as the bend number three days after choosing to keep the app's 3 ft
+radius. If that reading is wrong, a downloaded parts list orders bends that do not fit the drawing
+printed beside them. The question is on the board with him; the app cannot tell either way.
 
 **A pedestal blower is one line on the parts list with the plain blower.** They are one KTS part,
 so a design with one of each orders two of `A444200`; the row notes how many stand on a pedestal.
