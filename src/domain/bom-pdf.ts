@@ -4,6 +4,7 @@ import {
   DIM,
   drawRightText,
   drawText,
+  drawWatermark,
   formatDocumentDate,
   HAIRLINE,
   MARGIN_TOP,
@@ -37,6 +38,13 @@ const VIEW_WIDTH = 460;
 const VIEW_GAP = 26;
 const VIEW_LABEL_GAP = 22;
 const VIEWS_PER_PAGE = 2;
+
+/**
+ * Stamped across the pages of pictures. The client asked for the mark on those
+ * pages only: the parts list is the page people work from, and it carries the
+ * branding its own way.
+ */
+const WATERMARK = "KELLY SYSTEMS";
 
 /**
  * Render a design's bill of materials to PDF bytes.
@@ -138,6 +146,10 @@ export async function generateBomPdf(
  * Each is captioned with the angle it was taken from, which is what makes a
  * page of five near-identical shaded boxes navigable — and the captions match
  * the View menu, so a reader can put the model on screen in the same pose.
+ *
+ * The watermark goes on last, so it lies over the pictures rather than behind
+ * them: a JPEG has no transparency, and a mark under one would only show in
+ * the margins around it.
  */
 async function drawViewPages(doc: PDFDocument, p: Painter, views: BomPdfView[]): Promise<void> {
   const x = (PAGE_WIDTH - VIEW_WIDTH) / 2;
@@ -153,5 +165,6 @@ async function drawViewPages(doc: PDFDocument, p: Painter, views: BomPdfView[]):
       page.drawImage(image, { x, y: y - height, width: VIEW_WIDTH, height });
       y -= height + VIEW_GAP;
     }
+    drawWatermark(painter, WATERMARK);
   }
 }
