@@ -1,6 +1,7 @@
 # ADR-0030: The terminal and pedestal blower take their real numbers, and the bend stays at 3 ft
 
-- **Status:** Accepted
+- **Status:** Accepted; the bend's placeholder replaced by the client's own number in
+  [ADR-0037](0037-the-bend-takes-the-clients-number-unconfirmed.md), with the 3 ft radius unchanged
 - **Date:** 2026-09-14
 
 [ADR-0029](0029-real-part-numbers-arrive-in-part.md) put three of the seven KTS part numbers from

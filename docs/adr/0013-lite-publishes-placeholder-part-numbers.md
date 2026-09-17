@@ -1,10 +1,11 @@
 # ADR-0013: PTSBLite publishes placeholder part numbers
 
-- **Status:** Superseded in part by [ADR-0029](0029-real-part-numbers-arrive-in-part.md)
+- **Status:** Superseded by [ADR-0037](0037-the-bend-takes-the-clients-number-unconfirmed.md)
 - **Date:** 2026-08-03
 
-Real numbers arrived for the blower, the tube and the split sleeve on 2026-09-10. This ADR still
-governs the three entries that remain invented — the terminal, the pedestal blower and the bend.
+Real numbers arrived for the blower, the tube and the split sleeve on 2026-09-10, for the terminal
+and the pedestal blower on 2026-09-14, and for the bend on 2026-09-17. No entry is invented any
+more, so this ADR governs nothing; ADR-0037 records what replaced the hazard it named.
 
 ## Context
 
