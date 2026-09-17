@@ -249,6 +249,13 @@ export type ViewportProps = {
   onHover?: (cell: Vec3) => void;
   landingCells?: Vec3[];
   activeElevation?: number;
+  /**
+   * The floor the pointer casts onto: the base of the storey being worked on,
+   * which is not the placement height. Aiming happens on the floor and the
+   * elevation lifts the result straight up, so `[` and `]` never slide the
+   * ghost sideways (ADR-0035).
+   */
+  pickElevation?: number;
   portMarkers?: PortMarker[];
   /** Y level of a two-floor design's separator slab, or null for one floor. */
   separatorY?: number | null;
@@ -304,6 +311,7 @@ export function Viewport({
   onHover,
   landingCells = [],
   activeElevation = 0,
+  pickElevation = 0,
   portMarkers = [],
   separatorY = null,
   activeFloor = null,
@@ -321,11 +329,19 @@ export function Viewport({
   const mountRef = useRef<HTMLDivElement | null>(null);
   const stateRef = useRef<ViewportState>({});
   const toolRef = useRef<ToolId>(tool);
+  const elevationRef = useRef<number>(activeElevation);
   const callbacksRef = useRef<Pick<ViewportProps, "onPlace" | "onHover">>({ onPlace, onHover });
 
   useEffect(() => {
     toolRef.current = tool;
   }, [tool]);
+
+  // Read by the picker, which runs from event handlers outside React's render.
+  // Set here rather than in the effect that moves the plane so it is already
+  // current when that effect re-picks.
+  useEffect(() => {
+    elevationRef.current = activeElevation;
+  }, [activeElevation]);
 
   useEffect(() => {
     const s = stateRef.current;
@@ -665,14 +681,18 @@ export function Viewport({
     /** The cell under the pointer right now, on the current plane and camera. */
     function pickCell(): Vec3 | null {
       ray.setFromCamera(mouse, camera);
-      return pickPointerCell(ray, overlayGroup.children, hoverPlane);
+      return pickPointerCell(ray, overlayGroup.children, hoverPlane, elevationRef.current);
     }
 
     /**
      * Re-pick under the pointer and report the cell if it is a new one. The
      * click above picks the same way, so whatever the ghost was last drawn on
-     * is where a click lands — whether the pointer moved, the plane rose under
-     * it, or the camera turned.
+     * is where a click lands — whether the pointer moved, the camera turned, or
+     * a floor change moved the plane the pointer casts onto.
+     *
+     * An elevation key is not in that list, and must not be: it leaves the
+     * plane where it is, and the session lifts the hover cell straight up over
+     * the square already aimed at (ADR-0035).
      */
     function rehover() {
       if (!pointerKnown) return;
@@ -958,11 +978,14 @@ export function Viewport({
     const s = stateRef.current;
     if (!s.planeGroup || !s.hoverPlane) return;
     clearGroup(s.planeGroup);
-    s.hoverPlane.position.y = activeElevation;
-    // The plane has moved under a pointer that has not: an elevation key
-    // pressed while aiming. The session lifts the hovered cell straight up as
-    // its first answer; this replaces it with the cell the pointer actually
-    // rests on at the new height, which is the one a click would place on.
+    // The pointer casts onto the storey's floor, so this moves only when the
+    // floor does. An elevation key leaves it alone, which is what keeps the
+    // ghost over the square being aimed at as the height changes (ADR-0035).
+    //
+    // The re-pick is still needed for the move that does happen: selecting the
+    // other floor puts a different square under a pointer that has not moved,
+    // and the landing markers the picker prefers change with the elevation too.
+    s.hoverPlane.position.y = pickElevation;
     s.rehover?.();
     for (const marker of heightMarkers) {
       const sprite = buildHeightMarker(marker.at, marker.feet, { label: marker.label });
@@ -972,7 +995,7 @@ export function Viewport({
     // should be right now, so size it before it is ever drawn.
     s.syncMarkers?.();
     s.requestRender?.();
-  }, [activeElevation, heightMarkers]);
+  }, [activeElevation, pickElevation, heightMarkers]);
 
   useEffect(() => {
     const s = stateRef.current;

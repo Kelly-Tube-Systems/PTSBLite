@@ -176,12 +176,18 @@ export function rotationKeysApply(tool: ToolId): boolean {
  * screen until the pointer happened to move again, which read as the key doing
  * nothing at all.
  *
- * This is the immediate answer, not the final one. The cell straight above
- * the old hover is not what the pointer rests on at the new height: seen from
- * the camera, the raised plane meets the same pointer nearer than the floor
- * did. The viewport re-picks under the pointer once the plane has moved and
- * reports that cell as a fresh hover, so the ghost ends up exactly where a
- * click would place — which is what a click does, since it picks the same way.
+ * Straight up is the whole answer, not a first approximation (ADR-0035). The
+ * square is the one the pointer is aiming at on the floor, and the elevation
+ * only says how high above it the part goes, so the cell above the old hover
+ * is the cell the pointer still rests on. The viewport picks a click the same
+ * way — against a plane on the storey's floor, lifted to the elevation — so
+ * the part lands on the square the ghost stood on.
+ *
+ * It read as a stop-gap while the pointer cast onto a plane raised to the
+ * elevation: that plane met a still pointer nearer than the floor did, so the
+ * ghost had to be re-picked to agree with the click, and the fix moved both
+ * rather than neither. The client rejected that — "it retains its x/y
+ * position" — and the picking plane came down to the floor instead.
  */
 function withElevation(session: PlacementSession, activeElevation: number): PlacementSession {
   return {
