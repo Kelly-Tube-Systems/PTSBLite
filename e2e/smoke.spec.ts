@@ -67,6 +67,25 @@ test("autosaves to real storage and restores after a reload", async ({ page }) =
   await expect(partsCount(page)).toHaveText("1");
 });
 
+test("keeps the Finalize panel's content in view in a short window", async ({ page }) => {
+  // A layout assertion rather than a pixel one, and here because happy-dom has
+  // no layout at all: the client hit a Finalize panel showing its VALIDATION
+  // heading and nothing else, because the capped dialog squeezed its scrolling
+  // body to about 30px and everything below the heading fell outside it.
+  await createDesign(page);
+  await placeBlower(page);
+  await page.setViewportSize({ width: 1000, height: 190 });
+
+  await page.getByRole("button", { name: "Finalize" }).click();
+
+  const bodyBox = await page.locator(".finalize__scroll").boundingBox();
+  const warningBox = await page.locator(".validation__item").first().boundingBox();
+  if (!bodyBox || !warningBox) throw new Error("the Finalize dialog did not render");
+  // The body is tall enough to hold the first validation row rather than
+  // clipping it away below the heading.
+  expect(warningBox.y + warningBox.height).toBeLessThanOrEqual(bodyBox.y + bodyBox.height);
+});
+
 test("exports the BOM PDF through the real download path", async ({ page }) => {
   const errors = collectPageErrors(page);
 

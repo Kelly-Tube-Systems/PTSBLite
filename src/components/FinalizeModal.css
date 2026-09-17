@@ -6,6 +6,16 @@
   padding: 16px 18px;
 }
 
+/* In a window too short for a usable body the dialog itself scrolls (see the
+   matching breakpoint in Modal.css), so the body stops competing for the
+   leftover height and lays out at its full size inside it. */
+@media (max-height: 240px) {
+  .finalize__scroll {
+    flex: none;
+    overflow-y: visible;
+  }
+}
+
 .finalize__meta {
   margin-top: 18px;
   padding-bottom: 10px;

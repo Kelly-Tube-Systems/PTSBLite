@@ -67,3 +67,21 @@
   width: min(820px, 92%);
   max-height: 88%;
 }
+
+/* A window too short to leave the body a usable height. The capped dialog keeps
+   its header and its actions row at full size, so the body is whatever is left:
+   at a 190px-tall viewport that is about 30px, and the client's Finalize panel
+   showed its VALIDATION heading and nothing else — blank, with a scrollbar
+   thumb as the only hint that a parts list was below it.
+
+   Here the dialog scrolls as one piece instead, so everything in it is reachable
+   by scrolling rather than hidden behind a 30px scroller. The body gives up
+   being a scroller to match (`.finalize__scroll` in FinalizeModal.css). The
+   breakpoint is where the body can no longer show its heading and one row:
+   88% of 240px, less the 108px the header and actions take, is about 100px. */
+@media (max-height: 240px) {
+  .modal-dialog--lg,
+  .modal-dialog--xl {
+    overflow-y: auto;
+  }
+}
