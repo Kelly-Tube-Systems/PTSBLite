@@ -175,6 +175,28 @@ describe("the welcome setup form", () => {
     expect(within(dialog).queryByLabelText(/plenum height/i)).toBeNull();
   });
 
+  it("shows the Kelly Systems logo over the heading, but not over the warning", async () => {
+    window.localStorage.setItem(SESSION_KEY, storedDesign());
+    await renderApp();
+
+    // "Above" means before it in the dialog: the client asked for the logo over
+    // the heading, not for a third thing on the line the heading sits on.
+    const choice = screen.getByRole("dialog", { name: /Welcome back/ });
+    expect(choice.firstElementChild).toBe(
+      within(choice).getByRole("img", { name: "Kelly Systems" })
+    );
+
+    // The confirmation is a warning about losing a design, and the only stage a
+    // visit never opens on, so it is not branded.
+    fireEvent.click(within(choice).getByRole("button", { name: "New design" }));
+    const confirm = screen.getByRole("dialog", { name: /Start a new design/ });
+    expect(within(confirm).queryByRole("img", { name: "Kelly Systems" })).toBeNull();
+
+    fireEvent.click(within(confirm).getByRole("button", { name: "Start new design" }));
+    const setup = screen.getByRole("dialog", { name: "New design" });
+    expect(setup.firstElementChild).toBe(within(setup).getByRole("img", { name: "Kelly Systems" }));
+  });
+
   it("explains each field where the field is, not in a warning box", async () => {
     await renderApp();
     const dialog = screen.getByRole("dialog", { name: /Welcome to PTSBLite/ });

@@ -47,10 +47,26 @@ export type WelcomeScreenProps = {
 };
 
 /**
+ * The Kelly Systems wordmark, over whichever start screen the visit opens on.
+ *
+ * A masked element rather than an `<img>`, the way the viewport's watermark
+ * draws the same artwork: the file is black and the colour is the accent token,
+ * so the logo follows the theme instead of baking a green into the asset. It is
+ * the company's name rather than decoration, so it is labelled and not hidden.
+ */
+function KellyLogo() {
+  return <div className="welcome__logo" role="img" aria-label="Kelly Systems" />;
+}
+
+/**
  * The screen every visit starts on. With a design in storage it asks whether to
  * continue it or start a new one; otherwise (and after choosing to start over)
  * it collects the details a new design needs. It cannot be dismissed — there is
  * nothing to fall back to until one of its answers is given.
+ *
+ * The logo sits above the heading on both of those, at the client's request.
+ * Not on the confirmation between them: that one is a warning about losing a
+ * design, and it is the only stage the visit does not open on.
  *
  * Choosing "New design" asks for confirmation first, and even then discards
  * nothing: the stored design is replaced when the new one is actually created,
@@ -68,6 +84,7 @@ export function WelcomeScreen({ stored, greeting, onContinue, onCreate }: Welcom
     return (
       <Modal label="Welcome back" onClose={() => undefined} dismissOnBackdrop={false} size="md">
         <>
+          <KellyLogo />
           <div className="modal__header">
             <Icons.Layers size={16} />
             <div className="modal__title">Welcome back</div>
@@ -124,6 +141,7 @@ export function WelcomeScreen({ stored, greeting, onContinue, onCreate }: Welcom
   return (
     <Modal label={title} onClose={() => undefined} dismissOnBackdrop={false} size="md">
       <>
+        <KellyLogo />
         <div className="modal__header">
           <Icons.Layers size={16} />
           <div className="modal__title">{title}</div>
