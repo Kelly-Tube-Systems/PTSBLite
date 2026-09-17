@@ -71,6 +71,9 @@ describe("BOM derivation", () => {
     // The client corrected the tube number after the parts folder shipped one
     // that was wrong (ADR-0036), so the BOM asserts it rather than trusting the file.
     expect(byKey.tube6.partNo).toBe("ALP78435");
+    // The bend was the last invented number and is now the client's ALP08401,
+    // shipped on his instruction without a radius to confirm it (ADR-0037).
+    expect(byKey.bend90.partNo).toBe("ALP08401");
   });
 
   it("bomRows counts a pedestal blower on the blower row, noting the pedestal", () => {
@@ -115,7 +118,7 @@ describe("BOM derivation", () => {
 
   it("bomRows gives every blower unit a control box", () => {
     // The client asked for the line and for its number on 2026-09-17
-    // (ADR-0037). Nothing draws a control box, so this row is the only place
+    // (ADR-0038). Nothing draws a control box, so this row is the only place
     // one appears at all.
     const byKey = Object.fromEntries(bomRows(designWith(sampleParts)).map((r) => [r.key, r]));
     expect(byKey.blower.qty).toBe(1);

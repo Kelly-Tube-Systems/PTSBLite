@@ -75,7 +75,7 @@ describe("generateBomPdf", () => {
   });
 
   it("prints the control box the blower units imply, though nothing draws one", async () => {
-    // The row exists only on the parts list (ADR-0037), so the PDF is the only
+    // The row exists only on the parts list (ADR-0038), so the PDF is the only
     // artifact that can be checked for it end to end.
     const text = extractText(await generateBomPdf(designWith(sampleParts)));
     expect(text).toContain("Control Box");

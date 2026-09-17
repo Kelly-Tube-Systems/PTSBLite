@@ -1,4 +1,4 @@
-# ADR-0037: The control box is a parts-list line with no model
+# ADR-0038: The control box is a parts-list line with no model
 
 - **Status:** Accepted
 - **Date:** 2026-09-17
@@ -39,11 +39,12 @@ unit", which is what makes a line for a part absent from the pictures readable.
 
 **The client's number wins over the folder's.** Same reasoning as
 [ADR-0036](0036-the-client-corrects-the-tube-part-number.md): the client is the authority on their
-own catalog, and a direct answer about numbers is better evidence than a delivery of models. The
-caution that still holds the bend back does not apply here. A wrong bend number ships geometry that
-does not fit — `ALP08404` is a 4 ft radius part against the 3 ft radius the app draws — whereas the
-two power box numbers describe the same box, so the worst case is a re-order rather than a system
-that cannot be built. The client was shown the discrepancy and chose.
+own catalog, and a direct answer about numbers is better evidence than a delivery of models. He was
+shown the discrepancy and chose, in the same breath as the bend
+([ADR-0037](0037-the-bend-takes-the-clients-number-on-his-say-so.md)). This one carries less risk
+than that one did: the bend's two candidates describe *different geometry* — `ALP08404` is a 4 ft
+radius part against the 3 ft radius the app draws — where the two power box numbers describe the
+same box, so the worst case here is a re-order rather than parts that do not fit the layout.
 
 **A catalog entry may have no colour.** `PartCatalogEntry.color` is now optional, because the
 control box is the first entry nothing renders. `PartThumbnail` draws nothing without one; it
@@ -60,9 +61,9 @@ control box in the pictures, which is why the row is noted rather than bare.
 the box was kept out for as long as nobody had asked for it, and it arrives now because somebody
 did. Neither ADR's other decisions are touched.
 
-**The published catalog is real except for the bend, still.** `AEA751032` is a client-supplied
-number, so it joins the sourced ones rather than the invented one. `BN-90-3R` remains the single
-invented entry, subject to https://trello.com/c/KRcyIeAp.
+**The published catalog stays entirely real.** `AEA751032` is a client-supplied number, so it joins
+the rest rather than reopening the invented-number hazard ADR-0013 records, which ADR-0037 closed
+on the same day.
 
 ## When to revisit
 

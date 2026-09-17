@@ -17,7 +17,7 @@ export type PartCatalogEntry = {
   partNo: string;
   /**
    * Absent for an entry nothing draws. The control box is a line on the parts
-   * list and nothing else (ADR-0037), so it has no colour to be drawn in.
+   * list and nothing else (ADR-0038), so it has no colour to be drawn in.
    */
   color?: string;
   cells?: number;
