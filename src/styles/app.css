@@ -147,6 +147,14 @@ body {
   background: color-mix(in oklab, var(--accent) 26%, transparent);
   color: #fff;
 }
+/* An accent button that cannot be used is grey, not a faded green: the accent
+   rules above sit later in the file than `.topbtn:disabled` and carry the same
+   specificity, so they would otherwise win and leave it looking live. */
+.topbtn.accent:disabled {
+  background: transparent;
+  color: var(--text-mut);
+  border-color: var(--line);
+}
 
 .topbtn.primary {
   background: var(--accent);

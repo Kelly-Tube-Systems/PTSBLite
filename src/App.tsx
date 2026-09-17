@@ -44,7 +44,11 @@ import {
   resolvePlacementCell,
   type PlacementResult
 } from "@/domain/placement-session";
-import { autoBuildOpenPortPair, type UnroutedPair } from "@/domain/pathfinder";
+import {
+  autoBuildAvailability,
+  autoBuildOpenPortPair,
+  type UnroutedPair
+} from "@/domain/pathfinder";
 import { MAX_CENTERLINE_FEET } from "@/domain/validation";
 import { BUILD_AREA } from "@/domain/sparse-grid";
 import {
@@ -586,6 +590,10 @@ export default function App({ platform }: AppProps) {
 
   const warnings = useMemo(() => validate(design), [design]);
 
+  // Asked of every design the visitor arrives at, so the button comes alive as
+  // soon as the second open port is placed rather than when it is next pressed.
+  const autoBuildReady = useMemo(() => autoBuildAvailability(design), [design]);
+
   const viewportScene: Scene = useMemo(
     () => ({
       parts: design.parts,
@@ -669,6 +677,7 @@ export default function App({ platform }: AppProps) {
         canRedo={redoAvailable}
         onAutoBuild={() => void runAutoBuild()}
         autoBuilding={autoBuilding}
+        autoBuildUnavailable={autoBuildReady.ready ? null : autoBuildReady.message}
         onView={(next) => setCameraView(next && { ...next })}
         markersOn={markersOn}
         onToggleMarkers={() => setMarkersOverride(!markersOn)}

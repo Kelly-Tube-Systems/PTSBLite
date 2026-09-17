@@ -21,6 +21,11 @@ import { cellKey, manhattan, vAdd, vEq, vNeg, vScale } from "@/domain/vec3";
 export const PATHFINDER_NO_ROUTE_MESSAGE = "No route exists between the open ports.";
 export const PATHFINDER_SEARCH_LIMIT_MESSAGE =
   "Routing gave up before finding a path. Try moving the endpoints closer or clearing obstacles.";
+export const AUTO_BUILD_NOTHING_PLACED_MESSAGE =
+  "Nothing placed yet: Auto-Build joins the open ports of two parts.";
+export const AUTO_BUILD_NO_PAIR_MESSAGE = "No two open ports left for Auto-Build to join.";
+export const AUTO_BUILD_ALREADY_JOINED_MESSAGE =
+  "Auto-Build has nothing left to join: every part placed is already on one run.";
 
 /**
  * Search-cost penalties. They decide which route wins, but never touch the
@@ -139,6 +144,9 @@ export type AutoBuildPathResult =
       runBand: RunBandKind;
     }
   | { ok: false; reason: "no-route" | "search-limit"; message: string };
+
+/** Whether Auto-Build can be run at all, and why not when it cannot. */
+export type AutoBuildAvailability = { ready: true } | { ready: false; message: string };
 
 const SEARCH_MARGIN = 12;
 const MAX_ROUTE_EXPANSIONS = 120_000;
@@ -873,6 +881,36 @@ function buildUnderBand(
     unroutedPairs,
     runBand: band.kind
   };
+}
+
+/**
+ * Whether {@link autoBuildOpenPortPair} has a pair to work on at all, and if
+ * not, what to tell the visitor. This is the cheap half of the question the
+ * button asks: it counts the open ports the search would start from, without
+ * searching. Whether a route between them exists is the expensive half — up to
+ * a second and a half of search — so that answer still arrives after a press,
+ * as the message on a run that came back with nothing.
+ */
+export function autoBuildAvailability(design: DesignState): AutoBuildAvailability {
+  const topology = computeTopology(design);
+  const pool = reachablePorts(design, topology.openPorts());
+  // What is missing turns on what is on the floor, not on the port count: a
+  // finished run can leave one open port or none, and telling the visitor who
+  // just built it to place a blower and a terminal would be nonsense.
+  if (pool.length < 2) {
+    return {
+      ready: false,
+      message:
+        design.parts.length === 0 ? AUTO_BUILD_NOTHING_PLACED_MESSAGE : AUTO_BUILD_NO_PAIR_MESSAGE
+    };
+  }
+  // Two open ports on the same run are two ends of one piece of pipework, which
+  // is what `pickClosestPair` skips. Asking it is what keeps the button's test
+  // and the search's first move the same test.
+  if (!pickClosestPair(pool, topology)) {
+    return { ready: false, message: AUTO_BUILD_ALREADY_JOINED_MESSAGE };
+  }
+  return { ready: true };
 }
 
 export function autoBuildOpenPortPair(
