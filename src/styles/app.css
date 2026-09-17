@@ -1,4 +1,12 @@
 /* The design tokens are a table; column alignment is the point. */
+/* The accent is Kelly Tube Systems' green, hue 157 — the hue of the #00A261 in
+   the "Don't carry it… Kelly it." artwork the app already carries. `--accent-2`
+   is that colour exactly; `--accent` is the same hue lifted to 0.79 lightness,
+   because the accent has to carry icon strokes and 13px labels on panels that
+   are nearly black, and the artwork's own lightness greys out against them.
+   The viewport palette in `three-utils.ts` is deliberately not part of this: it
+   is lit for a dark 3D scene and already spends a green on the Kel2020
+   wordmark. */
 /* prettier-ignore */
 :root {
   --ink:        #0B0E13;
@@ -11,9 +19,9 @@
   --text:       #E6E9EF;
   --text-mut:   #8B95A7;
   --text-dim:   #5A6373;
-  --accent:     oklch(0.79 0.13 195);
-  --accent-2:   oklch(0.62 0.12 195);
-  --accent-bg:  oklch(0.79 0.13 195 / 0.12);
+  --accent:     oklch(0.79 0.15 157);
+  --accent-2:   oklch(0.63 0.15 157);
+  --accent-bg:  oklch(0.79 0.15 157 / 0.12);
   --warn:       oklch(0.78 0.14 75);
   --danger:     oklch(0.7  0.15 25);
   --ok:         oklch(0.78 0.16 150);
@@ -143,7 +151,9 @@ body {
 .topbtn.primary {
   background: var(--accent);
   border-color: transparent;
-  color: #06121a;
+  /* Near-black with the accent's own hue in it, so the label on a filled button
+     reads as the dark end of the green rather than as a second colour. */
+  color: #04120b;
   font-weight: 600;
 }
 .topbtn.danger {
