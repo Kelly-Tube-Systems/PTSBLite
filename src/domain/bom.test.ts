@@ -71,6 +71,10 @@ describe("BOM derivation", () => {
     // The client corrected the tube number after the parts folder shipped one
     // that was wrong (ADR-0036), so the BOM asserts it rather than trusting the file.
     expect(byKey.tube6.partNo).toBe("ALP78435");
+    // The bend's number is the client's word against a folder number that differs
+    // by one digit and describes a 4 ft radius part (ADR-0037). Asserting it here
+    // makes a slip back to ALP08404 fail a test rather than reach a released PDF.
+    expect(byKey.bend90.partNo).toBe("ALP08401");
   });
 
   it("bomRows counts a pedestal blower on the blower row, noting the pedestal", () => {

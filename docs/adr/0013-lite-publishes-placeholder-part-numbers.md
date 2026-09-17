@@ -1,10 +1,13 @@
 # ADR-0013: PTSBLite publishes placeholder part numbers
 
-- **Status:** Superseded in part by [ADR-0029](0029-real-part-numbers-arrive-in-part.md)
+- **Status:** Superseded outright by [ADR-0037](0037-the-bend-takes-the-clients-number-over-the-folders.md)
 - **Date:** 2026-08-03
 
-Real numbers arrived for the blower, the tube and the split sleeve on 2026-09-10. This ADR still
-governs the three entries that remain invented — the terminal, the pedestal blower and the bend.
+Real numbers arrived in three instalments — the blower, tube and split sleeve on 2026-09-10
+([ADR-0029](0029-real-part-numbers-arrive-in-part.md)), the terminal and pedestal blower on
+2026-09-14 ([ADR-0030](0030-the-terminal-and-pedestal-blower-take-their-real-numbers.md)), and the
+bend on 2026-09-17 (ADR-0037). Nothing in `parts.json` is invented now, so this ADR governs no
+entry and is kept for the record.
 
 ## Context
 
@@ -46,10 +49,13 @@ When issue #94 delivers the real catalog. At that point this ADR is superseded r
 `parts.json` is replaced, `CONTEXT.md`'s "Placeholder" row for part numbers becomes obsolete, and
 the risk this records disappears.
 
-That happened in part on 2026-09-10 — see
-[ADR-0029](0029-real-part-numbers-arrive-in-part.md). The catalog arrived piecemeal rather than
-whole, so `parts.json` is now mixed, `CONTEXT.md`'s row names the three entries still invented, and
-the risk above shrank to those three instead of disappearing.
+That happened piecemeal rather than whole, across ADR-0029, ADR-0030 and finally
+[ADR-0037](0037-the-bend-takes-the-clients-number-over-the-folders.md) on 2026-09-17. With the bend
+numbered, `parts.json` carries no invented entry, `CONTEXT.md`'s row names no exception, and the
+risk recorded here is gone as written.
 
-If the real catalog turns out to be further away than expected, the notice on the PDF is the cheap
-middle option and remains available. It is roughly one line of `bom-pdf.ts`.
+What replaced it is narrower and lives in ADR-0037: two of the numbers are the client's word
+against a parts folder that says otherwise, so a BOM can now carry a real number for the wrong
+part. The notice on the PDF stays available as the cheap middle option if that ever needs saying
+out loud — it is roughly one line of `bom-pdf.ts` — but it is not this ADR's decision to make any
+more.

@@ -50,10 +50,12 @@ terminal numbers only. The tube is checked with them, so a catalog edit cannot q
 customer-facing parts list prints.
 
 **The bend is still the only invented number**, so ADR-0030's count and the single-entry wording in
-`CONTEXT.md` and `docs/baked-in-assumptions.md` stand.
+`CONTEXT.md` and `docs/baked-in-assumptions.md` stand. *(Not for long: the client answered the same
+day and the bend took `ALP08401` —
+[ADR-0037](0037-the-bend-takes-the-clients-number-over-the-folders.md). No entry is invented now.)*
 
 ## When to revisit
 
 When the client answers the bend question (https://trello.com/c/KRcyIeAp), at which point
-ADR-0013 is superseded outright, or the control box question
+ADR-0013 is superseded outright — answered on 2026-09-17, see ADR-0037 — or the control box question
 (https://trello.com/c/xQ9Kk9PE), which would add a part the app does not model.

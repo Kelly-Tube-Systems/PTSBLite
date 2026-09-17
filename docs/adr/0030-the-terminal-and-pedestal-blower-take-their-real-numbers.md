@@ -31,7 +31,9 @@ counted, and nothing about it reaches the BOM.
 **The bend stays at 3 ft, with its placeholder number.** The client kept the radius the app was
 built on, so ADR-0001 holds and no geometry moves. `ALP08404` is a 4 ft radius part and does not go
 on the list. No number for a 3 ft radius 90° bend was supplied, so `BN-90-3R` remains, and it is now
-the only invented number `parts.json` carries.
+the only invented number `parts.json` carries. *(The client supplied one on 2026-09-17 —
+`ALP08401` — and the bend now prints it. The radius decision above is unchanged. See
+[ADR-0037](0037-the-bend-takes-the-clients-number-over-the-folders.md).)*
 
 **`AEA51032` stays out.** The power box was the third question; the answer names the terminal and
 the blower as the only parts wanted from the drop. PTSBLite still models no power box.
@@ -56,4 +58,6 @@ active-tool bar and the placement tools still do, and are unchanged.
 ## When to revisit
 
 When KTS supplies a part number for the 3 ft radius 90° bend: a one-line `parts.json` edit, at
-which point ADR-0013 is superseded outright.
+which point ADR-0013 is superseded outright. That happened on 2026-09-17, and it was the one-line
+edit predicted —
+[ADR-0037](0037-the-bend-takes-the-clients-number-over-the-folders.md).

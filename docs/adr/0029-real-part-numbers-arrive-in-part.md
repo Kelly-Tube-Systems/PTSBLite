@@ -1,6 +1,6 @@
 # ADR-0029: Real part numbers arrive in part, and the bend is held back
 
-- **Status:** Accepted; both open questions answered in [ADR-0030](0030-the-terminal-and-pedestal-blower-take-their-real-numbers.md), and the tube number corrected by the client in [ADR-0036](0036-the-client-corrects-the-tube-part-number.md)
+- **Status:** Accepted; both open questions answered in [ADR-0030](0030-the-terminal-and-pedestal-blower-take-their-real-numbers.md), and the tube and bend numbers corrected by the client in [ADR-0036](0036-the-client-corrects-the-tube-part-number.md) and [ADR-0037](0037-the-bend-takes-the-clients-number-over-the-folders.md). The bend this ADR held back is no longer held back.
 - **Date:** 2026-09-13
 
 Kelly Tube Systems delivered a parts folder on 2026-09-10: seven STEP files and six logo images,
@@ -47,7 +47,10 @@ pretend to be a catalogue entry.
   4x4 bounding box from it, and the pathfinder and every placed corner follow. A vendor STEP file is
   a citable source, so the disagreement is real and the question is with the client. Until it is
   settled the bend keeps `BN-90-3R`, because printing `ALP08404` on a parts list generated from 3 ft
-  geometry would have someone order bends that do not fit the layout they are holding.
+  geometry would have someone order bends that do not fit the layout they are holding. *(The client
+  supplied `ALP08401` on 2026-09-17 — a different number again, one digit off the folder's — and
+  said to ship it; see [ADR-0037](0037-the-bend-takes-the-clients-number-over-the-folders.md). The
+  radius is untouched and the 4 ft question behind it is still open.)*
 - **The terminal.** Two candidate numbers arrived, `A444942` and `A444940`, and the app lists one
   terminal per station. Picking one would be a guess about which assembly KTS expects on an order.
 - **The blower with pedestal.** The app has had a pedestal variant in the Build drawer since

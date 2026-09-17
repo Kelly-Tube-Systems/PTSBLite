@@ -40,7 +40,7 @@
   "bend90": {
     "type": "bend",
     "name": "90\u00b0 Bend (3ft radius)",
-    "partNo": "BN-90-3R",
+    "partNo": "ALP08401",
     "color": "#9AA4B4",
     "cells": 7,
     "ports": 2,

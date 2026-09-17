@@ -36,8 +36,10 @@ been — the client withdrew it
 the rule was flagged, questioned, and sourced rather than quietly edited. The 3 ft bend radius went
 through the same process — the bend KTS shipped is a 4 ft radius, the client was asked, and kept
 3 ft ([ADR-0030](docs/adr/0030-the-terminal-and-pedestal-blower-take-their-real-numbers.md)).
-Part *names* are ours; part *numbers* are real KTS numbers for everything except the bend, which
-still carries an invented one. See
+Part *names* are ours; part *numbers* are real KTS numbers throughout, the bend included since
+2026-09-17 ([ADR-0037](docs/adr/0037-the-bend-takes-the-clients-number-over-the-folders.md)). That
+ADR is worth reading before touching the bend: its number came from the client rather than the
+parts folder, and taking it did not move the radius. See
 [ADR-0001](docs/adr/0001-engineering-constraints-are-authoritative.md).
 
 User-facing copy must interpolate engineering constants rather than restating them.
