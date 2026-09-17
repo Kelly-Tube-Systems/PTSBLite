@@ -1,3 +1,24 @@
+/* The Kelly Systems wordmark, over the heading of whichever start screen the
+   visit opens on. Drawn as a mask so the colour is the accent token rather than
+   a green baked into the artwork — the same treatment the viewport's watermark
+   gives the same mark.
+
+   Sized by width, because the artwork is one long line of type: the box takes
+   the artwork's own 1316 x 158 ratio so the mark fills it exactly, and its
+   height follows. Centred over the header rather than sitting inside it: the
+   header is an icon and a title on one line, and the logo is not a third thing
+   on that line. */
+.welcome__logo {
+  width: 200px;
+  aspect-ratio: 1316 / 158;
+  margin: 22px auto 18px;
+  background: var(--accent);
+  mask-image: url("../assets/kelly-systems-wordmark.svg");
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
 .welcome__message {
   padding: 18px 18px 4px;
   font-size: 13px;
