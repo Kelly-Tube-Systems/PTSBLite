@@ -68,6 +68,9 @@ describe("BOM derivation", () => {
     expect(byKey.tube6.note).toMatch(/1 cut on-site/);
     expect(byKey.blower.partNo).toBe("A444200");
     expect(byKey.terminal.partNo).toBe("A444940");
+    // The client corrected the tube number after the parts folder shipped one
+    // that was wrong (ADR-0036), so the BOM asserts it rather than trusting the file.
+    expect(byKey.tube6.partNo).toBe("ALP78435");
   });
 
   it("bomRows counts a pedestal blower on the blower row, noting the pedestal", () => {

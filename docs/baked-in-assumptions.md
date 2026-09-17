@@ -135,8 +135,10 @@ worth asking about early.
 
 **One part number in `src/data/parts.json` is still invented; the rest are real.** KTS delivered
 part numbers on 2026-09-10 and answered the questions they raised on 2026-09-14: the blower is
-`A444200` whether or not it stands on a pedestal, the terminal `A444940`, the tube `ALP78403` and
-the split sleeve `ALP64401`. The bend still carries `BN-90-3R`, made up for the build, because the
+`A444200` whether or not it stands on a pedestal, the terminal `A444940`, the tube `ALP78435` and
+the split sleeve `ALP64401`. The tube is the client's own correction, on 2026-09-17, to the
+`ALP78403` the parts folder carried
+([ADR-0036](adr/0036-the-client-corrects-the-tube-part-number.md)). The bend still carries `BN-90-3R`, made up for the build, because the
 number KTS supplied describes a 4 ft radius part and the client kept the 3 ft radius the app draws.
 See [ADR-0029](adr/0029-real-part-numbers-arrive-in-part.md) and
 [ADR-0030](adr/0030-the-terminal-and-pedestal-blower-take-their-real-numbers.md).
