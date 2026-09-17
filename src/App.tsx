@@ -24,6 +24,7 @@ import {
   roomWalls,
   floorAtElevation,
   floorBaseElevation,
+  floorBeneath,
   floorSeparatorY,
   plenumBands
 } from "@/domain/floors";
@@ -695,6 +696,7 @@ export default function App({ platform }: AppProps) {
             onHover={onHover}
             landingCells={landingCells}
             activeElevation={activeElevation}
+            pickElevation={floorBeneath(design.metadata, activeElevation)}
             activeFloor={activeFloor}
             focusY={focusY}
             plenumBands={plenum}

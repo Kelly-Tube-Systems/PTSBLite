@@ -105,13 +105,23 @@ export function cellFromWorldPoint(point: Pick<THREE.Vector3, "x" | "y" | "z">):
 
 /**
  * The cell a pointer ray lands on: a landing marker if it crosses one, else
- * the placement plane, whose height is the active elevation.
+ * the square the ray meets on the plane, raised to `planeCellY`.
  *
- * The plane is what makes this a function of the elevation and the camera as
- * much as of the pointer. A pointer that has not moved lands on a different
- * cell once the plane rises under it or the camera turns, so the viewport
- * re-picks on both rather than only on pointer movement — otherwise the ghost
- * shows one cell and the click, which picks afresh, lands on another.
+ * The plane sits on the floor of the active storey, not at the placement
+ * height, and that separation is the point (ADR-0035). The pointer picks the
+ * square it is aiming at on the floor; the elevation only says how high above
+ * that square the part goes. So `[` and `]` cannot move the ghost sideways —
+ * they change `planeCellY` and nothing else — and the click, which picks the
+ * same way, lands on the square the ghost stood on.
+ *
+ * Picking against a plane raised to the elevation instead is what made the two
+ * disagree: seen from the camera, a raised plane meets a still pointer nearer
+ * than the floor does, so the ghost slid towards the camera as the height went
+ * up. Re-picking on every plane move made the ghost agree with the click again
+ * by moving both, which is the half the client rejected.
+ *
+ * The camera is still a dependency: turning or zooming it puts a different
+ * floor square under a still pointer, so the viewport re-picks on camera moves.
  *
  * The overlay the markers live in also holds the floor shadows, which carry no
  * landing cell. Taking the nearest object and giving up when it turns out to be
@@ -122,7 +132,8 @@ export function cellFromWorldPoint(point: Pick<THREE.Vector3, "x" | "y" | "z">):
 export function pickPointerCell(
   ray: THREE.Raycaster,
   landings: THREE.Object3D[],
-  plane: THREE.Mesh
+  plane: THREE.Mesh,
+  planeCellY: number
 ): Vec3 | null {
   for (const hit of ray.intersectObjects(landings, true)) {
     const landing = landingCellForObject(hit.object);
@@ -130,11 +141,7 @@ export function pickPointerCell(
   }
   const planeHit = ray.intersectObject(plane)[0];
   if (planeHit) {
-    return [
-      Math.floor(planeHit.point.x),
-      Math.floor(plane.position.y),
-      Math.floor(planeHit.point.z)
-    ];
+    return [Math.floor(planeHit.point.x), Math.floor(planeCellY), Math.floor(planeHit.point.z)];
   }
   return null;
 }

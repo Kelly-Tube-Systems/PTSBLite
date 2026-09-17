@@ -64,13 +64,20 @@ describe("pickPointerCell", () => {
     );
   }
 
-  it("lands the same still pointer on a nearer cell once the plane rises", () => {
+  it("holds a still pointer on its square as the placement height rises", () => {
     // Aim at (6, 0, 6) on the floor, then press ] three times without moving.
-    // The 3 ft plane meets the same ray half-way there, so the ghost has to be
-    // re-picked to (3, 3, 3): lifting (6, 0, 6) to (6, 3, 6) would draw it on a
-    // cell the click, which picks this same way, would not land on.
-    expect(pickPointerCell(pointerRay(), [], planeAt(0))).toEqual([6, 0, 6]);
-    expect(pickPointerCell(pointerRay(), [], planeAt(3))).toEqual([3, 3, 3]);
+    // The square is picked on the floor and the elevation lifts it, so the
+    // ghost rises straight up the way the client asked: same x and z, 3 ft up.
+    expect(pickPointerCell(pointerRay(), [], planeAt(0), 0)).toEqual([6, 0, 6]);
+    expect(pickPointerCell(pointerRay(), [], planeAt(0), 3)).toEqual([6, 3, 6]);
+  });
+
+  it("takes its square from the plane, not from the height it reports", () => {
+    // The regression guarded here is picking against a plane raised to the
+    // elevation: that plane meets this same ray at (3, 3, 3), a cell nearer the
+    // camera, which is how the ghost used to slide sideways under a still
+    // pointer. Only a floor change moves the plane now.
+    expect(pickPointerCell(pointerRay(), [], planeAt(3), 3)).toEqual([3, 3, 3]);
   });
 
   it("prefers a landing marker the ray crosses over the plane", () => {
@@ -78,12 +85,12 @@ describe("pickPointerCell", () => {
     marker.position.set(3, 3.5, 3); // squarely on the ray
     marker.userData.landingCell = [2, 3, 2];
     marker.updateMatrixWorld();
-    expect(pickPointerCell(pointerRay(), [marker], planeAt(0))).toEqual([2, 3, 2]);
+    expect(pickPointerCell(pointerRay(), [marker], planeAt(0), 0)).toEqual([2, 3, 2]);
   });
 
   it("reports nothing when the ray misses the plane", () => {
     const skyward = new THREE.Raycaster(new THREE.Vector3(0, 6, 0), new THREE.Vector3(0, 1, 0));
-    expect(pickPointerCell(skyward, [], planeAt(0))).toBeNull();
+    expect(pickPointerCell(skyward, [], planeAt(0), 0)).toBeNull();
   });
 
   it("looks past a nearer overlay that names no cell", () => {
@@ -100,7 +107,7 @@ describe("pickPointerCell", () => {
     marker.userData.landingCell = [2, 3, 2];
     marker.updateMatrixWorld();
 
-    expect(pickPointerCell(pointerRay(), [shadow, marker], planeAt(0))).toEqual([2, 3, 2]);
+    expect(pickPointerCell(pointerRay(), [shadow, marker], planeAt(0), 0)).toEqual([2, 3, 2]);
   });
 });
 
