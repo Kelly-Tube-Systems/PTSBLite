@@ -86,6 +86,11 @@ export function bomRows(input: readonly Part[] | DesignState): BomRow[] {
 
   return [
     row("blower", blowers, pedestalBlowers ? `${pedestalBlowers} on a pedestal` : undefined),
+    // The one row for a part the app never draws: the client asked for a
+    // control box against every blower unit, 1:1, and said it is not shown
+    // visually (ADR-0037). It sits next to the blower row because that is what
+    // its quantity is — a pedestal blower is a blower unit, so it counts too.
+    row("controlBox", blowers, "one per blower unit"),
     row("terminal", terminals),
     row(
       "tube6",

@@ -106,9 +106,38 @@ describe("BOM derivation", () => {
     expect(rows.map((r) => r.key).sort()).toEqual([
       "bend90",
       "blower",
+      "controlBox",
       "splitSleeve",
       "terminal",
       "tube6"
     ]);
+  });
+
+  it("bomRows gives every blower unit a control box", () => {
+    // The client asked for the line and for its number on 2026-09-17
+    // (ADR-0037). Nothing draws a control box, so this row is the only place
+    // one appears at all.
+    const byKey = Object.fromEntries(bomRows(designWith(sampleParts)).map((r) => [r.key, r]));
+    expect(byKey.blower.qty).toBe(1);
+    expect(byKey.controlBox.qty).toBe(byKey.blower.qty);
+    expect(byKey.controlBox.name).toBe("Control Box");
+    expect(byKey.controlBox.partNo).toBe("AEA751032");
+    expect(byKey.controlBox.note).toBe("one per blower unit");
+  });
+
+  it("bomRows counts a control box for a pedestal blower too", () => {
+    // A pedestal blower is the same blower unit (ADR-0030), so 1:1 means two.
+    const parts: Part[] = [
+      { id: "b1", type: "blower", cell: [0, 0, 0], dir: [1, 0, 0] },
+      { id: "b2", type: "blower", cell: [5, 2, 0], dir: [1, 0, 0], pedestalFeet: 2 }
+    ];
+    const byKey = Object.fromEntries(bomRows(designWith(parts)).map((r) => [r.key, r]));
+    expect(byKey.controlBox.qty).toBe(2);
+  });
+
+  it("bomRows carries no price on the control box row either", () => {
+    const byKey = Object.fromEntries(bomRows(designWith(sampleParts)).map((r) => [r.key, r]));
+    expect(byKey.controlBox).not.toHaveProperty("unitPrice");
+    expect(JSON.stringify(byKey.controlBox)).not.toMatch(/\$|price/i);
   });
 });

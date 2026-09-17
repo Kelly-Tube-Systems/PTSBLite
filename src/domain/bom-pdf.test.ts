@@ -74,6 +74,20 @@ describe("generateBomPdf", () => {
     }
   });
 
+  it("prints the control box the blower units imply, though nothing draws one", async () => {
+    // The row exists only on the parts list (ADR-0037), so the PDF is the only
+    // artifact that can be checked for it end to end.
+    const text = extractText(await generateBomPdf(designWith(sampleParts)));
+    expect(text).toContain("Control Box");
+    expect(text).toContain("AEA751032");
+  });
+
+  it("leaves the control box off a design with no blower in it", async () => {
+    const noBlower = sampleParts.filter((p) => p.type !== "blower");
+    const text = extractText(await generateBomPdf(designWith(noBlower)));
+    expect(text).not.toContain("AEA751032");
+  });
+
   it("says so rather than printing an empty table for a design with no parts", async () => {
     const text = extractText(await generateBomPdf(emptyDesign()));
     expect(text).toContain("no parts yet");

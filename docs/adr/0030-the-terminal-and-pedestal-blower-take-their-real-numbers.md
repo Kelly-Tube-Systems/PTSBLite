@@ -1,6 +1,6 @@
 # ADR-0030: The terminal and pedestal blower take their real numbers, and the bend stays at 3 ft
 
-- **Status:** Accepted
+- **Status:** Accepted; the power box decision superseded by [ADR-0037](0037-the-control-box-is-a-parts-list-line-with-no-model.md), where the client asks for it by name
 - **Date:** 2026-09-14
 
 [ADR-0029](0029-real-part-numbers-arrive-in-part.md) put three of the seven KTS part numbers from

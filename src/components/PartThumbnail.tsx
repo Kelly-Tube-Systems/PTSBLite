@@ -348,11 +348,13 @@ export function PartThumbnail({
   pedestal = false
 }: {
   type: string;
-  color: string;
+  /** Absent for a catalog entry the app never draws, such as the control box. */
+  color?: string;
   /** Draw a blower standing on its mast. The catalog calls a pedestal blower a
    * blower, which is right about the part and wrong about the picture. */
   pedestal?: boolean;
 }) {
+  if (!color) return null;
   return (
     <svg
       width="100%"

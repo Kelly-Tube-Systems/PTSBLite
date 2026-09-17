@@ -138,7 +138,9 @@ part numbers on 2026-09-10 and answered the questions they raised on 2026-09-14:
 `A444200` whether or not it stands on a pedestal, the terminal `A444940`, the tube `ALP78435` and
 the split sleeve `ALP64401`. The tube is the client's own correction, on 2026-09-17, to the
 `ALP78403` the parts folder carried
-([ADR-0036](adr/0036-the-client-corrects-the-tube-part-number.md)). The bend still carries `BN-90-3R`, made up for the build, because the
+([ADR-0036](adr/0036-the-client-corrects-the-tube-part-number.md)), and the control box `AEA751032`
+is theirs too, over the folder's `AEA51032`
+([ADR-0037](adr/0037-the-control-box-is-a-parts-list-line-with-no-model.md)). The bend still carries `BN-90-3R`, made up for the build, because the
 number KTS supplied describes a 4 ft radius part and the client kept the 3 ft radius the app draws.
 See [ADR-0029](adr/0029-real-part-numbers-arrive-in-part.md) and
 [ADR-0030](adr/0030-the-terminal-and-pedestal-blower-take-their-real-numbers.md).
@@ -150,6 +152,14 @@ public can download and keep, and nothing in the document marks it as identifyin
 a deliberate decision, recorded in
 [ADR-0013](adr/0013-lite-publishes-placeholder-part-numbers.md), and it is the one place invented
 data reaches a customer-facing artifact on purpose. Issue #94.
+
+**The control box is a parts-list row for a part the app does not have.** Every other BOM row names
+something the viewport draws. The control box does not: the client asked for a line against every
+blower unit, 1:1, and said the part is "not shown visually"
+([ADR-0037](adr/0037-the-control-box-is-a-parts-list-line-with-no-model.md)). So `parts.json` holds
+a catalog entry with a name and a number and no colour, geometry, footprint or Build-drawer card,
+and `PartCatalogEntry.color` is optional to say so. A second unmodelled part would fit the same
+shape; a request to *draw* the box would not, and is new geometry.
 
 **A pedestal blower is one line on the parts list with the plain blower.** They are one KTS part,
 so a design with one of each orders two of `A444200`; the row notes how many stand on a pedestal.
