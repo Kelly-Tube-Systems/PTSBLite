@@ -7,7 +7,7 @@ import { terminalAxisIsVertical, terminalBodyDir } from "@/domain/terminal";
 import { vEq } from "@/domain/vec3";
 import { buildBakedMesh } from "@/renderer/baked-geometry";
 import { buildKel2020Decal, type DecalPlacement } from "@/renderer/kel2020-decal";
-import { TUBE_R, v3, VP } from "@/renderer/three-utils";
+import { PORT_R, TUBE_R, v3, VP } from "@/renderer/three-utils";
 import type { Vec3 } from "@/types";
 
 /**
@@ -72,6 +72,11 @@ const BLOWER_WORDMARK: DecalPlacement = {
  * blower faces, which is a thing the viewport has to show and the hardware has
  * no reason to. The wordmark across the drum is the other way round — it is the
  * unit's own marking, which the CAD does not carry (ADR-0034).
+ *
+ * It is drawn on the rim of the neck — `PORT_R` across, at the port face — so
+ * it reads as the mouth of the port. It used to stand a third wider and float
+ * clear of the face, on a radius taken off `TUBE_R`, and the client asked for
+ * it to fit the top of the blower exactly.
  */
 export function buildBlowerMesh({ ghost = false } = {}): THREE.Group {
   const g = new THREE.Group();
@@ -91,10 +96,10 @@ export function buildBlowerMesh({ ghost = false } = {}): THREE.Group {
   const decal = buildKel2020Decal(BLOWER_WORDMARK, { ghost });
   if (decal) g.add(decal);
   const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(TUBE_R * 1.35, 0.018, 8, 24),
+    new THREE.TorusGeometry(PORT_R, 0.018, 8, 24),
     new THREE.MeshBasicMaterial({ color: VP.accent, transparent: true, opacity: ghost ? 0.5 : 0.9 })
   );
-  ring.position.set(0.56, 0, 0);
+  ring.position.set(0.5, 0, 0);
   ring.rotation.y = Math.PI / 2;
   g.add(ring);
   if (ghost) g.add(buildTransportArrow());
