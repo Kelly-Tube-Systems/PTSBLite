@@ -4,18 +4,21 @@ import { VP } from "@/renderer/three-utils";
 import type { Vec3 } from "@/types";
 
 /**
- * The KEL2020 wordmark, wrapped onto the blower's drum and the terminal's
- * housing (ADR-0034).
+ * The KEL2020 wordmark, wrapped onto the blower's drum (ADR-0034).
  *
- * The CAD the two units are baked from carries their shape, not their
- * markings, so the mark is a separate piece of geometry rather than another
- * material role: a strip of cylinder standing a few thousandths of a foot off
- * the surface it names, textured with the artwork and cut out by alpha.
+ * The blower's CAD carries its shape and not its markings, so the mark is a
+ * separate piece of geometry rather than another material role: a strip of
+ * cylinder standing a few thousandths of a foot off the surface it names,
+ * textured with the artwork and cut out by alpha.
  *
- * It is a cylinder strip and not a flat plane because both surfaces are round
- * and the mark is wide enough to see the curve — about 96° of the blower's
- * drum. A tangent plane would lift its ends a tenth of an inch clear of the
- * unit, which reads as a label peeling off.
+ * It is a cylinder strip and not a flat plane because the drum is round and the
+ * mark is wide enough to see the curve — about 96° of it. A tangent plane would
+ * lift its ends a tenth of an inch clear of the unit, which reads as a label
+ * peeling off.
+ *
+ * The terminal wore one of these too until the moulded mark its own CAD carries
+ * was found under it, which is a decal drawn on top of a decal; it now paints
+ * the moulded one instead (ADR-0040).
  */
 
 /** The box the artwork's ink actually fills, inside its 1575 x 366 viewBox. */
