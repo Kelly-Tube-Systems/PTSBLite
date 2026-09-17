@@ -103,7 +103,7 @@ describe("declared cell counts", () => {
     bend90: {
       type: "bend",
       name: "90° Bend (3ft radius)",
-      partNo: "BN-90-3R",
+      partNo: "ALP08401",
       color: "#9AA4B4",
       cells,
       ports: 2,
