@@ -33,6 +33,16 @@ export type BakedGeometry = {
   index: string;
 };
 
+/** The triangles of the role a split takes from, for `BakedSplit.pick`. */
+export type SplitFaces = {
+  /** Every vertex of the part, in its own frame: x, y, z per vertex. */
+  positions: Float32Array;
+  /** The part's index buffer. A face is `index[face]`, `+ 1` and `+ 2`. */
+  index: Uint16Array;
+  /** Where each of the role's faces starts in `index`. */
+  faces: readonly number[];
+};
+
 /**
  * Faces the bake could not tell apart from the rest of their role, lifted out
  * of it and drawn in another.
@@ -42,8 +52,8 @@ export type BakedGeometry = {
  * housing is the same plastic as the housing and arrives in the same group.
  * Rather than a second bake with hand-edited roles — the data file is
  * generated, and re-running the bake needs STEP files that are not in the
- * repository — the split names the faces by where they sit on the part, which
- * is a property of the shape rather than of this particular bake.
+ * repository — the split names the faces by the shape they make, which is a
+ * property of the part rather than of this particular bake.
  */
 export type BakedSplit = {
   /** The role the faces are taken out of. */
@@ -51,10 +61,14 @@ export type BakedSplit = {
   /** The role they are drawn in instead. */
   to: BakedRole;
   /**
-   * Whether this face belongs to `to`, from its three vertices in the part's
-   * own frame, as x, y, z triples.
+   * Which of those faces belong to `to`, as the offsets handed in.
+   *
+   * The whole role at once rather than one triangle at a time, because what
+   * separates the terminal's mark from its housing is that the mark's triangles
+   * join up into pieces of their own, and no single triangle can see that
+   * (ADR-0041). Called once per part per split, behind the cache below.
    */
-  pick: (triangle: Float32Array) => boolean;
+  pick: (role: SplitFaces) => ReadonlySet<number>;
 };
 
 function bytesOf(base64: string): Uint8Array {
@@ -125,7 +139,6 @@ export function drawnGeometry(baked: BakedGeometry, split?: BakedSplit): Drawn {
   const { position } = decode(baked);
   const out = new Uint16Array(index.length);
   const groups: BakedGroup[] = [];
-  const triangle = new Float32Array(9);
   let at = 0;
   for (const group of baked.groups) {
     if (group.role !== split.from) {
@@ -134,26 +147,20 @@ export function drawnGeometry(baked: BakedGeometry, split?: BakedSplit): Drawn {
       at += group.count;
       continue;
     }
-    const picked: number[] = [];
+    const faces: number[] = [];
+    for (let face = group.start; face < group.start + group.count; face += 3) faces.push(face);
+    const picked = split.pick({ positions: position, index, faces });
     const kept = at;
-    for (let face = group.start; face < group.start + group.count; face += 3) {
-      for (let corner = 0; corner < 3; corner++) {
-        const vertex = index[face + corner] * 3;
-        triangle[corner * 3] = position[vertex];
-        triangle[corner * 3 + 1] = position[vertex + 1];
-        triangle[corner * 3 + 2] = position[vertex + 2];
-      }
-      if (split.pick(triangle)) {
-        picked.push(face);
-        continue;
-      }
+    for (const face of faces) {
+      if (picked.has(face)) continue;
       out[at++] = index[face];
       out[at++] = index[face + 1];
       out[at++] = index[face + 2];
     }
     groups.push({ role: group.role, start: kept, count: at - kept });
     const marked = at;
-    for (const face of picked) {
+    for (const face of faces) {
+      if (!picked.has(face)) continue;
       out[at++] = index[face];
       out[at++] = index[face + 1];
       out[at++] = index[face + 2];

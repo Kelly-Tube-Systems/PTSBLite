@@ -155,48 +155,86 @@ export function buildPedestalMesh(feet: number, { ghost = false } = {}): THREE.G
  * learned to correct that one colour (ADR-0039) — so the split has one role to
  * take from.
  *
- * Every number is measured off the baked geometry. The mark is moulded onto a
- * raised panel on the front of the housing, and that panel is the shape the
- * split leans on: its faces run from y = 0.75 to y = 0.91 unbroken, while the
- * lettering standing on it is tessellated into faces of its own that never
- * reach either edge. The mark's own relief lies between y = 0.778 and y = 0.859,
- * so a band of 0.75–0.88 holds every face of the lettering — including the ones
- * that climb the side of a stroke — and cuts every face of the panel under it.
+ * A character is a piece of its own: the CAD moulds each one as a separate
+ * solid, so its triangles join up to each other and to nothing else. The mark
+ * is the connected pieces of the housing that lie wholly inside the strokes'
+ * own height band — y = 0.7768 to 0.8587, measured — and on the front of the
+ * unit. Nothing else the housing is made of both starts and ends inside 0.08 ft
+ * of height: the raised panel the lettering stands on runs y = 0.75 to 0.91
+ * unbroken, and the shell runs the length of the unit.
  *
- * So a face is the mark's if it lies wholly within that band, on the front of
- * the housing, across the width the lettering occupies. It used to be picked by
- * standing proud of the housing instead, measured against a cylinder of radius
- * 0.2119 ft about an axis offset 0.025 ft from the unit's own. That worked for
- * six characters out of seven: the panel is flatter than any cylinder through
- * it, so towards the ends of the mark it falls away from that reference faster
- * than the lettering stands off the panel, and the last 0 — which sits furthest
- * from the front, its outer edge 0.078 ft round — measured as below the housing
- * rather than above it and stayed in the plastic's own grey (Trello c9VZJ9vY).
+ * Three pieces of hinge leaf do share the band. They lie flat against the side
+ * of the unit and reach no further forward than z = 0.018, where the mark's
+ * furthest-round character starts at z = 0.078, so a front test half way
+ * between the two separates them with room to spare.
  *
- * The width is what keeps the hinge rail and the latch down the sides of the
- * unit out of the mark: they bake as `body` with the housing and cross the same
- * band. The lettering runs from x = -0.167 to x = 0.168 — centred on the unit,
- * not on the housing's own axis — so the span is opened by a hundredth of a
- * foot either side of that and no further.
+ * Pieces rather than a window around the lettering, because a window has now
+ * cut the mark at both ends. Relief against a cylinder fitted to the housing
+ * dropped the last 0 (ADR-0041), and the x span that replaced it took 0.04 ft
+ * off the solid block the artwork opens the K with — read as a narrow stem
+ * rather than as a missing character, so it outlived the fix for the 0
+ * (ADR-0042). A piece is all of a character or none of it, so neither end can
+ * be shaved.
+ *
+ * The emblem moulded into the **back** of the housing is a piece in the same
+ * band, and the front test leaves it unpainted: it is the far side of a
+ * see-through unit rather than a second mark on the front (ADR-0040).
  */
-const MARK_BAND = { from: 0.75, to: 0.88 } as const;
-const MARK_SPAN = { from: -0.177, to: 0.178 } as const;
+const MARK_BAND = { from: 0.77, to: 0.862 } as const;
 const MARK_FRONT_Z = 0.05;
 
 export const TERMINAL_MOULDED_MARK: BakedSplit = {
   from: "body",
   to: "mark",
-  pick: (triangle) => {
-    for (let corner = 0; corner < 3; corner++) {
-      const x = triangle[corner * 3];
-      const y = triangle[corner * 3 + 1];
-      const z = triangle[corner * 3 + 2];
-      // The mark is on the front of the housing, which is local +Z.
-      if (z < MARK_FRONT_Z) return false;
-      if (y < MARK_BAND.from || y > MARK_BAND.to) return false;
-      if (x < MARK_SPAN.from || x > MARK_SPAN.to) return false;
+  pick: ({ positions, index, faces }) => {
+    // Union-find over the vertices the housing's faces share, which is what
+    // "joined up" means once the bake has welded the shell into one buffer.
+    const root = new Map<number, number>();
+    const find = (vertex: number): number => {
+      let at = vertex;
+      while (root.get(at) !== at) at = root.get(at)!;
+      for (let step = vertex; root.get(step) !== at;) {
+        const next = root.get(step)!;
+        root.set(step, at);
+        step = next;
+      }
+      return at;
+    };
+    const join = (a: number, b: number): void => {
+      const left = find(a);
+      const right = find(b);
+      if (left !== right) root.set(left, right);
+    };
+    for (const face of faces)
+      for (let corner = 0; corner < 3; corner++) {
+        const vertex = index[face + corner];
+        if (!root.has(vertex)) root.set(vertex, vertex);
+      }
+    for (const face of faces) {
+      join(index[face], index[face + 1]);
+      join(index[face + 1], index[face + 2]);
     }
-    return true;
+
+    // A piece is lettering until one of its corners leaves the band or the
+    // front, so a stray triangle disqualifies a whole character rather than
+    // half-painting one.
+    const lettering = new Map<number, boolean>();
+    for (const face of faces) {
+      const piece = find(index[face]);
+      if (lettering.get(piece) === false) continue;
+      let inside = true;
+      for (let corner = 0; corner < 3; corner++) {
+        const vertex = index[face + corner] * 3;
+        const y = positions[vertex + 1];
+        const z = positions[vertex + 2];
+        if (z < MARK_FRONT_Z || y < MARK_BAND.from || y > MARK_BAND.to) inside = false;
+      }
+      lettering.set(piece, inside);
+    }
+
+    const picked = new Set<number>();
+    for (const face of faces) if (lettering.get(find(index[face]))) picked.add(face);
+    return picked;
   }
 };
 
@@ -286,9 +324,20 @@ export function buildTerminalMesh({
         // Unlit, like the wordmark on the blower's drum, so the mark holds its
         // colour wherever the unit stands; and opaque, so it reads as a sticker
         // on the housing rather than another see-through layer of it.
+        //
+        // Drawn from both sides because the characters are open shells: the CAD
+        // leaves the outward facet off parts of the 2, the 0 and the 2, so the
+        // only triangle covering those patches is one turned into the unit, and
+        // culling it bit lumps out of the strokes (ADR-0042). Nothing is lost by
+        // keeping them — the material is unlit, so a face reads the same green
+        // whichever side of it meets the camera — and seen from behind, through a
+        // housing that is see-through at the client's request, the mark now shows
+        // faintly and mirrored, as ADR-0040 already accepted for the emblem on
+        // the back.
         if (role === "mark") {
           return new THREE.MeshBasicMaterial({
             color: VP.signal,
+            side: THREE.DoubleSide,
             transparent: ghost,
             opacity: ghost ? 0.45 : 1
           });
