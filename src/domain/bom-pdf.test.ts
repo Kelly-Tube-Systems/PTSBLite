@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PDFDict, PDFDocument, PDFName } from "pdf-lib";
 import { extractStreams, extractText } from "@/test/pdf-text";
+import { KELLY_WORDMARK_PATHS } from "@/data/kelly-systems-wordmark";
 import { generateBomPdf } from "@/domain/bom-pdf";
 import { designFromScene, emptyDesign } from "@/domain/design-state";
 import { bomRows } from "@/domain/parts";
@@ -36,6 +37,20 @@ function streamShowing(bytes: Uint8Array, text: string): string {
   const stream = extractStreams(bytes).find((s) => s.includes(hex) || s.includes(text));
   if (stream === undefined) throw new Error(`no page draws "${text}"`);
   return stream;
+}
+
+/**
+ * How many Kelly Systems marks a page's operators draw.
+ *
+ * The mark is filled path by path in the accent green, so the page's fills of
+ * that colour divide by the artwork's path count — which is also the check that
+ * nothing drew a partial mark.
+ */
+function marksOn(stream: string): number {
+  const fill = `${ACCENT.red} ${ACCENT.green} ${ACCENT.blue} rg`;
+  const fills = stream.split(fill).length - 1;
+  expect(fills % KELLY_WORDMARK_PATHS.length).toBe(0);
+  return fills / KELLY_WORDMARK_PATHS.length;
 }
 
 const sampleParts: Part[] = [
@@ -173,22 +188,33 @@ describe("the views appended to a BOM", () => {
     expect(withViews.getPageCount()).toBe(3);
   });
 
-  it("stamps a Kelly Systems watermark across every page of pictures", async () => {
+  it("tiles the Kelly Systems logo across every page of pictures", async () => {
     // Three views make two pages, and the client asked for the mark on each of
-    // them rather than once in the document.
+    // them rather than once in the document — the artwork repeated small, the
+    // way the viewport tiles it behind the build area, rather than one stamp.
+    const bytes = await generateBomPdf(designWith(sampleParts), {
+      views: [shot("North-west"), shot("North-east"), shot("Top-down")]
+    });
+    for (const label of ["North-west", "Top-down"]) {
+      const marks = marksOn(streamShowing(bytes, label));
+      expect(marks).toBeGreaterThan(1);
+    }
+  });
+
+  it("draws the watermark as the logo artwork, not the words", async () => {
+    // What it replaced was "KELLY SYSTEMS" typeset across the diagonal. The
+    // client asked for the real mark, so no page typesets the name any more.
     const text = extractText(
-      await generateBomPdf(designWith(sampleParts), {
-        views: [shot("North-west"), shot("North-east"), shot("Top-down")]
-      })
+      await generateBomPdf(designWith(sampleParts), { views: [shot("North-west")] })
     );
-    expect([...text.matchAll(/KELLY SYSTEMS/g)]).toHaveLength(2);
+    expect(text).not.toContain("KELLY SYSTEMS");
   });
 
   it("leaves the parts list page unstamped", async () => {
-    // The first page carries the branding its own way; a document with no
-    // pictures in it gets no watermark at all.
-    const text = extractText(await generateBomPdf(designWith(sampleParts)));
-    expect(text).not.toContain("KELLY SYSTEMS");
+    // The first page carries the branding its own way — one mark, the
+    // masthead's — and a document with no pictures in it gets no watermark.
+    const bytes = await generateBomPdf(designWith(sampleParts));
+    expect(marksOn(streamShowing(bytes, "Bill of Materials"))).toBe(1);
   });
 
   it("captions each view with the angle it was taken from", async () => {
