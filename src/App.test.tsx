@@ -684,6 +684,20 @@ describe("Auto-Build", () => {
   });
 });
 
+describe("the erase drawer", () => {
+  it("tells you to click a part, because right click pans the camera", async () => {
+    await renderApp();
+
+    // The drawer shipped saying "Right click a part to remove it", which does
+    // nothing: right click is the camera pan, and erasing is arming the Eraser
+    // and left clicking.
+    fireEvent.click(screen.getByRole("button", { name: "Erase" }));
+    const eraser = screen.getByRole("button", { name: /^Eraser/ });
+    expect(eraser.textContent).toContain("Click a part to remove it");
+    expect(eraser.textContent).not.toMatch(/right click/i);
+  });
+});
+
 describe("left rail accessibility", () => {
   it("gives every icon-only rail control an accessible name", async () => {
     await renderApp();
