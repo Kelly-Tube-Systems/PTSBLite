@@ -19,19 +19,23 @@ type Control = {
 };
 
 /**
- * Every control the viewport has, in the order you meet them: the two clicks
- * that build, the three camera moves, then the keys that adjust what is about
- * to be placed.
+ * Every control the viewport has, in the order you meet them: the click that
+ * builds, the three camera moves, then the keys that adjust what is about to be
+ * placed.
  *
  * The client asked for exactly this list, with two entries — drag to change a
  * part's orientation, and drag to move a placed part — that the app has no
  * bindings for and that would both need the left drag the camera orbit already
  * owns. Those are still with him; this legend describes what is actually here,
  * which is the only thing a legend may do.
+ *
+ * A "Right click — Erase" row sat under the first one until the client asked
+ * for it to go. It was stale as well as unwanted: right-drag pan has the right
+ * button, as the Pan row two below it said, and erasing is the Eraser in the
+ * Erase drawer followed by a left click. The row outlived the binding.
  */
 const CONTROLS: Control[] = [
   { icon: Icons.MouseLeft, input: "Left click", action: "Place" },
-  { icon: Icons.MouseRight, input: "Right click", action: "Erase" },
   { icon: Icons.Orbit, input: "Left click drag", action: "Orbit" },
   { icon: Icons.Pan, input: "Right click drag", action: "Pan" },
   { icon: Icons.Scroll, input: "Scroll", action: "Zoom" },

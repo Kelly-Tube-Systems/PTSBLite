@@ -87,8 +87,8 @@ describe("tool selection by keyboard", () => {
     fireEvent.keyDown(window, { key: "o" });
     expect(screen.getByText("Obstacle volume")).toBeTruthy();
 
-    // Scoped to the tool pill: the controls legend also names the erase tool,
-    // and it is on screen whatever tool is armed.
+    // Scoped to the tool pill: the left rail's Erase drawer button names the
+    // tool too, and it is on screen whatever tool is armed.
     const pill = { selector: ".active-tool-bar__tool" };
     fireEvent.keyDown(window, { key: "x" });
     expect(screen.getByText("Erase", pill)).toBeTruthy();
@@ -472,6 +472,21 @@ describe("a two-floor design", () => {
     // Back to a tool the keys turn, and they are offered again.
     armBlower();
     expect(legend().queryByText("Rotate")).toBeTruthy();
+  });
+
+  it("does not offer right click as a way to erase", async () => {
+    // The client asked for the row to go, and it was stale as well as unwanted:
+    // right-drag pan has the right button, and erasing is the Eraser in the
+    // Erase drawer followed by a left click. The row outlived the binding.
+    await renderApp();
+    const legend = () => within(document.getElementById("controls-legend-list") as HTMLElement);
+
+    expect(legend().queryByText("Erase")).toBeNull();
+    expect(legend().queryByText("Right click")).toBeNull();
+
+    // What the two buttons really do is still there.
+    expect(legend().queryByText("Place")).toBeTruthy();
+    expect(legend().queryByText("Pan")).toBeTruthy();
   });
 
   it("reads the floor, not the plane, while the obstacle tool is armed", async () => {
