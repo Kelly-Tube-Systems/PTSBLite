@@ -109,8 +109,8 @@ describe("baked Kel2020 geometry", () => {
     const split: BakedSplit = {
       from: "body",
       to: "mark",
-      // The top half of the unit, which cuts across the housing's faces.
-      pick: (triangle) => triangle[1] > 0.5 && triangle[4] > 0.5 && triangle[7] > 0.5
+      // The moulded lettering, which the bake leaves in the housing's group.
+      within: { min: [-0.22, 0.77, 0.06], max: [0.18, 0.865, 0.23] }
     };
     const plain = drawnGeometry(KEL2020_TERMINAL);
     const drawn = drawnGeometry(KEL2020_TERMINAL, split);

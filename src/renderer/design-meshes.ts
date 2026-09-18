@@ -155,46 +155,27 @@ export function buildPedestalMesh(feet: number, { ghost = false } = {}): THREE.G
  * learned to correct that one colour (ADR-0039) — so the split has one role to
  * take from.
  *
- * Every number is measured off the baked geometry. The housing is a cylinder of
- * radius 0.2119 ft about an axis offset 0.025 ft from the unit's own, and the
- * mark stands proud of it between y = 0.778 and y = 0.859 — reaching 0.218 ft
- * at the top of its strokes, a sixteenth of an inch of relief. The band is
- * opened to 0.75–0.88 so a face that starts on the housing and climbs the side
- * of a stroke is caught with the rest of the mark, and nothing else on the
- * front of the housing stands above its surface in that band.
+ * The CAD moulds a solid per character and welds none of them to the shell, so
+ * what the split names is a whole character at a time: a piece of geometry that
+ * fits inside the box below is the mark's, and the shell, the plate the
+ * lettering stands on and the trim rail all run outside it and stay the
+ * housing's (ADR-0041).
  *
- * A face is the mark's if it stands above the housing but no further than the
- * relief goes. The ceiling is what keeps the hinge rail down the side of the
- * unit out of it: it bakes as `body` with the housing and crosses the same
- * band, standing a good three inches off the housing's axis. The mark runs 45° either
- * side of the front, where the housing is still 0.15 ft forward of its axis, so
- * a face any closer to the side than that is the housing's own edge and stays
- * with it.
+ * The box is measured off the baked geometry with a little room either side.
+ * The seven characters run from x = -0.207 to x = 0.163 and stand between
+ * y = 0.777 and y = 0.859, wrapping about 66° each side of the front — far
+ * enough round that the last 0 reaches z = 0.078, which is why the box is drawn
+ * around the mark rather than across the front of the unit.
  */
-const HOUSING_AXIS_X = -0.025;
-const HOUSING_RADIUS = 0.2119;
-const MARK_RELIEF = { from: 0.0006, to: 0.01 } as const;
-const MARK_BAND = { from: 0.75, to: 0.88 } as const;
-const MARK_FRONT_Z = 0.1;
+const MARK_BOX = {
+  min: [-0.22, 0.77, 0.06],
+  max: [0.18, 0.865, 0.23]
+} as const;
 
 export const TERMINAL_MOULDED_MARK: BakedSplit = {
   from: "body",
   to: "mark",
-  pick: (triangle) => {
-    let raised = false;
-    for (let corner = 0; corner < 3; corner++) {
-      const x = triangle[corner * 3];
-      const y = triangle[corner * 3 + 1];
-      const z = triangle[corner * 3 + 2];
-      // The mark is on the front of the housing, which is local +Z.
-      if (z < MARK_FRONT_Z) return false;
-      if (y < MARK_BAND.from || y > MARK_BAND.to) return false;
-      const relief = Math.hypot(x - HOUSING_AXIS_X, z) - HOUSING_RADIUS;
-      if (relief > MARK_RELIEF.to) return false;
-      if (relief > MARK_RELIEF.from) raised = true;
-    }
-    return raised;
-  }
+  within: MARK_BOX
 };
 
 /**

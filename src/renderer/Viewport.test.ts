@@ -385,18 +385,41 @@ describe("the KEL2020 mark on a terminal", () => {
     const corners = faces.flat();
     const across = corners.map((corner) => corner.x);
     const up = corners.map((corner) => corner.y);
-    // The mark runs about 0.3 ft across the front of the housing and 0.08 ft
-    // up it: wide enough that this is the wordmark and not a face of plastic
-    // that happened to stand proud.
-    expect(Math.max(...across) - Math.min(...across)).toBeGreaterThan(0.25);
+    // The mark runs about 0.37 ft across the housing and 0.08 ft up it: wide
+    // enough that this is the wordmark and not a face of plastic that happened
+    // to stand proud.
+    expect(Math.max(...across) - Math.min(...across)).toBeGreaterThan(0.36);
     expect(Math.max(...up) - Math.min(...up)).toBeGreaterThan(0.05);
-    // And all of it on the front of the housing, in the band it was measured
-    // in, standing off the surface rather than sunk into it.
+    // And all of it inside the box the lettering was measured in, so a re-bake
+    // that moved the housing paints nothing rather than a stripe of plastic.
     for (const corner of corners) {
-      expect(corner.z).toBeGreaterThan(0.1);
-      expect(corner.y).toBeGreaterThan(0.75);
-      expect(corner.y).toBeLessThan(0.88);
+      expect(corner.z).toBeGreaterThan(0.06);
+      expect(corner.y).toBeGreaterThan(0.77);
+      expect(corner.y).toBeLessThan(0.865);
     }
+  });
+
+  it("paints every character, including the one that wraps round the housing", () => {
+    // KEL2020 wraps about 66° each side of the front, and the last 0 is far
+    // enough round that a rule drawn across the front of the unit dropped it:
+    // the client saw the door read "KEL202" (Trello 3g9F9xXR). A missing
+    // character shows up here as a character-wide hole in what is painted.
+    const spans = markFaces()
+      .map((face) => face.map((corner) => corner.x))
+      .map((xs) => [Math.min(...xs), Math.max(...xs)] as const)
+      .sort((one, other) => one[0] - other[0]);
+    let reach = spans[0][1];
+    let widest = 0;
+    for (const [from, to] of spans) {
+      widest = Math.max(widest, from - reach);
+      reach = Math.max(reach, to);
+    }
+    // The K starts at x = -0.207 and the last 0 ends at x = 0.163, and a
+    // character is about 0.04 ft wide: painting reaches both ends of the
+    // moulding and leaves no letter-sized hole between them.
+    expect(spans[0][0]).toBeLessThan(-0.2);
+    expect(reach).toBeGreaterThan(0.15);
+    expect(widest).toBeLessThan(0.01);
   });
 });
 

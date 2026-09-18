@@ -44,6 +44,18 @@ export type BakedGeometry = {
  * generated, and re-running the bake needs STEP files that are not in the
  * repository — the split names the faces by where they sit on the part, which
  * is a property of the shape rather than of this particular bake.
+ *
+ * What it names is a whole piece of geometry rather than a face at a time: the
+ * CAD moulds the mark as a solid per character, none of them welded to the
+ * shell, and a piece that fits inside the box moves with all its faces
+ * (ADR-0041). Testing faces one by one measured each against a surface the
+ * housing only approximately is, and dropped the last character of KEL2020
+ * where the two disagreed.
+ *
+ * It is the rule `ROLE_CORRECTIONS` applies in the bake (ADR-0039), one step
+ * further down: only a piece that fits entirely inside the box is moved, so the
+ * shell and the full-height trim rail run straight through it and are left
+ * alone.
  */
 export type BakedSplit = {
   /** The role the faces are taken out of. */
@@ -51,10 +63,13 @@ export type BakedSplit = {
   /** The role they are drawn in instead. */
   to: BakedRole;
   /**
-   * Whether this face belongs to `to`, from its three vertices in the part's
-   * own frame, as x, y, z triples.
+   * The box, in the part's own frame, in feet. A connected piece of `from`
+   * whose every vertex falls inside it is drawn in `to`.
    */
-  pick: (triangle: Float32Array) => boolean;
+  within: {
+    min: readonly [number, number, number];
+    max: readonly [number, number, number];
+  };
 };
 
 function bytesOf(base64: string): Uint8Array {
@@ -97,6 +112,62 @@ function decode(baked: BakedGeometry): Decoded {
 type Drawn = { index: Uint16Array; groups: readonly BakedGroup[] };
 
 /**
+ * The faces of `group` that belong to a connected piece of geometry lying
+ * entirely inside `within`, keyed by where the face starts in the index.
+ *
+ * Connected means sharing a vertex, which the bake preserves: a solid the CAD
+ * models separately — each character of the terminal's mark — keeps its own
+ * vertices through the bake and comes out as a piece of its own.
+ */
+function piecesWithin(
+  { index, position }: Decoded,
+  group: BakedGroup,
+  within: BakedSplit["within"]
+): Set<number> {
+  const parent = new Map<number, number>();
+  const find = (vertex: number): number => {
+    let at = vertex;
+    while (parent.get(at) !== at) {
+      const up = parent.get(parent.get(at)!)!;
+      parent.set(at, up);
+      at = up;
+    }
+    return at;
+  };
+  const join = (one: number, other: number): void => {
+    const root = find(one);
+    const into = find(other);
+    if (root !== into) parent.set(root, into);
+  };
+  const end = group.start + group.count;
+  for (let face = group.start; face < end; face += 3)
+    for (let corner = 0; corner < 3; corner++) {
+      const vertex = index[face + corner];
+      if (!parent.has(vertex)) parent.set(vertex, vertex);
+    }
+  for (let face = group.start; face < end; face += 3) {
+    join(index[face], index[face + 1]);
+    join(index[face + 1], index[face + 2]);
+  }
+
+  // A piece fits only if every one of its vertices does, so one vertex outside
+  // the box keeps the whole piece in the role it was baked in.
+  const fits = new Map<number, boolean>();
+  for (const vertex of parent.keys()) {
+    const at = vertex * 3;
+    const inside = [0, 1, 2].every(
+      (axis) => position[at + axis] >= within.min[axis] && position[at + axis] <= within.max[axis]
+    );
+    const root = find(vertex);
+    fits.set(root, (fits.get(root) ?? true) && inside);
+  }
+  const picked = new Set<number>();
+  for (let face = group.start; face < end; face += 3)
+    if (fits.get(find(index[face]))) picked.add(face);
+  return picked;
+}
+
+/**
  * The index buffer a split rewrites, per split, alongside the decoded one.
  *
  * A split runs over every triangle of a group, so it is done once for the part
@@ -122,10 +193,9 @@ export function drawnGeometry(baked: BakedGeometry, split?: BakedSplit): Drawn {
   const cached = forBaked.get(split);
   if (cached) return cached;
 
-  const { position } = decode(baked);
+  const decoded = decode(baked);
   const out = new Uint16Array(index.length);
   const groups: BakedGroup[] = [];
-  const triangle = new Float32Array(9);
   let at = 0;
   for (const group of baked.groups) {
     if (group.role !== split.from) {
@@ -134,16 +204,11 @@ export function drawnGeometry(baked: BakedGeometry, split?: BakedSplit): Drawn {
       at += group.count;
       continue;
     }
+    const inside = piecesWithin(decoded, group, split.within);
     const picked: number[] = [];
     const kept = at;
     for (let face = group.start; face < group.start + group.count; face += 3) {
-      for (let corner = 0; corner < 3; corner++) {
-        const vertex = index[face + corner] * 3;
-        triangle[corner * 3] = position[vertex];
-        triangle[corner * 3 + 1] = position[vertex + 1];
-        triangle[corner * 3 + 2] = position[vertex + 2];
-      }
-      if (split.pick(triangle)) {
+      if (inside.has(face)) {
         picked.push(face);
         continue;
       }
