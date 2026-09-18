@@ -2,6 +2,9 @@
 
 - **Status:** Accepted
 - **Date:** 2026-09-17
+- **Amended:** 2026-09-18 — the predicate below painted six characters out of seven, and is replaced
+  by [ADR-0041](0041-the-terminals-mark-is-picked-by-its-panel.md). The decision to paint the
+  moulding rather than lay a decal over it stands.
 
 [ADR-0034](0034-the-units-carry-the-kel2020-wordmark.md) put the KEL2020 wordmark back on the blower
 and the terminal as a decal — a strip of cylinder carrying the client's artwork — on the reasoning

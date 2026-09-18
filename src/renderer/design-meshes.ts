@@ -155,33 +155,38 @@ export function buildPedestalMesh(feet: number, { ghost = false } = {}): THREE.G
  * learned to correct that one colour (ADR-0039) — so the split has one role to
  * take from.
  *
- * Every number is measured off the baked geometry. The housing is a cylinder of
- * radius 0.2119 ft about an axis offset 0.025 ft from the unit's own, and the
- * mark stands proud of it between y = 0.778 and y = 0.859 — reaching 0.218 ft
- * at the top of its strokes, a sixteenth of an inch of relief. The band is
- * opened to 0.75–0.88 so a face that starts on the housing and climbs the side
- * of a stroke is caught with the rest of the mark, and nothing else on the
- * front of the housing stands above its surface in that band.
+ * Every number is measured off the baked geometry. The mark is moulded onto a
+ * raised panel on the front of the housing, and that panel is the shape the
+ * split leans on: its faces run from y = 0.75 to y = 0.91 unbroken, while the
+ * lettering standing on it is tessellated into faces of its own that never
+ * reach either edge. The mark's own relief lies between y = 0.778 and y = 0.859,
+ * so a band of 0.75–0.88 holds every face of the lettering — including the ones
+ * that climb the side of a stroke — and cuts every face of the panel under it.
  *
- * A face is the mark's if it stands above the housing but no further than the
- * relief goes. The ceiling is what keeps the hinge rail down the side of the
- * unit out of it: it bakes as `body` with the housing and crosses the same
- * band, standing a good three inches off the housing's axis. The mark runs 45° either
- * side of the front, where the housing is still 0.15 ft forward of its axis, so
- * a face any closer to the side than that is the housing's own edge and stays
- * with it.
+ * So a face is the mark's if it lies wholly within that band, on the front of
+ * the housing, across the width the lettering occupies. It used to be picked by
+ * standing proud of the housing instead, measured against a cylinder of radius
+ * 0.2119 ft about an axis offset 0.025 ft from the unit's own. That worked for
+ * six characters out of seven: the panel is flatter than any cylinder through
+ * it, so towards the ends of the mark it falls away from that reference faster
+ * than the lettering stands off the panel, and the last 0 — which sits furthest
+ * from the front, its outer edge 0.078 ft round — measured as below the housing
+ * rather than above it and stayed in the plastic's own grey (Trello c9VZJ9vY).
+ *
+ * The width is what keeps the hinge rail and the latch down the sides of the
+ * unit out of the mark: they bake as `body` with the housing and cross the same
+ * band. The lettering runs from x = -0.167 to x = 0.168 — centred on the unit,
+ * not on the housing's own axis — so the span is opened by a hundredth of a
+ * foot either side of that and no further.
  */
-const HOUSING_AXIS_X = -0.025;
-const HOUSING_RADIUS = 0.2119;
-const MARK_RELIEF = { from: 0.0006, to: 0.01 } as const;
 const MARK_BAND = { from: 0.75, to: 0.88 } as const;
-const MARK_FRONT_Z = 0.1;
+const MARK_SPAN = { from: -0.177, to: 0.178 } as const;
+const MARK_FRONT_Z = 0.05;
 
 export const TERMINAL_MOULDED_MARK: BakedSplit = {
   from: "body",
   to: "mark",
   pick: (triangle) => {
-    let raised = false;
     for (let corner = 0; corner < 3; corner++) {
       const x = triangle[corner * 3];
       const y = triangle[corner * 3 + 1];
@@ -189,11 +194,9 @@ export const TERMINAL_MOULDED_MARK: BakedSplit = {
       // The mark is on the front of the housing, which is local +Z.
       if (z < MARK_FRONT_Z) return false;
       if (y < MARK_BAND.from || y > MARK_BAND.to) return false;
-      const relief = Math.hypot(x - HOUSING_AXIS_X, z) - HOUSING_RADIUS;
-      if (relief > MARK_RELIEF.to) return false;
-      if (relief > MARK_RELIEF.from) raised = true;
+      if (x < MARK_SPAN.from || x > MARK_SPAN.to) return false;
     }
-    return raised;
+    return true;
   }
 };
 
