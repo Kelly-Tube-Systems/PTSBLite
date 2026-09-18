@@ -1,7 +1,9 @@
 # ADR-0038: The bill of materials prints on Kelly Systems letterhead
 
-- **Status:** Accepted
+- **Status:** Accepted, amended
 - **Date:** 2026-09-17
+- **Amended:** 2026-09-18 — the picture pages tile the logo instead of stamping the name. See
+  "What the pages of pictures carry" below.
 
 The client asked for the first page of the exported PDF to carry his own branding:
 
@@ -27,9 +29,27 @@ document is a bill of materials and never a quote ([ADR-0011](0011-lite-has-no-c
 was invented that a reader could mistake for data, no document number, no issuing address, no
 revision (see `docs/baked-in-assumptions.md` on why there is no revision to print).
 
-The pages of pictures keep the watermark decided on the same day — the mark laid across them like a
-SAMPLE stamp — and get none of the letterhead. Two marks on one page is one too many, and the parts
-list is the page people work from.
+The pages of pictures carry the watermark decided on the same day and get none of the letterhead.
+Two marks on one page is one too many, and the parts list is the page people work from.
+
+## What the pages of pictures carry
+
+**Amended 2026-09-18.** The watermark shipped as the words "KELLY SYSTEMS" typeset once across the
+diagonal, a SAMPLE stamp saying Kelly Systems instead. The client asked for the real thing:
+
+> this is good but can we make it the actual logo? And could we also make it smaller to fit multiple
+> on the screen, similar to the background of the build area?
+
+So the mark is now the wordmark artwork itself, at 150 pt across, repeated in the artwork's own
+brick course — the 2016 x 1040 tile of `kelly-systems-watermark.svg`, whose rows sit 520 apart with
+every other row shifted half a tile — laid out from the middle of the sheet so the marks the edges
+cut through are cut evenly on both sides. That is the pattern the viewport already tiles behind the
+build area, which is the comparison he drew.
+
+It is the same paths the masthead fills, so the tiling cost nothing but a loop: `drawWordmark` in
+`pdf-typesetting.ts` draws one mark at a width, and the masthead and the watermark are both callers.
+The opacity is unchanged at 0.14, which was chosen to read over both the near-black pictures and
+white paper, and it is one constant to revise when he has the page in front of him.
 
 ## The wordmark is baked path data, not an image
 

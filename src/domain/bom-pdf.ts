@@ -1,6 +1,5 @@
 import { PDFDocument, StandardFonts, type PDFPage } from "pdf-lib";
 import taglineDataUrl from "@/assets/kelly-it-tagline.png?inline";
-import { KELLY_WORDMARK_BOX, KELLY_WORDMARK_PATHS } from "@/data/kelly-systems-wordmark";
 import { bomRows, totalPathLength } from "@/domain/parts";
 import {
   ACCENT,
@@ -9,6 +8,7 @@ import {
   drawRightText,
   drawText,
   drawWatermark,
+  drawWordmark,
   formatDocumentDate,
   HAIRLINE,
   MARGIN_TOP,
@@ -16,7 +16,8 @@ import {
   MUT,
   PAGE_HEIGHT,
   PAGE_WIDTH,
-  type Painter
+  type Painter,
+  wordmarkHeight
 } from "@/domain/pdf-typesetting";
 import { MAX_CENTERLINE_FEET } from "@/domain/validation";
 import type { DesignState } from "@/types";
@@ -42,13 +43,6 @@ const VIEW_WIDTH = 460;
 const VIEW_GAP = 26;
 const VIEW_LABEL_GAP = 22;
 const VIEWS_PER_PAGE = 2;
-
-/**
- * Stamped across the pages of pictures. The client asked for the mark on those
- * pages only: the parts list is the page people work from, and it carries the
- * branding its own way — the letterhead below.
- */
-const WATERMARK = "KELLY SYSTEMS";
 
 /**
  * The letterhead, in the client's words: "the logo at the top center, and the
@@ -183,16 +177,12 @@ export async function generateBomPdf(
  * Returns the y the document's own first line sits under.
  */
 function drawMasthead(p: Painter): number {
-  const scale = WORDMARK_WIDTH / KELLY_WORDMARK_BOX.width;
   const top = PAGE_HEIGHT - WORDMARK_TOP_GAP;
-  const x = (PAGE_WIDTH - WORDMARK_WIDTH) / 2;
-  for (const path of KELLY_WORDMARK_PATHS) {
-    p.page.drawSvgPath(path, { x, y: top, scale, color: ACCENT });
-  }
+  drawWordmark(p, (PAGE_WIDTH - WORDMARK_WIDTH) / 2, top, { width: WORDMARK_WIDTH });
 
   // Thick over thin: the pair of rules is what makes a sheet read as issued
   // stationery rather than something typed up.
-  const rule = top - KELLY_WORDMARK_BOX.height * scale - MASTHEAD_RULE_GAP;
+  const rule = top - wordmarkHeight(WORDMARK_WIDTH) - MASTHEAD_RULE_GAP;
   const right = PAGE_WIDTH - MARGIN_X;
   p.page.drawLine({
     start: { x: MARGIN_X, y: rule },
@@ -244,7 +234,9 @@ function assetBytes(dataUrl: string): Uint8Array {
  *
  * The watermark goes on last, so it lies over the pictures rather than behind
  * them: a JPEG has no transparency, and a mark under one would only show in
- * the margins around it.
+ * the margins around it. It goes on these pages only: the parts list is the
+ * page people work from, and it carries the branding its own way — the
+ * letterhead above.
  */
 async function drawViewPages(doc: PDFDocument, p: Painter, views: BomPdfView[]): Promise<void> {
   const x = (PAGE_WIDTH - VIEW_WIDTH) / 2;
@@ -260,6 +252,6 @@ async function drawViewPages(doc: PDFDocument, p: Painter, views: BomPdfView[]):
       page.drawImage(image, { x, y: y - height, width: VIEW_WIDTH, height });
       y -= height + VIEW_GAP;
     }
-    drawWatermark(painter, WATERMARK);
+    drawWatermark(painter);
   }
 }

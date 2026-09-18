@@ -1,4 +1,5 @@
-import { radians, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { rgb, type Color, type PDFFont, type PDFPage } from "pdf-lib";
+import { KELLY_WORDMARK_BOX, KELLY_WORDMARK_PATHS } from "@/data/kelly-systems-wordmark";
 
 /** Typesetting primitives for the bill-of-materials PDF. */
 
@@ -85,8 +86,45 @@ export function drawText(
   });
 }
 
-/** How much of the page's diagonal the watermark's text spans. */
-const WATERMARK_SPAN = 0.8;
+/**
+ * The Kelly Systems wordmark, `width` points wide, with the top left of its box
+ * at (x, y).
+ *
+ * Vector rather than an image, for ADR-0034's reason: an outline stays sharp at
+ * whatever size the document prints or is zoomed to. `drawSvgPath` takes the
+ * artwork's own coordinates, y running down from (x, y), unchanged.
+ */
+export function drawWordmark(
+  p: Painter,
+  x: number,
+  y: number,
+  opts: { width: number; color?: Color; opacity?: number }
+): void {
+  const scale = opts.width / KELLY_WORDMARK_BOX.width;
+  for (const path of KELLY_WORDMARK_PATHS) {
+    p.page.drawSvgPath(path, { x, y, scale, color: opts.color ?? ACCENT, opacity: opts.opacity });
+  }
+}
+
+/** A mark's height, at a given width. */
+export function wordmarkHeight(width: number): number {
+  return width * (KELLY_WORDMARK_BOX.height / KELLY_WORDMARK_BOX.width);
+}
+
+/**
+ * How wide one mark of the watermark prints: a quarter of the sheet, so several
+ * fall on a page and a reader's eye passes over them rather than reading them.
+ */
+const WATERMARK_MARK_WIDTH = 150;
+/**
+ * The pattern the artwork itself lays out, as ratios of one mark's width:
+ * `kelly-systems-watermark.svg` is a 2016 x 1040 tile holding a 1316-wide mark
+ * on rows 520 apart, every other row shifted half a tile across. That brick
+ * course is what the viewport tiles behind the build area, and the client asked
+ * for these pages to carry the same pattern.
+ */
+const WATERMARK_PERIOD = 2016 / 1316;
+const WATERMARK_ROW_GAP = 520 / 1316;
 /**
  * Faint enough to read the page through, strong enough to survive a
  * photocopier. The pictures are rendered on the viewport's near-black
@@ -97,35 +135,31 @@ const WATERMARK_SPAN = 0.8;
 const WATERMARK_OPACITY = 0.14;
 
 /**
- * Lay a watermark corner to corner across a page, over whatever is already on
- * it — the "SAMPLE" stamp the client asked for, saying Kelly Systems instead.
+ * Tile the Kelly Systems mark across a page, over whatever is already on it.
+ *
+ * Laid out from the middle of the sheet, the way the viewport's stylesheet
+ * centres its own tiling, so the marks the edges cut through are cut evenly on
+ * both sides.
  */
-export function drawWatermark(p: Painter, text: string): void {
-  const safe = sanitize(text);
-  const angle = Math.atan2(PAGE_HEIGHT, PAGE_WIDTH);
-  // One line, sized so it spans the diagonal rather than a chosen point size,
-  // which keeps the mark the same shape whatever the wording.
-  const size = (Math.hypot(PAGE_WIDTH, PAGE_HEIGHT) * WATERMARK_SPAN) / widthPerPoint(p, safe);
-  const width = widthPerPoint(p, safe) * size;
-  const cap = p.sansBold.heightAtSize(size, { descender: false });
-  // The baseline runs from (x, y) along the angle, so step back half the text
-  // along it and half the cap height across it to centre the mark on the page.
-  const x = PAGE_WIDTH / 2 - (width / 2) * Math.cos(angle) + (cap / 2) * Math.sin(angle);
-  const y = PAGE_HEIGHT / 2 - (width / 2) * Math.sin(angle) - (cap / 2) * Math.cos(angle);
-  p.page.drawText(safe, {
-    x,
-    y,
-    size,
-    font: p.sansBold,
-    color: ACCENT,
-    opacity: WATERMARK_OPACITY,
-    rotate: radians(angle)
-  });
-}
-
-/** The text's width at one point of size, which scales linearly. */
-function widthPerPoint(p: Painter, safe: string): number {
-  return p.sansBold.widthOfTextAtSize(safe, 100) / 100;
+export function drawWatermark(p: Painter): void {
+  const width = WATERMARK_MARK_WIDTH;
+  const height = wordmarkHeight(width);
+  const period = width * WATERMARK_PERIOD;
+  const rowGap = width * WATERMARK_ROW_GAP;
+  const columns = Math.ceil(PAGE_WIDTH / period / 2) + 1;
+  const rows = Math.ceil(PAGE_HEIGHT / rowGap / 2) + 1;
+  const centreX = (PAGE_WIDTH - width) / 2;
+  const centreY = (PAGE_HEIGHT + height) / 2;
+  for (let row = -rows; row <= rows; row++) {
+    const top = centreY + row * rowGap;
+    if (top < 0 || top - height > PAGE_HEIGHT) continue;
+    const shift = Math.abs(row) % 2 === 0 ? 0 : period / 2;
+    for (let column = -columns; column <= columns; column++) {
+      const x = centreX + shift + column * period;
+      if (x > PAGE_WIDTH || x + width < 0) continue;
+      drawWordmark(p, x, top, { width, opacity: WATERMARK_OPACITY });
+    }
+  }
 }
 
 export function drawRightText(
