@@ -119,20 +119,12 @@ export const Icons = {
   Keys: fromLucide(Keyboard),
 
   // --- domain glyphs, drawn here because lucide has no equivalent ----------
-  // The two mouse buttons, for the controls legend. lucide draws a mouse but
-  // cannot say which button is meant, and which button is the whole point of
-  // those two rows.
+  // The left mouse button, for the controls legend's Place row. lucide draws a
+  // mouse but cannot say which button is meant, and which button is the whole
+  // point of that row. Its right-button twin went with the legend's erase row.
   MouseLeft: (p: IconProps) => (
     <Icon {...p}>
       <path d="M11.5 3.1A5 5 0 0 0 7 8v1h4.5z" fill="currentColor" stroke="none" />
-      <rect x="7" y="3" width="10" height="18" rx="5" />
-      <path d="M7 9h10" />
-      <path d="M12 3v6" />
-    </Icon>
-  ),
-  MouseRight: (p: IconProps) => (
-    <Icon {...p}>
-      <path d="M12.5 3.1A5 5 0 0 1 17 8v1h-4.5z" fill="currentColor" stroke="none" />
       <rect x="7" y="3" width="10" height="18" rx="5" />
       <path d="M7 9h10" />
       <path d="M12 3v6" />
