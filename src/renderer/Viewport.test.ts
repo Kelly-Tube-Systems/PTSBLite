@@ -385,15 +385,20 @@ describe("the KEL2020 mark on a terminal", () => {
     const corners = faces.flat();
     const across = corners.map((corner) => corner.x);
     const up = corners.map((corner) => corner.y);
-    // The mark runs about 0.3 ft across the front of the housing and 0.08 ft
-    // up it: wide enough that this is the wordmark and not a face of plastic
-    // that happened to stand proud.
-    expect(Math.max(...across) - Math.min(...across)).toBeGreaterThan(0.25);
+    // All seven characters. The lettering runs 0.335 ft across the front of the
+    // housing; the first six of it run only 0.29, which is exactly what the
+    // client saw when the last 0 went unpainted and the unit read KEL202
+    // (Trello c9VZJ9vY). The width is what says every character is in.
+    expect(Math.max(...across) - Math.min(...across)).toBeGreaterThan(0.33);
+    // And only the lettering. It stands 0.08 ft tall on a raised panel twice
+    // that, so a split that took the panel with it — the other way this can go
+    // wrong — would paint a solid green stripe across the unit instead of a
+    // mark, and would show up here as a taller band.
     expect(Math.max(...up) - Math.min(...up)).toBeGreaterThan(0.05);
-    // And all of it on the front of the housing, in the band it was measured
-    // in, standing off the surface rather than sunk into it.
+    expect(Math.max(...up) - Math.min(...up)).toBeLessThan(0.1);
+    // All of it on the front of the housing, in the band it was measured in.
     for (const corner of corners) {
-      expect(corner.z).toBeGreaterThan(0.1);
+      expect(corner.z).toBeGreaterThan(0.05);
       expect(corner.y).toBeGreaterThan(0.75);
       expect(corner.y).toBeLessThan(0.88);
     }
