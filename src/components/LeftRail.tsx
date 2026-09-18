@@ -292,7 +292,7 @@ function EraseDrawer({
         <Icons.Erase size={18} className="erase-card__icon" />
         <span className="erase-card__text">
           <span className="erase-card__label">Eraser</span>
-          <span className="erase-card__detail">Right click a part to remove it</span>
+          <span className="erase-card__detail">Click a part to remove it</span>
         </span>
       </button>
       <div className="left-rail__drawer-divider" />
