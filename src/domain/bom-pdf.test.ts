@@ -53,6 +53,28 @@ function marksOn(stream: string): number {
   return fills / KELLY_WORDMARK_PATHS.length;
 }
 
+/**
+ * The angles, in degrees, a page turns the artwork through.
+ *
+ * `drawSvgPath` writes each path as a translate, then a rotation, then the flip
+ * that puts the artwork's downward y axis the PDF's way up — so a rotation
+ * counts as the mark's when that flip is the operator after it.
+ */
+function turnsOn(stream: string): number[] {
+  const matrices = [
+    ...stream.matchAll(/(-?[\d.]+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+) cm/g)
+  ].map((m) => m.slice(1, 7).map(Number));
+  const angles: number[] = [];
+  matrices.forEach(([a, b, c, d, e, f], i) => {
+    const isRotation = Math.abs(Math.hypot(a, b) - 1) < 1e-9 && a === d && b === -c && e === 0;
+    const next = matrices[i + 1];
+    const isFlip = next !== undefined && next[1] === 0 && next[2] === 0 && next[3] === -next[0];
+    if (isRotation && f === 0 && isFlip)
+      angles.push(Math.round((Math.atan2(b, a) * 180) / Math.PI));
+  });
+  return [...new Set(angles)].sort((x, y) => x - y);
+}
+
 const sampleParts: Part[] = [
   { id: "b", type: "blower", cell: [0, 0, 0], dir: [1, 0, 0] },
   { id: "t1", type: "terminal", cell: [1, 0, 0], axis: [1, 0, 0] },
@@ -199,6 +221,17 @@ describe("the views appended to a BOM", () => {
       const marks = marksOn(streamShowing(bytes, label));
       expect(marks).toBeGreaterThan(1);
     }
+  });
+
+  it("runs the tiling across the 45 degree diagonal", async () => {
+    // The stamp this replaced was turned 45 degrees and tiling it lost the
+    // angle; the client asked for it back, so every mark on a page of pictures
+    // is turned and the masthead's, which is not a watermark, is not.
+    const bytes = await generateBomPdf(designWith(sampleParts), {
+      views: [shot("North-west")]
+    });
+    expect(turnsOn(streamShowing(bytes, "North-west"))).toEqual([45]);
+    expect(turnsOn(streamShowing(bytes, "Bill of Materials"))).toEqual([0]);
   });
 
   it("draws the watermark as the logo artwork, not the words", async () => {

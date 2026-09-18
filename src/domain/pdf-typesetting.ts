@@ -1,4 +1,4 @@
-import { rgb, type Color, type PDFFont, type PDFPage } from "pdf-lib";
+import { degrees, rgb, type Color, type PDFFont, type PDFPage } from "pdf-lib";
 import { KELLY_WORDMARK_BOX, KELLY_WORDMARK_PATHS } from "@/data/kelly-systems-wordmark";
 
 /** Typesetting primitives for the bill-of-materials PDF. */
@@ -88,7 +88,7 @@ export function drawText(
 
 /**
  * The Kelly Systems wordmark, `width` points wide, with the top left of its box
- * at (x, y).
+ * at (x, y), turned `angle` degrees anticlockwise about that corner.
  *
  * Vector rather than an image, for ADR-0034's reason: an outline stays sharp at
  * whatever size the document prints or is zoomed to. `drawSvgPath` takes the
@@ -98,11 +98,19 @@ export function drawWordmark(
   p: Painter,
   x: number,
   y: number,
-  opts: { width: number; color?: Color; opacity?: number }
+  opts: { width: number; color?: Color; opacity?: number; angle?: number }
 ): void {
   const scale = opts.width / KELLY_WORDMARK_BOX.width;
+  const rotate = degrees(opts.angle ?? 0);
   for (const path of KELLY_WORDMARK_PATHS) {
-    p.page.drawSvgPath(path, { x, y, scale, color: opts.color ?? ACCENT, opacity: opts.opacity });
+    p.page.drawSvgPath(path, {
+      x,
+      y,
+      scale,
+      rotate,
+      color: opts.color ?? ACCENT,
+      opacity: opts.opacity
+    });
   }
 }
 
@@ -112,10 +120,11 @@ export function wordmarkHeight(width: number): number {
 }
 
 /**
- * How wide one mark of the watermark prints: a quarter of the sheet, so several
- * fall on a page and a reader's eye passes over them rather than reading them.
+ * How wide one mark of the watermark prints. A little over a quarter of the
+ * sheet: big enough to read as the logo when it catches the eye, small enough
+ * that several fall on a page and none of them asks to be read.
  */
-const WATERMARK_MARK_WIDTH = 150;
+const WATERMARK_MARK_WIDTH = 170;
 /**
  * The pattern the artwork itself lays out, as ratios of one mark's width:
  * `kelly-systems-watermark.svg` is a 2016 x 1040 tile holding a 1316-wide mark
@@ -126,40 +135,101 @@ const WATERMARK_MARK_WIDTH = 150;
 const WATERMARK_PERIOD = 2016 / 1316;
 const WATERMARK_ROW_GAP = 520 / 1316;
 /**
+ * How far the brick course is opened out beyond the artwork's own spacing. The
+ * viewport's tiling is behind an empty workspace and can afford to be busy; a
+ * page of pictures cannot, and the client asked for fewer marks on it. Applied
+ * to both axes, so the pattern stretches without shearing.
+ */
+const WATERMARK_SPACING = 1.25;
+/**
  * Faint enough to read the page through, strong enough to survive a
  * photocopier. The pictures are rendered on the viewport's near-black
  * background, so the mark has to show against both that and white paper: the
  * accent green sits between the two, where a grey light enough for the picture
  * would disappear into the paper.
  */
-const WATERMARK_OPACITY = 0.14;
+const WATERMARK_OPACITY = 0.1;
+/**
+ * The angle a stamped mark is read at, and the one the client asked this to
+ * keep when it stopped being a single "SAMPLE"-style stamp and became a tiling.
+ */
+const WATERMARK_ANGLE = 45;
 
 /**
  * Tile the Kelly Systems mark across a page, over whatever is already on it.
  *
- * Laid out from the middle of the sheet, the way the viewport's stylesheet
- * centres its own tiling, so the marks the edges cut through are cut evenly on
- * both sides.
+ * The brick course runs on the 45° diagonal, so it is laid out in the mark's
+ * own frame and turned into the page's: `along` is the direction the mark
+ * reads, `down` the direction its rows stack, both unit vectors. Laid out from
+ * the middle of the sheet, the way the viewport's stylesheet centres its own
+ * tiling, so the marks the edges cut through are cut evenly on both sides.
  */
 export function drawWatermark(p: Painter): void {
   const width = WATERMARK_MARK_WIDTH;
   const height = wordmarkHeight(width);
-  const period = width * WATERMARK_PERIOD;
-  const rowGap = width * WATERMARK_ROW_GAP;
-  const columns = Math.ceil(PAGE_WIDTH / period / 2) + 1;
-  const rows = Math.ceil(PAGE_HEIGHT / rowGap / 2) + 1;
-  const centreX = (PAGE_WIDTH - width) / 2;
-  const centreY = (PAGE_HEIGHT + height) / 2;
+  const period = width * WATERMARK_PERIOD * WATERMARK_SPACING;
+  const rowGap = width * WATERMARK_ROW_GAP * WATERMARK_SPACING;
+
+  const radians = (WATERMARK_ANGLE * Math.PI) / 180;
+  // `drawSvgPath` translates to the anchor, turns, then flips the artwork's
+  // y axis — so the mark reads along (cos, sin) and its rows stack along
+  // (sin, -cos), which at 0° is the plain left-to-right, top-down layout.
+  const along = { x: Math.cos(radians), y: Math.sin(radians) };
+  const down = { x: Math.sin(radians), y: -Math.cos(radians) };
+
+  // A turned lattice no longer lines up with the page's edges, so it is spread
+  // over the disc that contains the sheet rather than over its width and
+  // height, and each mark is culled on where it actually lands.
+  const reach = Math.hypot(PAGE_WIDTH, PAGE_HEIGHT) / 2 + width;
+  const columns = Math.ceil(reach / period);
+  const rows = Math.ceil(reach / rowGap);
+  const originX = PAGE_WIDTH / 2 - (along.x * width + down.x * height) / 2;
+  const originY = PAGE_HEIGHT / 2 - (along.y * width + down.y * height) / 2;
+
   for (let row = -rows; row <= rows; row++) {
-    const top = centreY + row * rowGap;
-    if (top < 0 || top - height > PAGE_HEIGHT) continue;
     const shift = Math.abs(row) % 2 === 0 ? 0 : period / 2;
     for (let column = -columns; column <= columns; column++) {
-      const x = centreX + shift + column * period;
-      if (x > PAGE_WIDTH || x + width < 0) continue;
-      drawWordmark(p, x, top, { width, opacity: WATERMARK_OPACITY });
+      const step = shift + column * period;
+      const x = originX + along.x * step + down.x * row * rowGap;
+      const y = originY + along.y * step + down.y * row * rowGap;
+      if (!markTouchesPage(x, y, width, height, along, down)) continue;
+      drawWordmark(p, x, y, {
+        width,
+        opacity: WATERMARK_OPACITY,
+        angle: WATERMARK_ANGLE
+      });
     }
   }
+}
+
+type Vector = { x: number; y: number };
+
+/** Whether a mark anchored at (x, y) puts any of its box on the sheet. */
+function markTouchesPage(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  along: Vector,
+  down: Vector
+): boolean {
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (const [u, v] of [
+    [0, 0],
+    [width, 0],
+    [0, height],
+    [width, height]
+  ]) {
+    xs.push(x + along.x * u + down.x * v);
+    ys.push(y + along.y * u + down.y * v);
+  }
+  return (
+    Math.min(...xs) <= PAGE_WIDTH &&
+    Math.max(...xs) >= 0 &&
+    Math.min(...ys) <= PAGE_HEIGHT &&
+    Math.max(...ys) >= 0
+  );
 }
 
 export function drawRightText(

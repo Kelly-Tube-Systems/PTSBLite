@@ -51,6 +51,24 @@ It is the same paths the masthead fills, so the tiling cost nothing but a loop: 
 The opacity is unchanged at 0.14, which was chosen to read over both the near-black pictures and
 white paper, and it is one constant to revise when he has the page in front of him.
 
+**Amended again 2026-09-18.** He had the page in front of him the same day and asked for four
+adjustments at once:
+
+> Good, but let's modify even more. Let's reduce the density of the logo repetition, increase the
+> logo size slightly, and keep it angled at 45°. Let's also increase the transparency a little bit too
+
+So the mark is 170 pt across rather than 150, the artwork's brick course is opened out by a quarter
+on both axes, and the opacity is the 0.14 above revised to 0.10 — 45 marks to a page became 25.
+
+The angle is the part worth recording, because "keep it" is not what happened. The single stamp was
+turned 45°, and tiling it lost that: what shipped in the amendment above ran flat across the page.
+He read the tiling as still being on the diagonal, and asking to keep it is what surfaced that it
+was not, so the tiling is now turned. `drawWordmark` takes an angle, and `drawWatermark` lays its
+lattice out in the mark's own frame — one axis along the way the mark reads, one along the way its
+rows stack — and turns that into the page's. A turned lattice no longer lines up with the sheet's
+edges, so it is spread over the disc containing the sheet and each mark is culled on where it
+actually lands, rather than by column and row as before.
+
 ## The wordmark is baked path data, not an image
 
 `src/data/kelly-systems-wordmark.ts` holds the mark as SVG path data in its own 1316 x 158 box,
