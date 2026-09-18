@@ -4,6 +4,10 @@
 - **Date:** 2026-09-18
 - **Amends:** the predicate described in
   [ADR-0040](0040-the-terminals-mark-is-painted-not-decalled.md); the decision there stands
+- **Superseded:** 2026-09-18 by
+  [ADR-0042](0042-the-marks-characters-are-found-as-pieces.md) — the window below painted all seven
+  characters but cut 0.04 ft off the block that opens the K. Its reading of why relief could not
+  work stands.
 
 [ADR-0040](0040-the-terminals-mark-is-painted-not-decalled.md) paints the KEL2020 mark the
 terminal's CAD already carries, and picks its faces out of the housing with a `BakedSplit` that asks

@@ -110,7 +110,12 @@ describe("baked Kel2020 geometry", () => {
       from: "body",
       to: "mark",
       // The top half of the unit, which cuts across the housing's faces.
-      pick: (triangle) => triangle[1] > 0.5 && triangle[4] > 0.5 && triangle[7] > 0.5
+      pick: ({ positions, index, faces }) =>
+        new Set(
+          faces.filter((face) =>
+            [0, 1, 2].every((corner) => positions[index[face + corner] * 3 + 1] > 0.5)
+          )
+        )
     };
     const plain = drawnGeometry(KEL2020_TERMINAL);
     const drawn = drawnGeometry(KEL2020_TERMINAL, split);

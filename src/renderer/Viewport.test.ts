@@ -385,11 +385,13 @@ describe("the KEL2020 mark on a terminal", () => {
     const corners = faces.flat();
     const across = corners.map((corner) => corner.x);
     const up = corners.map((corner) => corner.y);
-    // All seven characters. The lettering runs 0.335 ft across the front of the
-    // housing; the first six of it run only 0.29, which is exactly what the
-    // client saw when the last 0 went unpainted and the unit read KEL202
-    // (Trello c9VZJ9vY). The width is what says every character is in.
-    expect(Math.max(...across) - Math.min(...across)).toBeGreaterThan(0.33);
+    // All seven characters, the whole width of each. The lettering runs 0.371 ft
+    // across the front of the housing. Without the last 0 it runs 0.29, which is
+    // what the client saw when the unit read KEL202 (Trello c9VZJ9vY); without
+    // the far end of the block that opens the K it runs 0.330, which is what he
+    // saw next (Trello wQTcFyRn), and the bar here was 0.33, which that cleared
+    // by a thousandth of a foot.
+    expect(Math.max(...across) - Math.min(...across)).toBeGreaterThan(0.36);
     // And only the lettering. It stands 0.08 ft tall on a raised panel twice
     // that, so a split that took the panel with it — the other way this can go
     // wrong — would paint a solid green stripe across the unit instead of a
@@ -402,6 +404,42 @@ describe("the KEL2020 mark on a terminal", () => {
       expect(corner.y).toBeGreaterThan(0.75);
       expect(corner.y).toBeLessThan(0.88);
     }
+  });
+
+  it("leaves nothing moulded in the strokes' band unpainted", () => {
+    // The width above says the mark reaches both ends. This says the same thing
+    // from the other side, and is the one a rule that shaves an end cannot pass:
+    // no face moulded onto the front of the housing between the top and bottom
+    // of the strokes is still drawn in the housing's own plastic.
+    //
+    // It is bounded by the strokes rather than by whatever the split measures,
+    // so it cannot be quieted by widening that — the panel would come with it
+    // and fail the height check above.
+    const mesh = buildTerminalMesh().children.find(
+      (child): child is THREE.Mesh => child instanceof THREE.Mesh
+    )!;
+    const drawn = drawnGeometry(KEL2020_TERMINAL, TERMINAL_MOULDED_MARK);
+    const position = mesh.geometry.getAttribute("position");
+    const index = mesh.geometry.getIndex()!;
+    let unpainted = 0;
+    for (const group of drawn.groups) {
+      if (group.role !== "body") continue;
+      for (let face = group.start; face < group.start + group.count; face += 3) {
+        const corners = [0, 1, 2].map((corner) => {
+          const vertex = index.getX(face + corner);
+          return { y: position.getY(vertex), z: position.getZ(vertex) };
+        });
+        if (corners.every(({ y, z }) => z > 0.05 && y > 0.7768 && y < 0.8587)) unpainted++;
+      }
+    }
+    expect(unpainted).toBe(0);
+  });
+
+  it("draws the mark from both sides, so an open stroke is not culled hollow", () => {
+    // The characters are open shells: parts of the 2, the 0 and the 2 have no
+    // outward facet, only one turned into the unit, and culling it left bites in
+    // the strokes that the client photographed (Trello wQTcFyRn).
+    expect(markMaterial().side).toBe(THREE.DoubleSide);
   });
 });
 
