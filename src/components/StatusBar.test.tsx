@@ -47,4 +47,16 @@ describe("the Finalize button", () => {
   it("stays clickable whatever the state, so the issue list is always reachable", () => {
     expect(statusBar({}).hasAttribute("disabled")).toBe(false);
   });
+
+  // The pulse itself is an animation happy-dom will not run. What matters here
+  // is that it is carried by the same state as the colour, so the button cannot
+  // end up green without having said so, or keep pulsing at a design that has
+  // since broken.
+  it("carries the shared ready tell once the checks pass", () => {
+    expect(statusBar({ parts: [blower] }).classList.contains("ready-pulse")).toBe(true);
+  });
+
+  it("does not carry the ready tell while there is nothing to finalize", () => {
+    expect(statusBar({}).classList.contains("ready-pulse")).toBe(false);
+  });
 });
