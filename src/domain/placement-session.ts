@@ -166,7 +166,7 @@ export function elevationKeysApply(tool: ToolId): boolean {
  *
  * `null` once the footprint is closed and the draft is waiting for its height
  * and Place: there is nothing left to draw, and the camera should be free to
- * look at what was drawn. See ADR-0043.
+ * look at what was drawn. See ADR-0044.
  */
 export type DragDrawPhase = "anchor" | "close" | null;
 

@@ -44,7 +44,7 @@ type Control = {
 const CONTROLS: Control[] = [
   { icon: Icons.MouseLeft, input: "Left click", action: "Place" },
   // One input, two rows. The left drag draws the obstacle box while one is
-  // part-drawn (ADR-0043) and orbits the rest of the time, including once that
+  // part-drawn (ADR-0044) and orbits the rest of the time, including once that
   // box is closed and waiting for Place — so the row follows the drag itself
   // rather than the armed tool. A legend may only say what the app does.
   {

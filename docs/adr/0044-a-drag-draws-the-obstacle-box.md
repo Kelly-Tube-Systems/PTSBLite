@@ -1,4 +1,4 @@
-# ADR-0043: A left drag draws the obstacle box, and only while one is being drawn
+# ADR-0044: A left drag draws the obstacle box, and only while one is being drawn
 
 - **Status:** Accepted
 - **Date:** 2026-09-19
