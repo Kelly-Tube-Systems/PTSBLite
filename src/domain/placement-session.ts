@@ -1,4 +1,10 @@
 import { bendLandingCells, bendPlacementGhost, placeBend } from "@/domain/bend-placement";
+import {
+  blowerTerminalOrientation,
+  placeBlowerWithTerminal,
+  validateBlowerTerminalFootprint
+} from "@/domain/blower-terminal";
+import { companionOccupantId } from "@/domain/design-state";
 import { eraseAtCell } from "@/domain/erase-placement";
 import {
   DEFAULT_FREE_PLACEMENT_MEMORY,
@@ -73,9 +79,9 @@ export const INITIAL_PLACEMENT_SESSION: PlacementSession = {
 /**
  * Where the pointer's cell actually lands for the armed tool.
  *
- * A blower or a terminal aimed at an impenetrable obstacle steps onto it. Tubes
- * and bends continue from a port, while the obstacle tool must be able to draw
- * over existing occupants.
+ * A blower, a terminal, or the pair of a blower and a terminal aimed at an
+ * impenetrable obstacle steps onto it. Tubes and bends continue from a port,
+ * while the obstacle tool must be able to draw over existing occupants.
  */
 export function resolvePlacementCell(
   tool: ToolId,
@@ -86,6 +92,10 @@ export function resolvePlacementCell(
   switch (tool) {
     case "blower":
     case "terminal":
+    case "blowerTerminal":
+      // The pair steps up for the same reason its blower does: it is a blower
+      // being stood somewhere, and what the terminal on top of it needs is
+      // headroom rather than a different surface.
       return restOnObstacles(design, cell, buildArea);
     case "cursor":
     case "tube":
@@ -128,6 +138,15 @@ export type PlacementAction =
 
 function isFreePlacementTool(tool: ToolId): tool is FreePlacementType {
   return tool === "blower" || tool === "terminal";
+}
+
+/**
+ * Whether `R` turns this tool's orientation rather than a bend's rotation
+ * index. The blower-and-terminal pair is not a free placement — it is two of
+ * them — but it turns on the same ring and out of the same memory.
+ */
+function usesFreePlacementRotation(tool: ToolId): boolean {
+  return isFreePlacementTool(tool) || tool === "blowerTerminal";
 }
 
 /**
@@ -241,7 +260,7 @@ export function placementSessionReducer(
     // — and a few more presses is the cost he chose to pay for one less key.
     case "rotate":
       if (!rotationKeysApply(session.tool)) return session;
-      if (isFreePlacementTool(session.tool)) {
+      if (usesFreePlacementRotation(session.tool)) {
         // One ring of five orientations, stepped one way. It used to toggle
         // up/down on a separate axis, which left a blower that had been turned
         // sideways unable to point back up.
@@ -386,6 +405,41 @@ export function attemptPlacement(
       };
     }
 
+    // Two parts, one click. The pair does not snap — see blower-terminal.ts —
+    // so its orientation is only what it was last turned to, carried round the
+    // same ring by `R`.
+    case "blowerTerminal": {
+      const orientation = blowerTerminalOrientation(
+        session.freePlacementMemory,
+        session.freePlacementRotation
+      );
+      const placed = placeBlowerWithTerminal(design, {
+        blowerId: occupantId,
+        terminalId: companionOccupantId(occupantId),
+        cell,
+        orientation
+      });
+      if (!placed.ok) return unchanged({ status: "error", message: placed.message });
+      // Everything a single endpoint does on landing, for the same reasons: the
+      // orientation is remembered for the next one, `R` starts over, and the
+      // placement plane drops back to the floor of the storey (ADR-0031).
+      return {
+        session: withElevation(
+          {
+            ...session,
+            freePlacementMemory: rememberFreePlacementOrientation(
+              session.freePlacementMemory,
+              "blowerTerminal",
+              orientation
+            ),
+            freePlacementRotation: DEFAULT_FREE_PLACEMENT_ROTATION
+          },
+          floorBeneath(design.metadata, session.activeElevation)
+        ),
+        result: { status: "committed", design: placed.design }
+      };
+    }
+
     case "tube": {
       const placed = placeTube(design, { id: occupantId, cell, sourcePartId });
       return unchanged(
@@ -480,6 +534,17 @@ export function placementGhost(session: PlacementSession, design: DesignState): 
         memory: session.freePlacementMemory,
         rotationSteps: session.freePlacementRotation
       });
+    case "blowerTerminal": {
+      // One ghost for the pair: the click is refused or accepted as a whole, so
+      // previewing only the half that fits would promise a placement that is
+      // not on offer.
+      const dir = blowerTerminalOrientation(
+        session.freePlacementMemory,
+        session.freePlacementRotation
+      );
+      if (!validateBlowerTerminalFootprint(design, hoverCell, dir).ok) return null;
+      return { type: "blowerTerminal", cell: hoverCell, dir };
+    }
     case "tube":
       return tubePlacementGhost(design, hoverCell);
     case "bend":
@@ -515,6 +580,12 @@ export function placementLandingCells(session: PlacementSession, design: DesignS
     case "blower":
     case "terminal":
       return freePlacementLandingCells(design);
+    // Nothing lights up for the pair, because it has nothing to snap to: its
+    // blower's only port is taken by its own terminal (blower-terminal.ts).
+    // Every legal cell is as good as every other, which is what an empty set
+    // says — the same thing it says for the first blower of a design.
+    case "blowerTerminal":
+      return [];
     case "tube":
       return tubeLandingCells(design);
     case "bend":

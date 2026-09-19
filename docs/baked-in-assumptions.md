@@ -75,6 +75,21 @@ than it looks. *See Provisional below for the two-terminal fence.*
 
 **Single-direction system.** Assumed by how the topology is walked, not by the data.
 
+**A Build tile is one catalog part, with one exception.** The blower-and-terminal tile places two
+parts in one click and has no catalog entry of its own
+([ADR-0045](adr/0045-the-blower-and-terminal-pair-is-a-placement-not-a-part.md)); nothing below the
+tool knows the pair exists, so the BOM, the grid, validation and the saved design see two ordinary
+parts. What the model cannot express is an *assembly*: a thing that is one line on the parts list
+and several shapes in the viewport, or a group of placed parts that erase, move or count together.
+Another "place these two at once" shortcut costs about what this one did; a real assembly with its
+own part number is a `Part` type, a footprint and a BOM row, and the question of what erasing half
+of one means.
+
+**The pair does not snap to an open port, though the single endpoints do.** Its blower's only port
+is taken by its own terminal, so it is aimed with `R` and joined to the rest by Auto-Build
+(ADR-0045). Snapping it is not a small change: it needs an answer to which end lands on the port
+and where the rest of the unit then sits relative to the cursor.
+
 **Nothing below Y = 0.** The ground plane is the floor. Basements or below-grade runs would need the
 build area to describe a Y origin rather than assuming zero.
 

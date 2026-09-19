@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { designFromScene, emptyDesign } from "@/domain/design-state";
+import { companionOccupantId, designFromScene, emptyDesign } from "@/domain/design-state";
 import {
   attemptPlacement,
   commitObstacleDraft,
@@ -131,6 +131,10 @@ describe("resolvePlacementCell", () => {
     expect(resolvePlacementCell("blower", design, [1, 0, 1], AREA)).toEqual([1, 3, 1]);
     expect(resolvePlacementCell("terminal", design, [1, 0, 1], AREA)).toEqual([1, 3, 1]);
   });
+
+  it("stands the blower-and-terminal pair on one, as the blower in it would", () => {
+    expect(resolvePlacementCell("blowerTerminal", design, [1, 0, 1], AREA)).toEqual([1, 3, 1]);
+  });
 });
 
 describe("attemptPlacement", () => {
@@ -173,6 +177,54 @@ describe("attemptPlacement", () => {
     expect(remoted.result.status).toBe("committed");
     if (remoted.result.status !== "committed") return;
     expect(remoted.result.design.parts.at(-1)).toMatchObject({ id: "t1", cell: [6, 0, 0] });
+  });
+
+  it("places a blower and its terminal on one click, from the one id it is given", () => {
+    const { session: after, result } = attemptPlacement(
+      session({ tool: "blowerTerminal" }),
+      emptyDesign(),
+      [4, 0, 4],
+      "ppair"
+    );
+    expect(result.status).toBe("committed");
+    if (result.status !== "committed") return;
+    // Two parts, two ids, both derived from the click's own id so the session
+    // stays a function of its arguments.
+    expect(result.design.parts.map((p) => p.type)).toEqual(["blower", "terminal"]);
+    expect(result.design.parts.map((p) => p.id)).toEqual(["ppair", companionOccupantId("ppair")]);
+    expect(result.design.parts[0]).toMatchObject({ cell: [4, 0, 4], dir: [0, 1, 0] });
+    expect(result.design.parts[1]).toMatchObject({ cell: [4, 1, 4], axis: [0, 1, 0] });
+    expect(after.freePlacementMemory.blowerTerminal).toEqual([0, 1, 0]);
+    expect(after.freePlacementRotation).toEqual(DEFAULT_FREE_PLACEMENT_ROTATION);
+  });
+
+  it("turns the pair with R without turning the blower tool", () => {
+    let s = session({ tool: "blowerTerminal" });
+    s = placementSessionReducer(s, { type: "rotate" });
+    expect(s.ghostRotation).toBe(0);
+    expect(s.freePlacementRotation).toBe(1);
+
+    const { result } = attemptPlacement(s, emptyDesign(), [4, 0, 4], "ppair");
+    expect(result.status === "committed" && result.design.parts[0]).toMatchObject({
+      dir: [1, 0, 0]
+    });
+    expect(s.freePlacementMemory.blower).toEqual(
+      INITIAL_PLACEMENT_SESSION.freePlacementMemory.blower
+    );
+  });
+
+  it("commits neither part of the pair when the terminal is blocked", () => {
+    const design = designFromScene({
+      parts: [{ id: "b1", type: "blower", cell: [4, 2, 4], dir: [0, 1, 0] }],
+      obstacles: []
+    });
+    const { result } = attemptPlacement(
+      session({ tool: "blowerTerminal" }),
+      design,
+      [4, 0, 4],
+      "ppair"
+    );
+    expect(result.status).toBe("error");
   });
 
   it("reports the reason a placement was refused instead of committing", () => {
@@ -230,7 +282,7 @@ describe("attemptPlacement", () => {
     // placing a blower or a terminal." Chosen over leaving the setting where it
     // was, knowing the first tube after a raised blower then needs it put back
     // up to reach the port (ADR-0031).
-    for (const tool of ["blower", "terminal"] as const) {
+    for (const tool of ["blower", "terminal", "blowerTerminal"] as const) {
       const raised = session({ tool, activeElevation: 3, hoverCell: [2, 3, 2] });
       const { session: after, result } = attemptPlacement(raised, emptyDesign(), [2, 3, 2], "p");
       expect(result.status).toBe("committed");
@@ -359,6 +411,24 @@ describe("placementGhost", () => {
     expect(ghost?.type).toBe("blower");
   });
 
+  it("previews the blower-and-terminal pair as one shape", () => {
+    expect(
+      placementGhost(session({ tool: "blowerTerminal", hoverCell: [0, 0, 0] }), emptyDesign())
+    ).toEqual({ type: "blowerTerminal", cell: [0, 0, 0], dir: [0, 1, 0] });
+  });
+
+  it("takes the pair's preview away when only its terminal is blocked", () => {
+    // The cell under the cursor is free, so previewing the blower alone would
+    // offer a placement the click will refuse.
+    const design = designFromScene({
+      parts: [{ id: "b1", type: "blower", cell: [0, 2, 0], dir: [0, 1, 0] }],
+      obstacles: []
+    });
+    expect(
+      placementGhost(session({ tool: "blowerTerminal", hoverCell: [0, 0, 0] }), design)
+    ).toBeNull();
+  });
+
   it("previews the obstacle volume before the first click, not only the floor square", () => {
     // One cell, one foot tall, standing on the floor — the volume a click
     // starts, rather than nothing until a corner has been anchored.
@@ -423,6 +493,16 @@ describe("placementLandingCells", () => {
     });
     expect(placementLandingCells(session({ tool: "terminal" }), design)).toEqual([[1, 0, 0]]);
     expect(placementLandingCells(session({ tool: "blower" }), design)).toEqual([[1, 0, 0]]);
+  });
+
+  it("highlights nothing for the pair, which has nothing to snap to", () => {
+    // Its blower's only port is taken by its own terminal, so an open port
+    // elsewhere in the design is not somewhere the pair can land.
+    const design = designFromScene({
+      parts: [{ id: "b1", type: "blower", cell: [0, 0, 0], dir: [1, 0, 0] }],
+      obstacles: []
+    });
+    expect(placementLandingCells(session({ tool: "blowerTerminal" }), design)).toEqual([]);
   });
 
   it("follows the cursor for the obstacle tool", () => {

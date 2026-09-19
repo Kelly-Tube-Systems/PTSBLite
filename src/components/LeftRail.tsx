@@ -15,11 +15,17 @@ type RailItem = {
 type BuildPart = {
   id: ToolId;
   regKey: string;
+  /** A second catalog entry the tile also places, for the one tool that puts
+   * two parts down at once. The card then names and numbers both, because
+   * that is what the BOM will show — there is no combined part number to
+   * print instead, and inventing one would make the pair a third product. */
+  withRegKey?: string;
 };
 
 const BUILD_PARTS: BuildPart[] = [
   { id: "blower", regKey: "blower" },
   { id: "terminal", regKey: "terminal" },
+  { id: "blowerTerminal", regKey: "blower", withRegKey: "terminal" },
   { id: "tube", regKey: "tube6" },
   { id: "bend", regKey: "bend90" }
 ];
@@ -323,20 +329,23 @@ function PartCard({
   onClick: () => void;
 }) {
   const entry = partRegistry.get(part.regKey);
+  const second = part.withRegKey ? partRegistry.get(part.withRegKey) : null;
+  const name = second ? `${entry.name} + ${second.name}` : entry.name;
+  const partNo = second ? `${entry.partNo} + ${second.partNo}` : entry.partNo;
   return (
     <button
       className="part-card"
       onClick={onClick}
-      title={entry.name}
-      aria-label={entry.name}
+      title={name}
+      aria-label={name}
       aria-pressed={active}
     >
       <div className="part-card__preview">
-        <PartThumbnail type={entry.type} color={entry.color} />
+        <PartThumbnail type={entry.type} color={entry.color} seatedTerminalColor={second?.color} />
       </div>
       <div>
-        <div className="part-card__name">{entry.name}</div>
-        <div className="part-card__part-no">{entry.partNo}</div>
+        <div className="part-card__name">{name}</div>
+        <div className="part-card__part-no">{partNo}</div>
       </div>
     </button>
   );

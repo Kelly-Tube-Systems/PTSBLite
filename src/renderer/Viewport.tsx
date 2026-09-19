@@ -42,6 +42,7 @@ import {
   updateLineResolutions,
   VP
 } from "@/renderer/three-utils";
+import { blowerTerminalSeatCell } from "@/domain/blower-terminal";
 import { type PlenumBand, type RoomRect } from "@/domain/floors";
 import type { DragDrawPhase } from "@/domain/placement-session";
 import { STANDARD_VIEWS, type CameraView } from "@/renderer/camera-views";
@@ -944,6 +945,19 @@ export function Viewport({
         mesh = buildTerminalMesh({ axis: ghost.axis, ghost: true });
         const c = cellCenter(ghost.cell);
         mesh.position.set(c[0], c[1], c[2]);
+      } else if (ghost.type === "blowerTerminal") {
+        // Both halves in one group, so the height marker below measures the
+        // whole pair and the pair moves as one thing.
+        mesh = new THREE.Group();
+        const blower = buildBlowerMesh({ ghost: true });
+        const blowerCenter = cellCenter(ghost.cell);
+        blower.position.set(blowerCenter[0], blowerCenter[1], blowerCenter[2]);
+        blower.quaternion.copy(dirToQuat(ghost.dir));
+        mesh.add(blower);
+        const terminal = buildTerminalMesh({ axis: ghost.dir, ghost: true });
+        const seat = cellCenter(blowerTerminalSeatCell(ghost.cell, ghost.dir));
+        terminal.position.set(seat[0], seat[1], seat[2]);
+        mesh.add(terminal);
       } else if (ghost.type === "tube") {
         mesh = buildTubeMesh(ghost.from, ghost.to, {
           ghost: true,

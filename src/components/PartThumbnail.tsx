@@ -164,6 +164,26 @@ function Blower({ color }: { color: string }) {
   );
 }
 
+// The two parts the pair tile places: the two drawings either side of this
+// one, unchanged. Nothing new is drawn here for the same reason nothing new is
+// modelled in blower-terminal.ts — the pair is the two catalog parts, together.
+function BlowerWithTerminal({ color, terminalColor }: { color: string; terminalColor: string }) {
+  // The offset is screen pixels, measured off the two drawings rather than
+  // guessed: `iso` puts the blower's collar 40.1px down the frame and the
+  // terminal's base 49.4px down it, so 9.3px lands the one on the other.
+  // Nothing is scaled — `iso` works in absolute coordinates, so a scale would
+  // slide the drawing sideways as well as shrink it. The pair gets a taller
+  // viewBox instead and the SVG's own fitting does the shrinking.
+  return (
+    <>
+      <Blower color={color} />
+      <g transform="translate(0,-9.3)">
+        <Terminal color={terminalColor} />
+      </g>
+    </>
+  );
+}
+
 // The Kel2020 terminal: a clear barrel ribbed along its length between two
 // brushed collars, the slatted door and its green wordmark across the front,
 // the send button on the lower collar and the port on top. Drawn by eye like
@@ -303,22 +323,32 @@ function Bend({ color }: { color: string }) {
 
 export function PartThumbnail({
   type,
-  color
+  color,
+  seatedTerminalColor
 }: {
   type: string;
   /** Absent for a catalog entry the app never draws, such as the control box. */
   color?: string;
+  /** The terminal's colour, for the one tile that places a blower and a
+   * terminal together. Its presence is what says to draw the pair. */
+  seatedTerminalColor?: string;
 }) {
   if (!color) return null;
+  const seated = type === "blower" ? seatedTerminalColor : undefined;
   return (
     <svg
       width="100%"
       height="100%"
-      viewBox="0 0 64 56"
+      // A blower with a terminal on it stands 3 ft where every other part in
+      // the drawer is 1 or 2, so it is given the taller frame rather than being
+      // squeezed into this one. `meet` then fits it to the same card, which is
+      // what makes the pair read as bigger than its two halves.
+      viewBox={seated ? "0 -4 64 68" : "0 0 64 56"}
       preserveAspectRatio="xMidYMid meet"
       className="part-thumbnail"
     >
-      {type === "blower" && <Blower color={color} />}
+      {seated && <BlowerWithTerminal color={color} terminalColor={seated} />}
+      {type === "blower" && !seated && <Blower color={color} />}
       {type === "terminal" && <Terminal color={color} />}
       {type === "tube" && <Tube color={color} />}
       {type === "bend" && <Bend color={color} />}

@@ -35,6 +35,20 @@ export function newOccupantId(
   }
 }
 
+/**
+ * The id for the second occupant of a click that creates two — the terminal
+ * that comes down with a blower.
+ *
+ * Derived rather than generated so that `attemptPlacement` still takes one id
+ * per click and stays a function of its arguments. It cannot collide: every
+ * generated id is a prefix letter followed by a UUID, which is a fixed length,
+ * so appending to one can never produce another; and two clicks start from two
+ * different UUIDs. `addPart` asserts the id is free regardless.
+ */
+export function companionOccupantId(occupantId: string): string {
+  return `${occupantId}+`;
+}
+
 function withMetadata(meta?: Partial<DesignMetadata>): DesignMetadata {
   const multiFloor = meta?.multiFloor ?? false;
   return {
