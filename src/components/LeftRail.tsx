@@ -223,7 +223,7 @@ function DrawerButton({
         aria-expanded={open}
         aria-pressed={active}
       >
-        <Glyph size={24} />
+        <Glyph size={29} />
       </button>
     </RailSlot>
   );
@@ -376,7 +376,7 @@ function RailButton({
         // Keyboard focus (Tab) still works and shows the ring via :focus-visible.
         onMouseDown={(e) => e.preventDefault()}
       >
-        <ItemIcon size={23} />
+        <ItemIcon size={28} />
       </button>
     </RailSlot>
   );

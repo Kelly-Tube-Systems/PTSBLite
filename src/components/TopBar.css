@@ -1,10 +1,10 @@
 .topbar {
-  height: 62px;
+  height: 76px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 14px;
+  gap: 14px;
+  padding: 0 18px;
   background: linear-gradient(180deg, #181c25, #14181f);
   border-bottom: 1px solid var(--line);
   position: relative;
@@ -17,20 +17,35 @@
   align-items: center;
   gap: 7px;
   flex-shrink: 0;
-  font-size: 19px;
+  font-size: 23px;
   font-weight: 600;
+}
+
+/* The bar's own buttons, sized to the bar. `.topbtn` itself is shared with the
+   dialogs, the welcome screen and the finalize sheet, none of which Nick asked
+   to grow, so the larger size is scoped to the bar rather than applied to the
+   class. */
+.topbar .topbtn {
+  height: 44px;
+  padding: 0 17px;
+  border-radius: 8px;
+  font-size: 16px;
+}
+.topbar .topbtn.icon {
+  width: 44px;
+  padding: 0;
 }
 
 /* A button, but it reads as the document's label until pointed at: chrome that
    announced itself as editable would compete with the controls either side. */
 .topbar__document {
-  font-size: 11.5px;
+  font-size: 13.5px;
   color: var(--text-dim);
   max-width: 260px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding: 4px 7px;
+  padding: 5px 9px;
   border: 1px solid transparent;
   border-radius: 6px;
   background: none;
@@ -84,19 +99,21 @@
   margin: 5px 4px;
 }
 
+/* Sized with the bar it drops out of: a 44px "View" button opening 34px rows
+   reads as two different pieces of chrome. */
 .viewmenu-item {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
-  height: 34px;
-  padding: 0 10px;
+  height: 40px;
+  padding: 0 12px;
   border-radius: 6px;
   background: transparent;
   color: var(--text-mut);
   border: none;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   text-align: left;
