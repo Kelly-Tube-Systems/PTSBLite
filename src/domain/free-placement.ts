@@ -99,8 +99,8 @@ function modulo(n: number, d: number): number {
 }
 
 /**
- * Turn an orientation `steps` places around the ring. Negative steps go back,
- * which is what shift-`R` does.
+ * Turn an orientation `steps` places around the ring. The ring is closed, so
+ * `R` stepping one way reaches every orientation in it.
  *
  * An orientation the ring does not hold — a part snapped to a downward-facing
  * port, say — enters the ring at the top on the first press rather than being

@@ -456,8 +456,8 @@ describe("a two-floor design", () => {
 
   it("offers the rotate keys only where they still turn something", async () => {
     // The client's second pass over the same complaint: having lost [ and ],
-    // the obstacle tool went on advertising R / ⇧R, which turns nothing on a
-    // volume drawn corner to corner.
+    // the obstacle tool went on advertising R, which turns nothing on a volume
+    // drawn corner to corner.
     await renderApp();
     const legend = () => within(document.getElementById("controls-legend-list") as HTMLElement);
 
@@ -472,6 +472,33 @@ describe("a two-floor design", () => {
     // Back to a tool the keys turn, and they are offered again.
     armBlower();
     expect(legend().queryByText("Rotate")).toBeTruthy();
+  });
+
+  it("neither offers nor answers ⇧R", async () => {
+    // "R and Shift+R is the same tool but just in reverse" — the client had the
+    // reverse dropped rather than kept as a second way round, so the key is
+    // inert as well as unadvertised. R alone still reaches every orientation.
+    await renderApp();
+    const legend = () => within(document.getElementById("controls-legend-list") as HTMLElement);
+    const dir = () => {
+      const ghost = viewport.props?.ghost;
+      return ghost?.type === "blower" ? ghost.dir : null;
+    };
+
+    armBlower();
+    act(() => viewport.props?.onHover?.([2, 0, 2]));
+    expect(legend().queryByText("Rotate")).toBeTruthy();
+    expect(legend().queryByText("⇧R")).toBeNull();
+    expect(screen.queryByText("Shift+R")).toBeNull();
+
+    // R turns the ghost; the same key with shift held leaves it where it is.
+    const upright = dir();
+    fireEvent.keyDown(window, { key: "r" });
+    const turned = dir();
+    expect(turned).not.toEqual(upright);
+
+    fireEvent.keyDown(window, { key: "R", shiftKey: true });
+    expect(dir()).toEqual(turned);
   });
 
   it("does not offer right click as a way to erase", async () => {

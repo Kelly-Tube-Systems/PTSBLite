@@ -148,11 +148,6 @@ describe("free placement orientation", () => {
     }
   });
 
-  it("turns the other way on shift-R", () => {
-    expect(resolveFreePlacementOrientation([0, 1, 0], -1)).toEqual([0, 0, -1]);
-    expect(resolveFreePlacementOrientation([0, 1, 0], 1)).toEqual([1, 0, 0]);
-  });
-
   it("brings an orientation the ring does not hold into it on the first press", () => {
     // A part snapped to a downward-facing port starts outside the ring; a
     // rotate key must still visibly do something.

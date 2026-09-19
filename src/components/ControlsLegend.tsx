@@ -41,13 +41,7 @@ const CONTROLS: Control[] = [
   { icon: Icons.Scroll, input: "Scroll", action: "Zoom" },
   {
     icon: Icons.Keys,
-    input: (
-      <>
-        <kbd>R</kbd>
-        <span className="legend__or">/</span>
-        <kbd>⇧R</kbd>
-      </>
-    ),
+    input: <kbd>R</kbd>,
     action: "Rotate",
     applies: rotationKeysApply
   },
