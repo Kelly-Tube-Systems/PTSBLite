@@ -81,7 +81,6 @@ describe("placeBlowerWithTerminal", () => {
   it("leaves two ordinary parts behind, not a third kind of part", () => {
     const { blower, terminal } = placedPair(CELL, [0, 1, 0]);
     expect(blower.type).toBe("blower");
-    expect(blower.pedestalFeet).toBeUndefined();
     expect(terminal.type).toBe("terminal");
   });
 

@@ -15,9 +15,11 @@ import {
 import { KEL2020_TERMINAL } from "@/data/kel2020-geometry";
 import { drawnGeometry, type BakedRole } from "@/renderer/baked-geometry";
 import {
+  beginDragDraw,
   cellFromWorldPoint,
   clickCellForTool,
   createViewportDragState,
+  dragDrawRelease,
   moveViewportDrag,
   partIdForObject,
   pickPointerCell
@@ -44,6 +46,41 @@ describe("Viewport click cell resolution", () => {
 
   it("floors world hit coordinates to grid cells, including negative coordinates", () => {
     expect(cellFromWorldPoint({ x: -1.05, y: 4.99, z: -0.01 })).toEqual([-2, 4, -1]);
+  });
+});
+
+describe("drawing a box with a drag", () => {
+  it("leaves the drag to the camera when nothing is being drawn", () => {
+    expect(beginDragDraw(null, [1, 0, 1])).toBeNull();
+  });
+
+  it("leaves the drag to the camera when the press is off the grid", () => {
+    expect(beginDragDraw("anchor", null)).toBeNull();
+  });
+
+  it("closes the box on the square the drag ends over", () => {
+    const gesture = beginDragDraw("anchor", [1, 0, 1]);
+    expect(gesture).toEqual({ from: [1, 0, 1], anchored: true });
+    expect(dragDrawRelease(gesture!, [4, 0, 6])).toEqual([4, 0, 6]);
+  });
+
+  it("leaves a press and release on one square as the first of two clicks", () => {
+    // The press already put that corner down, so closing here as well would
+    // turn every first click into a finished one-foot box.
+    const gesture = beginDragDraw("anchor", [1, 0, 1]);
+    expect(dragDrawRelease(gesture!, [1, 0, 1])).toBeNull();
+  });
+
+  it("closes on the release when a click anchored the corner first", () => {
+    // Nothing was anchored by this press, so the release is the second click —
+    // whether the pointer travelled between the two or not.
+    const gesture = beginDragDraw("close", [1, 0, 1]);
+    expect(gesture).toEqual({ from: [1, 0, 1], anchored: false });
+    expect(dragDrawRelease(gesture!, [1, 0, 1])).toEqual([1, 0, 1]);
+  });
+
+  it("closes nothing when the release lands off the grid", () => {
+    expect(dragDrawRelease({ from: [1, 0, 1], anchored: false }, null)).toBeNull();
   });
 });
 

@@ -83,8 +83,13 @@ export function ViewportHUD({
           ))}
         </div>
       )}
+      {/* The strip exists only once the footprint is drawn, so appearing at all
+          is its "you can use me now" — it pulses on arrival rather than on a
+          state change, and carries the accent the other two wear when live.
+          Testers were drawing a footprint and not noticing they had been handed
+          a height and a Place button. */}
       {obstacleReady && (
-        <div className="hud__obstacle-controls">
+        <div className="hud__obstacle-controls ready-pulse">
           <Icons.Obstacle size={12} className="hud__obstacle-icon" />
           {/* Height only: an obstacle stands on the floor of the storey it was
               drawn on, so there is no base to set. */}

@@ -79,15 +79,9 @@ export const INITIAL_PLACEMENT_SESSION: PlacementSession = {
 /**
  * Where the pointer's cell actually lands for the armed tool.
  *
- * Either kind of blower, a terminal, or the pair of a blower and a terminal,
- * aimed at an impenetrable obstacle steps onto it. Tubes and bends continue
- * from a port, while the obstacle tool must be able to draw over existing
- * occupants.
- *
- * The pedestal blower was left out of this when the step-up shipped, on the
- * grounds that its mast reached the floor and must not pass through whatever
- * holds it up. It now stands on the obstacle instead (ADR-0032), so there is
- * nothing to drive through and the tool steps up like the rest.
+ * A blower, a terminal, or the pair of a blower and a terminal aimed at an
+ * impenetrable obstacle steps onto it. Tubes and bends continue from a port,
+ * while the obstacle tool must be able to draw over existing occupants.
  */
 export function resolvePlacementCell(
   tool: ToolId,
@@ -97,7 +91,6 @@ export function resolvePlacementCell(
 ): Vec3 {
   switch (tool) {
     case "blower":
-    case "blowerPedestal":
     case "terminal":
     case "blowerTerminal":
       // The pair steps up for the same reason its blower does: it is a blower
@@ -144,7 +137,7 @@ export type PlacementAction =
   | { type: "apply-attempt"; session: PlacementSession };
 
 function isFreePlacementTool(tool: ToolId): tool is FreePlacementType {
-  return tool === "blower" || tool === "blowerPedestal" || tool === "terminal";
+  return tool === "blower" || tool === "terminal";
 }
 
 /**
@@ -168,6 +161,32 @@ function usesFreePlacementRotation(tool: ToolId): boolean {
  */
 export function elevationKeysApply(tool: ToolId): boolean {
   return tool !== "obstacle";
+}
+
+/**
+ * What a left drag across the grid does with the armed tool.
+ *
+ * Every tool but one orbits the camera, which is what a left drag has always
+ * done. The obstacle tool is the exception while its box is still being drawn:
+ * people reach for a drag the way they would in any other drawing tool, and got
+ * the view spinning with a corner anchored behind them. So a drag draws the box
+ * instead, in one of two phases —
+ *
+ * - `"anchor"`: nothing is down yet, so the press puts the first corner on the
+ *   grid and the release closes the footprint on the square it lands on.
+ * - `"close"`: a corner is already down from a first click, so the press adds
+ *   nothing and the release closes the footprint.
+ *
+ * `null` once the footprint is closed and the draft is waiting for its height
+ * and Place: there is nothing left to draw, and the camera should be free to
+ * look at what was drawn. See ADR-0044.
+ */
+export type DragDrawPhase = "anchor" | "close" | null;
+
+export function dragDrawPhase(session: PlacementSession): DragDrawPhase {
+  if (session.tool !== "obstacle") return null;
+  if (obstaclePlacementDraftHasFootprint(session.obstacleDraft)) return null;
+  return session.obstacleDraft ? "close" : "anchor";
 }
 
 /**
@@ -346,10 +365,8 @@ export function attemptPlacement(
     // Blowers and terminals place identically: anywhere legal, snapping to an
     // open port when there is one under the cursor. Terminal 1 used to be a
     // third case, pinned to the blower's outlet cell, until the client withdrew
-    // that rule (ADR-0019). A pedestal blower is a fourth tool but not a fourth
-    // rule — it places as a blower and grows its mast underneath.
+    // that rule (ADR-0019).
     case "blower":
-    case "blowerPedestal":
     case "terminal": {
       // The same orientation the ghost previews, resolved the same way, so what
       // gets placed is what was on screen. It is worked out here rather than
@@ -509,17 +526,9 @@ export function placementGhost(session: PlacementSession, design: DesignState): 
     case "erase":
       return null;
     case "blower":
-    case "blowerPedestal":
-      return freePlacementGhost({
-        type: tool,
-        design,
-        cell: hoverCell,
-        memory: session.freePlacementMemory,
-        rotationSteps: session.freePlacementRotation
-      });
     case "terminal":
       return freePlacementGhost({
-        type: "terminal",
+        type: tool,
         design,
         cell: hoverCell,
         memory: session.freePlacementMemory,
@@ -569,7 +578,6 @@ export function placementLandingCells(session: PlacementSession, design: DesignS
     case "erase":
       return [];
     case "blower":
-    case "blowerPedestal":
     case "terminal":
       return freePlacementLandingCells(design);
     // Nothing lights up for the pair, because it has nothing to snap to: its

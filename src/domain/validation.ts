@@ -1,7 +1,6 @@
 import { partRegistry, type PartRegistry } from "@/domain/part-registry";
 import { totalPathLength } from "@/domain/parts";
 import { bendFootprint } from "@/domain/occupant-footprints";
-import { hasPedestal, pedestalCells } from "@/domain/pedestal";
 import { terminalCells } from "@/domain/terminal";
 import { computeTopology } from "@/domain/topology";
 import type { BlowerPart, DesignState, Obstacle, Part, TerminalPart, Vec3, Warning } from "@/types";
@@ -121,11 +120,6 @@ export function validate(design: DesignState, registry: PartRegistry = partRegis
 }
 
 function partFootprint(part: Part, registry: PartRegistry): Vec3[] {
-  // The mast under a pedestal blower is drawn and occupies cells, so an
-  // obstacle it passes through is as much a fault as one a tube passes through.
-  if (hasPedestal(part)) {
-    return [cellAt(part.cell), ...pedestalCells(cellAt(part.cell), part.pedestalFeet)];
-  }
   if (part.type === "blower") return [cellAt(part.cell)];
   // Both feet of a terminal are solid, so an obstacle through either is a fault.
   if (part.type === "terminal") return terminalCells(cellAt(part.cell), part.axis);

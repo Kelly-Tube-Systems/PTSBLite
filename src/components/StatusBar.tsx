@@ -59,10 +59,12 @@ export function StatusBar({ design, warnings, expanded, onToggle, onFinalize }: 
         {/* The same state drives Finalize, so the button goes green at exactly
             the moment the label beside it says the checks pass. It stays
             clickable in every state: a design that is still short of valid is
-            when you most want the dialog's issue list. */}
+            when you most want the dialog's issue list. Passing is also the
+            moment it pulses, the same tell Auto-Build and the obstacle strip
+            give when they become usable. */}
         <button
           type="button"
-          className="status-bar__finalize"
+          className={`status-bar__finalize${okState ? " ready-pulse" : ""}`}
           data-state={state}
           onClick={onFinalize}
         >

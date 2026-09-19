@@ -3,6 +3,7 @@ import { companionOccupantId, designFromScene, emptyDesign } from "@/domain/desi
 import {
   attemptPlacement,
   commitObstacleDraft,
+  dragDrawPhase,
   INITIAL_PLACEMENT_SESSION,
   placementGhost,
   placementLandingCells,
@@ -129,12 +130,6 @@ describe("resolvePlacementCell", () => {
   it("stands a blower or terminal on an impenetrable obstacle", () => {
     expect(resolvePlacementCell("blower", design, [1, 0, 1], AREA)).toEqual([1, 3, 1]);
     expect(resolvePlacementCell("terminal", design, [1, 0, 1], AREA)).toEqual([1, 3, 1]);
-  });
-
-  it("stands a pedestal blower on one too, since its mast now stands on the top", () => {
-    // The client asked for the step-up to cover the pedestal tool as well; the
-    // mast stands on the obstacle rather than passing through it (ADR-0032).
-    expect(resolvePlacementCell("blowerPedestal", design, [1, 0, 1], AREA)).toEqual([1, 3, 1]);
   });
 
   it("stands the blower-and-terminal pair on one, as the blower in it would", () => {
@@ -287,7 +282,7 @@ describe("attemptPlacement", () => {
     // placing a blower or a terminal." Chosen over leaving the setting where it
     // was, knowing the first tube after a raised blower then needs it put back
     // up to reach the port (ADR-0031).
-    for (const tool of ["blower", "blowerPedestal", "terminal", "blowerTerminal"] as const) {
+    for (const tool of ["blower", "terminal", "blowerTerminal"] as const) {
       const raised = session({ tool, activeElevation: 3, hoverCell: [2, 3, 2] });
       const { session: after, result } = attemptPlacement(raised, emptyDesign(), [2, 3, 2], "p");
       expect(result.status).toBe("committed");
@@ -369,6 +364,34 @@ describe("commitObstacleDraft", () => {
       "obox"
     ]);
     expect(after.obstacleDraft).toBeNull();
+  });
+});
+
+describe("dragDrawPhase", () => {
+  it("leaves the drag to the camera for every other tool", () => {
+    for (const tool of ["cursor", "blower", "terminal", "tube", "bend", "erase"] as const) {
+      expect(dragDrawPhase(session({ tool }))).toBeNull();
+    }
+  });
+
+  it("draws from the press while the obstacle tool has nothing down", () => {
+    expect(dragDrawPhase(session({ tool: "obstacle" }))).toBe("anchor");
+  });
+
+  it("draws from the release once a first click has anchored a corner", () => {
+    expect(
+      dragDrawPhase(session({ tool: "obstacle", obstacleDraft: { cornerA: [0, 0, 0] } }))
+    ).toBe("close");
+  });
+
+  it("gives the drag back to the camera once the footprint is closed", () => {
+    // Nothing left to draw: the draft is waiting for its height and Place, and
+    // the visitor should be able to look at the box from another angle.
+    const drafted = session({
+      tool: "obstacle",
+      obstacleDraft: { cornerA: [0, 0, 0], cornerB: [2, 0, 2], baseY: 0, height: 1 }
+    });
+    expect(dragDrawPhase(drafted)).toBeNull();
   });
 });
 

@@ -123,9 +123,8 @@ const COLLAR = "#7a8598";
 // KTS geometry in ADR-0033. A card is a quarter-inch icon and this file cannot
 // import Three.js, so the two are kept recognisably the same part rather than
 // the same shape.
-// The unit itself is drawn `y` feet up its own axis so the pedestal variant can
-// raise it without a second copy of the geometry.
-function BlowerBody({ color, y = 0 }: { color: string; y?: number }) {
+function Blower({ color }: { color: string }) {
+  const y = -3;
   return (
     <>
       <Cylinder
@@ -165,64 +164,23 @@ function BlowerBody({ color, y = 0 }: { color: string; y?: number }) {
   );
 }
 
-function Blower({ color }: { color: string }) {
-  return (
-    <g transform="translate(0,-3)">
-      <BlowerBody color={color} />
-    </g>
-  );
-}
-
-// The two parts the pair tile places: the blower, and the terminal seated on
-// its port. Both are the drawings above, unchanged — nothing new is drawn here
-// for the same reason nothing new is modelled in blower-terminal.ts. The pair
-// is the two catalog parts, together.
+// The two parts the pair tile places: the two drawings either side of this
+// one, unchanged. Nothing new is drawn here for the same reason nothing new is
+// modelled in blower-terminal.ts — the pair is the two catalog parts, together.
 function BlowerWithTerminal({ color, terminalColor }: { color: string; terminalColor: string }) {
   // The offset is screen pixels, measured off the two drawings rather than
-  // guessed: `iso` puts the blower's collar 10.4px above the projection origin
-  // and the terminal's base 49.4px below it, so 28.9px lands the one on the
-  // other. Nothing is scaled here — `iso` works in absolute coordinates, so a
-  // scale would slide the drawing sideways as well as shrink it. The pair gets
-  // a taller viewBox instead and the SVG's own fitting does the shrinking.
+  // guessed: `iso` puts the blower's collar 40.1px down the frame and the
+  // terminal's base 49.4px down it, so 9.3px lands the one on the other.
+  // Nothing is scaled — `iso` works in absolute coordinates, so a scale would
+  // slide the drawing sideways as well as shrink it. The pair gets a taller
+  // viewBox instead and the SVG's own fitting does the shrinking.
   return (
     <>
-      <BlowerBody color={color} />
-      <g transform="translate(0,-28.9)">
+      <Blower color={color} />
+      <g transform="translate(0,-9.3)">
         <Terminal color={terminalColor} />
       </g>
     </>
-  );
-}
-
-// The same unit standing on its mast — what the drawer's fifth card shows, and
-// what the viewport draws once the blower is raised off the floor. The mast is
-// tube-coloured because that is what it is made of, even though it is counted
-// in no BOM row (see domain/pedestal.ts).
-function PedestalBlower({ color }: { color: string }) {
-  const tube = "#9AA4B4";
-  const lift = 2.5;
-  return (
-    <g transform="translate(0,1.5)">
-      <Cylinder
-        c0={[0, -3.6, 0]}
-        c1={[0, -3.2, 0]}
-        r={1.25}
-        basisA={[1, 0, 0]}
-        basisB={[0, 0, 1]}
-        color={shade(tube, -0.3)}
-        capColor={shade(tube, -0.12)}
-      />
-      <Cylinder
-        c0={[0, -3.2, 0]}
-        c1={[0, lift - 1.5, 0]}
-        r={0.5}
-        basisA={[1, 0, 0]}
-        basisB={[0, 0, 1]}
-        color={tube}
-        capColor={shade(tube, 0.2)}
-      />
-      <BlowerBody color={color} y={lift} />
-    </g>
   );
 }
 
@@ -366,15 +324,11 @@ function Bend({ color }: { color: string }) {
 export function PartThumbnail({
   type,
   color,
-  pedestal = false,
   seatedTerminalColor
 }: {
   type: string;
   /** Absent for a catalog entry the app never draws, such as the control box. */
   color?: string;
-  /** Draw a blower standing on its mast. The catalog calls a pedestal blower a
-   * blower, which is right about the part and wrong about the picture. */
-  pedestal?: boolean;
   /** The terminal's colour, for the one tile that places a blower and a
    * terminal together. Its presence is what says to draw the pair. */
   seatedTerminalColor?: string;
@@ -389,14 +343,12 @@ export function PartThumbnail({
       // the drawer is 1 or 2, so it is given the taller frame rather than being
       // squeezed into this one. `meet` then fits it to the same card, which is
       // what makes the pair read as bigger than its two halves.
-      viewBox={seated ? "0 -24 64 68" : "0 0 64 56"}
+      viewBox={seated ? "0 -4 64 68" : "0 0 64 56"}
       preserveAspectRatio="xMidYMid meet"
       className="part-thumbnail"
     >
       {seated && <BlowerWithTerminal color={color} terminalColor={seated} />}
-      {type === "blower" &&
-        !seated &&
-        (pedestal ? <PedestalBlower color={color} /> : <Blower color={color} />)}
+      {type === "blower" && !seated && <Blower color={color} />}
       {type === "terminal" && <Terminal color={color} />}
       {type === "tube" && <Tube color={color} />}
       {type === "bend" && <Bend color={color} />}

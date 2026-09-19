@@ -3,7 +3,6 @@ export type Vec3 = readonly [number, number, number];
 export type ToolId =
   | "cursor"
   | "blower"
-  | "blowerPedestal"
   | "terminal"
   /** Lays a blower and a terminal down together, seated. Two parts, one click —
    * see blower-terminal.ts. */
@@ -18,11 +17,6 @@ export type BlowerPart = {
   readonly type: "blower";
   readonly cell: Vec3;
   readonly dir: Vec3;
-  /** Height of the mast under a blower placed with a pedestal, in feet. Absent
-   * on a plain blower; 0 on a pedestal blower standing on the floor. Drawn and
-   * occupying grid cells, but counted in no BOM row and no centerline — see
-   * pedestal.ts and ADR-0020. */
-  readonly pedestalFeet?: number;
 };
 
 export type TerminalPart = {
@@ -69,7 +63,7 @@ export type Obstacle = {
 };
 
 export type Ghost =
-  | { type: "blower"; cell: Vec3; dir: Vec3; pedestalFeet?: number }
+  | { type: "blower"; cell: Vec3; dir: Vec3 }
   | { type: "terminal"; cell: Vec3; axis: Vec3 }
   /**
    * The blower-and-terminal pair previewed as one shape: `cell` and `dir` are

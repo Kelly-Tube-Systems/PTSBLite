@@ -101,16 +101,14 @@ and the renderer treat one no differently. What went was the base stepper the HU
 at the client's request: a shelf has a height, not two numbers. Restoring a floating volume is a
 control and a clamp, not a model change.
 
-**A blower's pedestal is the only uncounted geometry, and it is a property rather than a part.**
-`BlowerPart.pedestalFeet` holds the height of the mast under a blower placed with a pedestal; it is
-drawn and it claims grid cells, but it reaches no BOM row, no tube footage and no centerline
-([ADR-0020](adr/0020-a-pedestal-is-drawn-but-not-counted.md)). Nothing generalizes from it: there
-is no notion of an uncounted part, and a second piece of hardware that "does not count" — a hanger,
-a bracket, a wall mount — would be another property on another part rather than a category the
-model already has. The mast measures to whatever the blower stands on — the floor of its storey, or the top of an
-impenetrable obstacle under it ([ADR-0032](adr/0032-a-pedestal-stands-on-what-is-under-it.md)) — and
-is refused when something is in the column between the two. It does not follow a blower that is
-later re-elevated, because placed parts cannot be moved at all (see *Selection and move*).
+**There is no uncounted geometry, and no way to express any.** Everything drawn is a `Part` that
+reaches the BOM, the footage total and the 300 ft centerline. The blower's pedestal was the one
+exception — a mast held as `BlowerPart.pedestalFeet`, drawn and claiming grid cells but counted
+nowhere — until the client junked the part
+([ADR-0043](adr/0043-the-client-junks-the-pedestal-blower.md)). A piece of hardware that "does not
+count" — a hanger, a bracket, a wall mount — is a property on the part it mounts, the shape
+[ADR-0020](adr/0020-a-pedestal-is-drawn-but-not-counted.md) argued for, rather than a category the
+model has waiting.
 
 **Split sleeves are derived on every read, and the rule that places them is in code.** Sleeves are
 not in `parts` and not in the saved design: `splitSleeves` recomputes them from the joints
@@ -151,7 +149,7 @@ worth asking about early.
 
 **No part number in `src/data/parts.json` is invented any more.** KTS delivered numbers on
 2026-09-10, the client answered the questions they raised on 2026-09-14, and on 2026-09-17 he
-listed the catalog himself: the blower is `A444200` whether or not it stands on a pedestal, the
+listed the catalog himself: the blower is `A444200`, the
 terminal `A444940`, the tube `ALP78435`, the split sleeve `ALP64401` and the bend `ALP08401`. The
 last two changes are his corrections to what the parts folder carried
 ([ADR-0036](adr/0036-the-client-corrects-the-tube-part-number.md),
@@ -177,11 +175,6 @@ blower unit, 1:1, and said the part is "not shown visually"
 a catalog entry with a name and a number and no colour, geometry, footprint or Build-drawer card,
 and `PartCatalogEntry.color` is optional to say so. A second unmodelled part would fit the same
 shape; a request to *draw* the box would not, and is new geometry.
-
-**A pedestal blower is one line on the parts list with the plain blower.** They are one KTS part,
-so a design with one of each orders two of `A444200`; the row notes how many stand on a pedestal.
-Nothing in the list describes the pedestal itself, because it is mounting rather than a part
-([ADR-0020](adr/0020-a-pedestal-is-drawn-but-not-counted.md)).
 
 **Part `name` values are ours, not KTS's.** They label the parts palette, the active-tool bar and
 the BOM rows. The KTS catalog names are recorded in ADR-0029 and are what to quote when ordering.

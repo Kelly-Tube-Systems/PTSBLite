@@ -1,4 +1,6 @@
 import * as THREE from "three";
+import { vEq } from "@/domain/vec3";
+import type { DragDrawPhase } from "@/domain/placement-session";
 import type { ToolId, Vec3 } from "@/types";
 
 /**
@@ -78,6 +80,44 @@ export function endViewportDrag(state: ViewportDragState): ViewportDragState {
     active: false,
     dragging: false
   };
+}
+
+/**
+ * A left press that is drawing a box rather than orbiting the camera.
+ *
+ * The gesture is remembered from the press because the release has to know two
+ * things the phase alone cannot tell it: which square the press was on, and
+ * whether the press itself put a corner down.
+ */
+export type DragDrawGesture = {
+  /** The cell the press landed on. */
+  from: Vec3;
+  /** Whether the press anchored the first corner, rather than a click before it. */
+  anchored: boolean;
+};
+
+/**
+ * The gesture a left press starts, or null when the drag orbits as usual —
+ * every tool but a part-drawn obstacle, and a press with no cell under it.
+ */
+export function beginDragDraw(phase: DragDrawPhase, cell: Vec3 | null): DragDrawGesture | null {
+  if (!phase || !cell) return null;
+  return { from: cell, anchored: phase === "anchor" };
+}
+
+/**
+ * The cell the release closes the footprint on, or null when the gesture was a
+ * click and the two-click flow should be left to carry on.
+ *
+ * A press and release on one square is a click, and a press that anchored has
+ * already put that corner down: closing there as well would turn every first
+ * click into a finished one-foot box. A release on any other square is the drag
+ * the client asked for, and closes the box across it.
+ */
+export function dragDrawRelease(gesture: DragDrawGesture, cell: Vec3 | null): Vec3 | null {
+  if (!cell) return null;
+  if (gesture.anchored && vEq(gesture.from, cell)) return null;
+  return cell;
 }
 
 export function partIdForObject(object: THREE.Object3D): string | undefined {

@@ -1,6 +1,6 @@
 # ADR-0032: A pedestal stands on what is under it
 
-- **Status:** Accepted; amends [ADR-0020](0020-a-pedestal-is-drawn-but-not-counted.md)
+- **Status:** Superseded by [ADR-0043](0043-the-client-junks-the-pedestal-blower.md), which removes the part; amended [ADR-0020](0020-a-pedestal-is-drawn-but-not-counted.md)
 - **Date:** 2026-09-15
 
 [ADR-0020](0020-a-pedestal-is-drawn-but-not-counted.md) defined the mast under a pedestal blower as

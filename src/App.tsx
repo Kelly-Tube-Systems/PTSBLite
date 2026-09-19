@@ -37,6 +37,7 @@ import {
 import {
   attemptPlacement,
   commitObstacleDraft,
+  dragDrawPhase,
   INITIAL_PLACEMENT_SESSION,
   placementGhost,
   placementLandingCells,
@@ -644,6 +645,10 @@ export default function App({ platform }: AppProps) {
         ? ghostElevation(ghostState)
         : activeElevation;
 
+  // Whether a left drag draws the obstacle box instead of orbiting, which the
+  // viewport acts on and the controls legend describes.
+  const dragDraw = dragDrawPhase(placement);
+
   const portMarkers = useMemo(() => openPortMarkers(design, tool), [design, tool]);
   // Heights are labelled while a placement tool is armed, and while an
   // Auto-Build run stands: they answer the question elevation raises, and would
@@ -703,6 +708,7 @@ export default function App({ platform }: AppProps) {
             roomTop={roomHeightFeet(design.metadata)}
             ghost={ghostState}
             tool={tool}
+            dragDraw={dragDraw}
             onPlace={onPlace}
             onHover={onHover}
             landingCells={landingCells}
@@ -736,7 +742,7 @@ export default function App({ platform }: AppProps) {
             onObstacleCancel={cancelObstacleDraft}
           />
           <QuickStartGuide />
-          <ControlsLegend tool={tool} />
+          <ControlsLegend tool={tool} dragDraw={dragDraw} />
           <ActiveToolBar tool={tool} elevation={armedElevation} floor={activeFloor} />
         </div>
       </div>
