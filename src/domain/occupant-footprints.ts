@@ -1,5 +1,4 @@
 import { partRegistry, type PartRegistry } from "@/domain/part-registry";
-import { hasPedestal, pedestalCells } from "@/domain/pedestal";
 import { terminalCells } from "@/domain/terminal";
 import { cellAt, tubeCells, vAdd, vEq } from "@/domain/vec3";
 import type { BendPart, Obstacle, Part, Vec3 } from "@/types";
@@ -24,7 +23,6 @@ export function bendFootprint(part: BendPart, registry: PartRegistry = partRegis
 
 /** The grid cells a part occupies. */
 export function partCells(part: Part): Vec3[] {
-  if (hasPedestal(part)) return [part.cell, ...pedestalCells(part.cell, part.pedestalFeet)];
   switch (part.type) {
     case "blower":
       return [part.cell];

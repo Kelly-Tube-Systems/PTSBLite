@@ -1,6 +1,6 @@
 # ADR-0020: A pedestal is drawn but not counted
 
-- **Status:** Accepted; the surface a mast measures to is amended by [ADR-0032](0032-a-pedestal-stands-on-what-is-under-it.md)
+- **Status:** Superseded by [ADR-0043](0043-the-client-junks-the-pedestal-blower.md), which records the client junking the part; the surface a mast measured to had been amended by [ADR-0032](0032-a-pedestal-stands-on-what-is-under-it.md)
 - **Date:** 2026-08-30
 
 The client asked for a fifth item in the Build drawer: a blower with a pedestal, which grows

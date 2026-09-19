@@ -158,15 +158,14 @@ describe("free placement orientation", () => {
 
 describe("free placement commits", () => {
   it("uses the registry-backed endpoint footprint for occupancy", () => {
-    const design = emptyDesign();
-    expect(freePlacementFootprint("blower", [3, 0, 4], design, UP)).toEqual([[3, 0, 4]]);
+    expect(freePlacementFootprint("blower", [3, 0, 4], UP)).toEqual([[3, 0, 4]]);
     // A terminal is 2 ft long, and the catalog says so: both feet are claimed.
-    expect(freePlacementFootprint("terminal", [4, 0, 4], design, UP)).toEqual([
+    expect(freePlacementFootprint("terminal", [4, 0, 4], UP)).toEqual([
       [4, 0, 4],
       [4, 1, 4]
     ]);
     // Turned on its side it is the same two feet, laid across the floor.
-    expect(freePlacementFootprint("terminal", [4, 0, 4], design, [0, 0, 1])).toEqual([
+    expect(freePlacementFootprint("terminal", [4, 0, 4], [0, 0, 1])).toEqual([
       [4, 0, 4],
       [4, 0, 5]
     ]);

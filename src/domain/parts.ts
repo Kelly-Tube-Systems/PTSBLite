@@ -1,5 +1,4 @@
 import { partRegistry } from "@/domain/part-registry";
-import { hasPedestal } from "@/domain/pedestal";
 import { SPLIT_SLEEVE_KEY, splitSleeveCount } from "@/domain/split-sleeve";
 import type { DesignState, Part } from "@/types";
 
@@ -64,12 +63,7 @@ export type BomRow = {
  */
 export function bomRows(input: readonly Part[] | DesignState): BomRow[] {
   const parts = isDesignState(input) ? input.parts : input;
-  // A pedestal blower is the same KTS part as a plain one (ADR-0030), so the
-  // two share a row; the pedestal count rides along as a note. The mast under
-  // it is not a row of its own and adds nothing to the tube footage: it is how
-  // the unit is mounted, not part of the run (see pedestal.ts and ADR-0020).
   const blowers = parts.filter((p) => p.type === "blower").length;
-  const pedestalBlowers = parts.filter(hasPedestal).length;
   const terminals = parts.filter((p) => p.type === "terminal").length;
   const bends = parts.filter((p) => p.type === "bend").length;
   const ft = tubeFeet(parts);
@@ -85,11 +79,11 @@ export function bomRows(input: readonly Part[] | DesignState): BomRow[] {
   };
 
   return [
-    row("blower", blowers, pedestalBlowers ? `${pedestalBlowers} on a pedestal` : undefined),
+    row("blower", blowers),
     // The one row for a part the app never draws: the client asked for a
     // control box against every blower unit, 1:1, and said it is not shown
     // visually (ADR-0038). It sits next to the blower row because that is what
-    // its quantity is — a pedestal blower is a blower unit, so it counts too.
+    // its quantity is.
     row("controlBox", blowers, "one per blower unit"),
     row("terminal", terminals),
     row(
