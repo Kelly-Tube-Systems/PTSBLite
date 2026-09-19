@@ -171,6 +171,46 @@ body {
   font-weight: 600;
 }
 
+/* "You can use me now." Three controls come alive at a point the eye is not
+   looking at — Auto-Build once there are ports to route, Finalize once the
+   checks pass, and the obstacle height/Place strip once a footprint is drawn —
+   and testers were walking past the last one without seeing it. Colour alone
+   was not catching them, so the moment of becoming usable now carries a short
+   outline pulse as well. It is one class on all three deliberately: the client
+   asked for the same tell every time, on the grounds that a movement you have
+   already learned somewhere else is one you do not have to be taught again.
+
+   The pulse rides on whatever colour the control already wears and fades to
+   nothing, so nothing is left blinking at a user who has seen it. Applying the
+   class is what starts it, which makes React's own render the trigger — no
+   effect has to watch for the transition. */
+.ready-pulse {
+  animation: ready-pulse 1.1s ease-out 3;
+}
+
+/* An outline rather than a box-shadow: two of the three already cast a shadow
+   of their own, and animating that property would blink the shadow off and
+   back on around the pulse. An outline also costs no layout. */
+@keyframes ready-pulse {
+  0%,
+  100% {
+    outline: 2px solid transparent;
+    outline-offset: 0;
+  }
+  40% {
+    outline: 2px solid color-mix(in oklab, var(--accent) 45%, transparent);
+    outline-offset: 3px;
+  }
+}
+
+/* A pulse is an attention-getter, and for some people it is the opposite. The
+   colour change stays; only the movement goes. */
+@media (prefers-reduced-motion: reduce) {
+  .ready-pulse {
+    animation: none;
+  }
+}
+
 /* Names the group of inputs under it, at the weight of the dialog title it sits
    below. Shared because the setup form and the rename dialog both use it, and a
    heading that matched in only one of them would read as a mistake. */

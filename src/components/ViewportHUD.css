@@ -14,8 +14,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(11, 14, 19, 0.82);
-  border: 1px solid var(--line);
+  /* Accent-edged rather than the plain panel line it wore: it is only ever on
+     screen when there is something to do with it, which is the same thing
+     Auto-Build and Finalize say by turning green. */
+  background: color-mix(in oklab, var(--accent) 12%, rgba(11, 14, 19, 0.88));
+  border: 1px solid color-mix(in oklab, var(--accent) 35%, transparent);
   border-radius: 6px;
   padding: 7px 8px;
   font-size: 11.5px;
