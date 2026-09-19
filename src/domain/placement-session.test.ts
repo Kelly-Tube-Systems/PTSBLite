@@ -130,12 +130,6 @@ describe("resolvePlacementCell", () => {
     expect(resolvePlacementCell("blower", design, [1, 0, 1], AREA)).toEqual([1, 3, 1]);
     expect(resolvePlacementCell("terminal", design, [1, 0, 1], AREA)).toEqual([1, 3, 1]);
   });
-
-  it("stands a pedestal blower on one too, since its mast now stands on the top", () => {
-    // The client asked for the step-up to cover the pedestal tool as well; the
-    // mast stands on the obstacle rather than passing through it (ADR-0032).
-    expect(resolvePlacementCell("blowerPedestal", design, [1, 0, 1], AREA)).toEqual([1, 3, 1]);
-  });
 });
 
 describe("attemptPlacement", () => {
@@ -235,7 +229,7 @@ describe("attemptPlacement", () => {
     // placing a blower or a terminal." Chosen over leaving the setting where it
     // was, knowing the first tube after a raised blower then needs it put back
     // up to reach the port (ADR-0031).
-    for (const tool of ["blower", "blowerPedestal", "terminal"] as const) {
+    for (const tool of ["blower", "terminal"] as const) {
       const raised = session({ tool, activeElevation: 3, hoverCell: [2, 3, 2] });
       const { session: after, result } = attemptPlacement(raised, emptyDesign(), [2, 3, 2], "p");
       expect(result.status).toBe("committed");

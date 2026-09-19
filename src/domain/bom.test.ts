@@ -76,22 +76,18 @@ describe("BOM derivation", () => {
     expect(byKey.bend90.partNo).toBe("ALP08401");
   });
 
-  it("bomRows counts a pedestal blower on the blower row, noting the pedestal", () => {
-    // One KTS part however it is mounted (ADR-0030): a parts list handed to
-    // KTS orders two of A444200, not one of each of two numbers.
+  it("bomRows puts every blower on the one unannotated row", () => {
+    // There is one kind of blower again: the pedestal variant was junked by the
+    // client (ADR-0043), and with it the note that counted how many stood on a
+    // mast. Two blowers are two of A444200 and nothing else.
     const parts: Part[] = [
       { id: "b1", type: "blower", cell: [0, 0, 0], dir: [1, 0, 0] },
-      { id: "b2", type: "blower", cell: [5, 2, 0], dir: [1, 0, 0], pedestalFeet: 2 }
+      { id: "b2", type: "blower", cell: [5, 2, 0], dir: [1, 0, 0] }
     ];
     const byKey = Object.fromEntries(bomRows(designWith(parts)).map((r) => [r.key, r]));
     expect(byKey.blower.qty).toBe(2);
-    expect(byKey.blower.note).toBe("1 on a pedestal");
-    expect(byKey.blowerPedestal).toBeUndefined();
-  });
-
-  it("bomRows leaves the blower row unannotated when nothing is on a pedestal", () => {
-    const byKey = Object.fromEntries(bomRows(designWith(sampleParts)).map((r) => [r.key, r]));
     expect(byKey.blower.note).toBeUndefined();
+    expect(byKey.blowerPedestal).toBeUndefined();
   });
 
   it("bomRows counts the split sleeves the joins imply", () => {
@@ -128,11 +124,12 @@ describe("BOM derivation", () => {
     expect(byKey.controlBox.note).toBe("one per blower unit");
   });
 
-  it("bomRows counts a control box for a pedestal blower too", () => {
-    // A pedestal blower is the same blower unit (ADR-0030), so 1:1 means two.
+  it("bomRows counts a control box for the second blower too", () => {
+    // 1:1 against blower units, so a system with a blower at each end (ADR-0019)
+    // orders two.
     const parts: Part[] = [
       { id: "b1", type: "blower", cell: [0, 0, 0], dir: [1, 0, 0] },
-      { id: "b2", type: "blower", cell: [5, 2, 0], dir: [1, 0, 0], pedestalFeet: 2 }
+      { id: "b2", type: "blower", cell: [5, 2, 0], dir: [1, 0, 0] }
     ];
     const byKey = Object.fromEntries(bomRows(designWith(parts)).map((r) => [r.key, r]));
     expect(byKey.controlBox.qty).toBe(2);

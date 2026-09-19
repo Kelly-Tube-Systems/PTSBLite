@@ -7,7 +7,6 @@ import {
   roomHeightFeet,
   roomRect
 } from "@/domain/floors";
-import { hasPedestal, pedestalCells } from "@/domain/pedestal";
 import { terminalCells } from "@/domain/terminal";
 import { computeTopology, type Port } from "@/domain/topology";
 import { tubeCells } from "@/domain/vec3";
@@ -54,7 +53,6 @@ export type HeightMarker = {
  */
 const ELEVATION_TOOLS: ReadonlySet<ToolId> = new Set<ToolId>([
   "blower",
-  "blowerPedestal",
   "terminal",
   "tube",
   "bend",
@@ -323,7 +321,6 @@ export function placedPartShadows(design: DesignState): FloorShadow[] {
 
 /** The cells a placed part occupies, whatever kind of part it is. */
 function partFootprint(part: Part): Vec3[] {
-  if (hasPedestal(part)) return [part.cell, ...pedestalCells(part.cell, part.pedestalFeet)];
   switch (part.type) {
     case "blower":
       return [part.cell];
@@ -340,9 +337,7 @@ function partFootprint(part: Part): Vec3[] {
 function ghostFootprint(ghost: Ghost): Vec3[] {
   switch (ghost.type) {
     case "blower":
-      return ghost.pedestalFeet === undefined
-        ? [ghost.cell]
-        : [ghost.cell, ...pedestalCells(ghost.cell, ghost.pedestalFeet)];
+      return [ghost.cell];
     case "terminal":
       return terminalCells(ghost.cell, ghost.axis);
     case "tube":

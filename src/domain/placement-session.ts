@@ -73,14 +73,9 @@ export const INITIAL_PLACEMENT_SESSION: PlacementSession = {
 /**
  * Where the pointer's cell actually lands for the armed tool.
  *
- * Either kind of blower, or a terminal, aimed at an impenetrable obstacle steps
- * onto it. Tubes and bends continue from a port, while the obstacle tool must
- * be able to draw over existing occupants.
- *
- * The pedestal blower was left out of this when the step-up shipped, on the
- * grounds that its mast reached the floor and must not pass through whatever
- * holds it up. It now stands on the obstacle instead (ADR-0032), so there is
- * nothing to drive through and the tool steps up like the rest.
+ * A blower or a terminal aimed at an impenetrable obstacle steps onto it. Tubes
+ * and bends continue from a port, while the obstacle tool must be able to draw
+ * over existing occupants.
  */
 export function resolvePlacementCell(
   tool: ToolId,
@@ -90,7 +85,6 @@ export function resolvePlacementCell(
 ): Vec3 {
   switch (tool) {
     case "blower":
-    case "blowerPedestal":
     case "terminal":
       return restOnObstacles(design, cell, buildArea);
     case "cursor":
@@ -133,7 +127,7 @@ export type PlacementAction =
   | { type: "apply-attempt"; session: PlacementSession };
 
 function isFreePlacementTool(tool: ToolId): tool is FreePlacementType {
-  return tool === "blower" || tool === "blowerPedestal" || tool === "terminal";
+  return tool === "blower" || tool === "terminal";
 }
 
 /**
@@ -326,10 +320,8 @@ export function attemptPlacement(
     // Blowers and terminals place identically: anywhere legal, snapping to an
     // open port when there is one under the cursor. Terminal 1 used to be a
     // third case, pinned to the blower's outlet cell, until the client withdrew
-    // that rule (ADR-0019). A pedestal blower is a fourth tool but not a fourth
-    // rule — it places as a blower and grows its mast underneath.
+    // that rule (ADR-0019).
     case "blower":
-    case "blowerPedestal":
     case "terminal": {
       // The same orientation the ghost previews, resolved the same way, so what
       // gets placed is what was on screen. It is worked out here rather than
@@ -454,17 +446,9 @@ export function placementGhost(session: PlacementSession, design: DesignState): 
     case "erase":
       return null;
     case "blower":
-    case "blowerPedestal":
-      return freePlacementGhost({
-        type: tool,
-        design,
-        cell: hoverCell,
-        memory: session.freePlacementMemory,
-        rotationSteps: session.freePlacementRotation
-      });
     case "terminal":
       return freePlacementGhost({
-        type: "terminal",
+        type: tool,
         design,
         cell: hoverCell,
         memory: session.freePlacementMemory,
@@ -503,7 +487,6 @@ export function placementLandingCells(session: PlacementSession, design: DesignS
     case "erase":
       return [];
     case "blower":
-    case "blowerPedestal":
     case "terminal":
       return freePlacementLandingCells(design);
     case "tube":
