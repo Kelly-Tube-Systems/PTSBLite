@@ -77,8 +77,6 @@ export function ActiveToolBar({
           {rotationKeysApply(tool) && (
             <span className="active-tool-bar__hint">
               <kbd>R</kbd>
-              <span>/</span>
-              <kbd>Shift+R</kbd>
               <span>rotate</span>
             </span>
           )}
