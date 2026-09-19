@@ -127,6 +127,39 @@ test("moves the quick start guide out from under an open tool drawer", async ({ 
   await expect.poll(async () => (await guide.boundingBox())?.x).toBeCloseTo(home!.x, 0);
 });
 
+test("draws an obstacle box by dragging one corner to the other", async ({ page }) => {
+  // The press, the drag and the release only meet in a real browser: happy-dom
+  // has no raycaster, and the unit suites can prove the phase and the gesture
+  // maths but not that a held button draws a box instead of orbiting the camera
+  // (Trello EcZrRueR).
+  const errors = collectPageErrors(page);
+  await createDesign(page);
+
+  const canvas = page.locator(".viewport-canvas canvas");
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+  await page.keyboard.press("o");
+
+  const from = { x: box!.x + box!.width / 2 - 60, y: box!.y + box!.height / 2 };
+  const to = { x: from.x + 120, y: from.y + 40 };
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  // More than one step, so the pointer really travels: a jump from press to
+  // release would pass even if a drag still orbited.
+  await page.mouse.move(to.x, to.y, { steps: 12 });
+  await page.mouse.up();
+
+  // The height stepper and Place only exist once a footprint is closed, which
+  // is the whole of "the drag drew the box".
+  const place = page.getByRole("button", { name: "Place", exact: true });
+  await expect(place).toBeVisible();
+  await place.click();
+  await page.getByRole("button", { name: "Erase", exact: true }).click();
+  await expect(page.getByRole("button", { name: /Clear all obstacles/ })).toContainText("1 placed");
+
+  expect(errors).toEqual([]);
+});
+
 test("lets a short window scroll down to the rest of the setup form", async ({ page }) => {
   // happy-dom has no layout, so this can only be caught in a real browser. The
   // client opened the app in a window too short for the whole setup form and
