@@ -17,6 +17,7 @@ const TOOL_LABELS: Record<ToolId, string> = {
   blower: catalogLabel("blower"),
   blowerPedestal: catalogLabel("blowerPedestal"),
   terminal: catalogLabel("terminal"),
+  blowerTerminal: pairLabel("blower", "terminal"),
   tube: catalogLabel("tube6"),
   bend: catalogLabel("bend90"),
   obstacle: "Obstacle volume",
@@ -27,6 +28,19 @@ const TOOL_LABELS: Record<ToolId, string> = {
 function catalogLabel(registryKey: string): string {
   const { name, partNo } = partRegistry.get(registryKey);
   return `${name} · ${partNo}`;
+}
+
+/**
+ * Two catalog names for the one tool that places two parts.
+ *
+ * The part numbers are left off here alone. Every other tool carries its
+ * number because it has one; this tool has two, and a pill already long enough
+ * for the client to complain that the corner panels cover it is the wrong
+ * place to put both. They are on the tile in the Build drawer and on the two
+ * BOM lines, which is where a number is read rather than glanced at.
+ */
+function pairLabel(firstKey: string, secondKey: string): string {
+  return `${partRegistry.get(firstKey).name} + ${partRegistry.get(secondKey).name}`;
 }
 
 export function ActiveToolBar({
@@ -45,6 +59,7 @@ export function ActiveToolBar({
     tool === "blower" ||
     tool === "blowerPedestal" ||
     tool === "terminal" ||
+    tool === "blowerTerminal" ||
     tool === "tube" ||
     tool === "bend";
   const usesElevation = placesPart || tool === "obstacle";

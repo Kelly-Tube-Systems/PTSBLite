@@ -1,3 +1,4 @@
+import { blowerTerminalFootprint } from "@/domain/blower-terminal";
 import { bendFootprint, obstacleVolumeCells } from "@/domain/occupant-footprints";
 import {
   floorBaseElevation,
@@ -56,6 +57,7 @@ const ELEVATION_TOOLS: ReadonlySet<ToolId> = new Set<ToolId>([
   "blower",
   "blowerPedestal",
   "terminal",
+  "blowerTerminal",
   "tube",
   "bend",
   "obstacle"
@@ -229,6 +231,9 @@ export function ghostElevation(ghost: Ghost): number {
   switch (ghost.type) {
     case "blower":
     case "terminal":
+    case "blowerTerminal":
+      // The pair's cell is its blower's, which is the one the pointer is on and
+      // the one the elevation keys move.
       return ghost.cell[1];
     case "tube":
       return Math.floor(Math.max(ghost.from[1], ghost.to[1]));
@@ -345,6 +350,8 @@ function ghostFootprint(ghost: Ghost): Vec3[] {
         : [ghost.cell, ...pedestalCells(ghost.cell, ghost.pedestalFeet)];
     case "terminal":
       return terminalCells(ghost.cell, ghost.axis);
+    case "blowerTerminal":
+      return blowerTerminalFootprint(ghost.cell, ghost.dir);
     case "tube":
       return tubeCells(ghost.from, ghost.to);
     case "bend":

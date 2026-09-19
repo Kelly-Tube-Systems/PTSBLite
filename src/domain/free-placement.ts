@@ -15,7 +15,17 @@ import { cellKey, vEq, vNeg } from "@/domain/vec3";
  */
 export type FreePlacementType = "blower" | "blowerPedestal" | "terminal";
 
-export type FreePlacementMemory = Record<FreePlacementType, Vec3>;
+/**
+ * Every tool that remembers which way it was last turned.
+ *
+ * A superset of the tools that place freely, because the blower-and-terminal
+ * pair turns on the same ring without placing as a single part: it is two free
+ * placements, and it keeps its own slot so that turning the pair does not also
+ * turn the plain blower tool. See blower-terminal.ts.
+ */
+export type OrientationMemoryKey = FreePlacementType | "blowerTerminal";
+
+export type FreePlacementMemory = Record<OrientationMemoryKey, Vec3>;
 
 /** The two ghost shapes free placement can produce, and no others. Both kinds
  * of blower preview as one: a pedestal is a taller drawing of a blower, not a
@@ -64,7 +74,8 @@ export const FREE_PLACEMENT_ORIENTATIONS: Vec3[] = [
 export const DEFAULT_FREE_PLACEMENT_MEMORY: FreePlacementMemory = {
   blower: UP,
   blowerPedestal: UP,
-  terminal: UP
+  terminal: UP,
+  blowerTerminal: UP
 };
 
 export const FREE_PLACEMENT_MESSAGES = {
@@ -144,7 +155,7 @@ export function freePlacementOrientation(
 
 export function rememberFreePlacementOrientation(
   memory: FreePlacementMemory,
-  type: FreePlacementType,
+  type: OrientationMemoryKey,
   orientation: Vec3
 ): FreePlacementMemory {
   return { ...memory, [type]: orientation };

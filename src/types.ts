@@ -1,7 +1,17 @@
 export type Vec3 = readonly [number, number, number];
 
 export type ToolId =
-  "cursor" | "blower" | "blowerPedestal" | "terminal" | "tube" | "bend" | "obstacle" | "erase";
+  | "cursor"
+  | "blower"
+  | "blowerPedestal"
+  | "terminal"
+  /** Lays a blower and a terminal down together, seated. Two parts, one click —
+   * see blower-terminal.ts. */
+  | "blowerTerminal"
+  | "tube"
+  | "bend"
+  | "obstacle"
+  | "erase";
 
 export type BlowerPart = {
   readonly id: string;
@@ -61,6 +71,15 @@ export type Obstacle = {
 export type Ghost =
   | { type: "blower"; cell: Vec3; dir: Vec3; pedestalFeet?: number }
   | { type: "terminal"; cell: Vec3; axis: Vec3 }
+  /**
+   * The blower-and-terminal pair previewed as one shape: `cell` and `dir` are
+   * the blower's, and the terminal seated on its port follows from them
+   * (`blowerTerminalSeatCell`). One ghost rather than two because everything
+   * downstream — the height marker, the floor shadow, the viewport's ghost
+   * group — is written for a single preview, and the pair is a single preview:
+   * it is one click, refused or accepted as a whole.
+   */
+  | { type: "blowerTerminal"; cell: Vec3; dir: Vec3 }
   | { type: "tube"; from: Vec3; to: Vec3; blocked?: boolean; note?: string }
   | {
       type: "bend";
