@@ -106,8 +106,8 @@ export type PlacementAction =
   /** Arm a tool. Abandons anything the previous tool had in flight. */
   | { type: "select-tool"; tool: ToolId }
   | { type: "hover"; cell: Vec3 | null }
-  /** `R` (or shift-`R`) — turns the ghost, or the free-placement orientation. */
-  | { type: "rotate"; reverse: boolean }
+  /** `R` — turns the ghost, or the free-placement orientation. */
+  | { type: "rotate" }
   /** `[` and `]` — move the active placement plane. */
   | { type: "nudge-elevation"; delta: number; buildArea: BuildArea }
   /** Jump the placement plane, e.g. the floor selector picking a floor's base. */
@@ -151,7 +151,7 @@ export function elevationKeysApply(tool: ToolId): boolean {
 }
 
 /**
- * Whether `R` and `⇧R` turn anything for the armed tool.
+ * Whether `R` turns anything for the armed tool.
  *
  * Rotation reaches two things: the orientation a blower or terminal is set down
  * in, and the index a bend is placed at. An obstacle volume is drawn corner to
@@ -215,20 +215,24 @@ export function placementSessionReducer(
     case "hover":
       return { ...session, hoverCell: action.cell };
 
+    // `R` steps one way round a closed ring, so it still reaches every
+    // orientation. There was a `⇧R` that stepped the other way until the client
+    // asked for it to go — "R and Shift+R is the same tool but just in reverse"
+    // — and a few more presses is the cost he chose to pay for one less key.
     case "rotate":
       if (!rotationKeysApply(session.tool)) return session;
       if (isFreePlacementTool(session.tool)) {
-        // One ring of five orientations, so shift-R is simply the other way
-        // round it. It used to toggle up/down on a separate axis, which left a
-        // blower that had been turned sideways unable to point back up.
+        // One ring of five orientations, stepped one way. It used to toggle
+        // up/down on a separate axis, which left a blower that had been turned
+        // sideways unable to point back up.
         return {
           ...session,
-          freePlacementRotation: session.freePlacementRotation + (action.reverse ? -1 : 1)
+          freePlacementRotation: session.freePlacementRotation + 1
         };
       }
       return {
         ...session,
-        ghostRotation: (session.ghostRotation + (action.reverse ? 3 : 1)) % 4
+        ghostRotation: (session.ghostRotation + 1) % 4
       };
 
     case "nudge-elevation":

@@ -354,8 +354,10 @@ export default function App({ platform }: AppProps) {
         return;
       }
       if (KEY_TOOL_MAP[k] && !e.metaKey && !e.ctrlKey) selectTool(KEY_TOOL_MAP[k]);
-      if (k === "r" && !e.metaKey && !e.ctrlKey) {
-        dispatchPlacement({ type: "rotate", reverse: e.shiftKey });
+      // `⇧R` used to rotate the other way. The client had it removed rather
+      // than kept as a shortcut, so it is inert here as well as unadvertised.
+      if (k === "r" && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+        dispatchPlacement({ type: "rotate" });
       }
       if (k === "escape") selectTool("cursor");
       if (k === "[" && !e.metaKey && !e.ctrlKey) {

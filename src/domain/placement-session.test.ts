@@ -33,38 +33,28 @@ describe("placementSessionReducer", () => {
   });
 
   it("rotates the ghost for tools that snap to a port", () => {
+    // One key, one direction: four presses wrap back to where they started, so
+    // R alone still reaches all four orientations.
     let s = session({ tool: "bend" });
-    s = placementSessionReducer(s, { type: "rotate", reverse: false });
-    expect(s.ghostRotation).toBe(1);
-    // Shift-R steps backwards, and the index wraps within the four orientations.
-    s = placementSessionReducer(s, { type: "rotate", reverse: true });
-    expect(s.ghostRotation).toBe(0);
+    for (const expected of [1, 2, 3, 0]) {
+      s = placementSessionReducer(s, { type: "rotate" });
+      expect(s.ghostRotation).toBe(expected);
+    }
   });
 
   it("rotates the free-placement orientation instead for blower and terminal", () => {
-    const s = placementSessionReducer(session({ tool: "blower" }), {
-      type: "rotate",
-      reverse: false
-    });
+    const s = placementSessionReducer(session({ tool: "blower" }), { type: "rotate" });
     expect(s.ghostRotation).toBe(0);
     expect(s.freePlacementRotation).toBe(1);
-
-    // Shift-R is simply the other way round the same ring.
-    const back = placementSessionReducer(session({ tool: "blower" }), {
-      type: "rotate",
-      reverse: true
-    });
-    expect(back.freePlacementRotation).toBe(-1);
   });
 
   it("leaves the rotation alone for the tools that have none to turn", () => {
-    // The client's complaint: the obstacle tool still offered R / shift-R. It
-    // was not merely a decorative key — ghostRotation survives a tool change,
-    // so an R pressed here came back as a pre-turned bend.
+    // The client's complaint: the obstacle tool still offered R. It was not
+    // merely a decorative key — ghostRotation survives a tool change, so an R
+    // pressed here came back as a pre-turned bend.
     for (const tool of ["tube", "obstacle"] as const) {
       const before = session({ tool });
-      expect(placementSessionReducer(before, { type: "rotate", reverse: false })).toBe(before);
-      expect(placementSessionReducer(before, { type: "rotate", reverse: true })).toBe(before);
+      expect(placementSessionReducer(before, { type: "rotate" })).toBe(before);
     }
   });
 
