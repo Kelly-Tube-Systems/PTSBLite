@@ -57,8 +57,10 @@ other.
 is derived from it (`companionOccupantId`). Undo is unaffected — it snapshots designs, not
 placements — so one undo takes the whole pair back, which is what a single click should do.
 
-**The Build drawer has six tiles where it had five.** Two of them are blowers with something
-attached, which is a reason to keep watching the drawer's readability rather than a problem today.
+**The Build drawer has five tiles where it had four**, the pedestal blower having left it on the
+same day ([ADR-0043](0043-the-client-junks-the-pedestal-blower.md)). The pair's tile is the only
+one whose name and number lines carry two of each, so it is the one that ellipsises first — a
+reason to keep watching the drawer's readability rather than a problem today.
 
 ## When to revisit
 
