@@ -154,3 +154,17 @@
   border-color: var(--line-2);
   background: var(--panel-2);
 }
+
+/* Green once the design passes its checks, matching Auto-Build's tell in the
+   top bar. The hover rule above sits earlier in the file and carries the same
+   specificity, so the valid hover has to be restated to win. */
+.status-bar__finalize[data-state="ok"] {
+  background: color-mix(in oklab, var(--accent) 18%, transparent);
+  color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 35%, transparent);
+}
+.status-bar__finalize[data-state="ok"]:hover {
+  background: color-mix(in oklab, var(--accent) 26%, transparent);
+  color: #fff;
+  border-color: color-mix(in oklab, var(--accent) 35%, transparent);
+}
