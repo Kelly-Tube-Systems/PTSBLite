@@ -42,6 +42,7 @@ export function TopBar({
   markersOn,
   onToggleMarkers
 }: TopBarProps) {
+  const autoBuildReady = !autoBuilding && autoBuildUnavailable === null;
   return (
     <div className="topbar nosel">
       <div className="topbar__brand">{productName}</div>
@@ -70,12 +71,14 @@ export function TopBar({
       >
         <Icons.Redo size={21} />
       </button>
+      {/* Pulses at the moment it stops being grey, which is the same moment
+          Finalize and the obstacle strip announce themselves. */}
       <button
         type="button"
-        className="topbtn accent topbar-no-drag"
+        className={`topbtn accent topbar-no-drag${autoBuildReady ? " ready-pulse" : ""}`}
         title={autoBuildUnavailable ?? "Route the open ports"}
         onClick={onAutoBuild}
-        disabled={autoBuilding || autoBuildUnavailable !== null}
+        disabled={!autoBuildReady}
       >
         <Icons.Auto size={19} /> {autoBuilding ? "Routing…" : "Auto-Build"}
       </button>
