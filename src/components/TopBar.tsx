@@ -49,7 +49,7 @@ export function TopBar({
       {/* "New" rather than a File menu that only ever held it: a menu with one
           item is a click in front of the thing it contains. */}
       <button className="topbtn topbar-no-drag" onClick={onNew}>
-        <Icons.New size={16} /> New
+        <Icons.New size={19} /> New
       </button>
       <ViewMenu onView={onView} markersOn={markersOn} onToggleMarkers={onToggleMarkers} />
       <button
@@ -59,7 +59,7 @@ export function TopBar({
         onClick={onUndo}
         disabled={!canUndo}
       >
-        <Icons.Undo size={18} />
+        <Icons.Undo size={21} />
       </button>
       <button
         className="topbtn icon topbar-no-drag"
@@ -68,7 +68,7 @@ export function TopBar({
         onClick={onRedo}
         disabled={!canRedo}
       >
-        <Icons.Redo size={18} />
+        <Icons.Redo size={21} />
       </button>
       <button
         type="button"
@@ -77,7 +77,7 @@ export function TopBar({
         onClick={onAutoBuild}
         disabled={autoBuilding || autoBuildUnavailable !== null}
       >
-        <Icons.Auto size={16} /> {autoBuilding ? "Routing…" : "Auto-Build"}
+        <Icons.Auto size={19} /> {autoBuilding ? "Routing…" : "Auto-Build"}
       </button>
     </div>
   );
@@ -132,7 +132,7 @@ function ViewMenu({
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
-        View {open ? <Icons.ChevU size={13} /> : <Icons.ChevD size={13} />}
+        View {open ? <Icons.ChevU size={15} /> : <Icons.ChevD size={15} />}
       </button>
       {open && (
         <div role="menu" className="topbar-menu__panel topbar-no-drag">
@@ -142,7 +142,7 @@ function ViewMenu({
             className="viewmenu-item"
             onClick={() => choose(onToggleMarkers)}
           >
-            <span className="viewmenu-item__check">{markersOn && <Icons.Check size={12} />}</span>
+            <span className="viewmenu-item__check">{markersOn && <Icons.Check size={13} />}</span>
             Height markers
           </button>
           <div className="topbar-menu__divider" />

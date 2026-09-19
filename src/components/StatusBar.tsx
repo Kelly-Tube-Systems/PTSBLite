@@ -41,7 +41,7 @@ export function StatusBar({ design, warnings, expanded, onToggle, onFinalize }: 
                 : `${warnings.length} issue${warnings.length === 1 ? "" : "s"}`}
           </span>
           {warnings.length > 0 &&
-            (expanded ? <Icons.ChevD size={11} /> : <Icons.ChevU size={11} />)}
+            (expanded ? <Icons.ChevD size={13} /> : <Icons.ChevU size={13} />)}
         </button>
 
         <Sep />
@@ -57,7 +57,7 @@ export function StatusBar({ design, warnings, expanded, onToggle, onFinalize }: 
 
         <div className="status-bar__spacer" />
         <button type="button" className="status-bar__finalize" onClick={onFinalize}>
-          <Icons.Bom size={15} /> Finalize
+          <Icons.Bom size={18} /> Finalize
         </button>
       </div>
     </div>
