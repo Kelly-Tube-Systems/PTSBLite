@@ -454,6 +454,33 @@ describe("a two-floor design", () => {
     expect(legend().queryByText("Elevation")).toBeTruthy();
   });
 
+  it("gives the left drag to the box while one is being drawn, and says so", async () => {
+    // The client reached for a drag the way he would in any drawing tool and
+    // got the camera instead, with a corner anchored behind him (Trello
+    // EcZrRueR). The viewport takes the phase; the legend describes it.
+    await renderApp();
+    const legend = () => within(document.getElementById("controls-legend-list") as HTMLElement);
+
+    expect(viewport.props?.dragDraw).toBeNull();
+    expect(legend().queryByText("Orbit")).toBeTruthy();
+
+    fireEvent.keyDown(window, { key: "o" });
+    expect(viewport.props?.dragDraw).toBe("anchor");
+    expect(legend().queryByText("Draw box")).toBeTruthy();
+    expect(legend().queryByText("Orbit")).toBeNull();
+
+    // A first corner down by click: the release of the next drag closes it.
+    clickCell([0, 0, 0]);
+    expect(viewport.props?.dragDraw).toBe("close");
+
+    // Closed, and waiting on the height stepper and Place — so the drag is the
+    // camera's again and the visitor can look at what he drew.
+    clickCell([2, 0, 2]);
+    expect(placeButton()).toBeTruthy();
+    expect(viewport.props?.dragDraw).toBeNull();
+    expect(legend().queryByText("Orbit")).toBeTruthy();
+  });
+
   it("offers the rotate keys only where they still turn something", async () => {
     // The client's second pass over the same complaint: having lost [ and ],
     // the obstacle tool went on advertising R, which turns nothing on a volume

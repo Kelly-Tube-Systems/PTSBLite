@@ -9,14 +9,17 @@ import {
   buildTubeMesh
 } from "@/renderer/design-meshes";
 import {
+  beginDragDraw,
   beginViewportDrag,
   clickCellForTool,
   createViewportDragState,
+  dragDrawRelease,
   endViewportDrag,
   isViewportClick,
   moveViewportDrag,
   partIdForObject,
-  pickPointerCell
+  pickPointerCell,
+  type DragDrawGesture
 } from "@/renderer/interaction";
 import {
   buildFloorShadow,
@@ -40,6 +43,7 @@ import {
   VP
 } from "@/renderer/three-utils";
 import { type PlenumBand, type RoomRect } from "@/domain/floors";
+import type { DragDrawPhase } from "@/domain/placement-session";
 import { STANDARD_VIEWS, type CameraView } from "@/renderer/camera-views";
 import type { FloorShadow, HeightMarker } from "@/domain/renderer-affordances";
 import { type PortMarker } from "@/domain/renderer-affordances";
@@ -244,6 +248,11 @@ export type ViewportProps = {
   buildArea?: BuildArea;
   ghost: Ghost | null;
   tool: ToolId;
+  /**
+   * Whether a left drag draws with the armed tool instead of orbiting, and
+   * which half of the box the press and release supply. See `dragDrawPhase`.
+   */
+  dragDraw?: DragDrawPhase;
   onPlace?: (cell: Vec3, target?: ViewportPlaceTarget) => void;
   onHover?: (cell: Vec3) => void;
   landingCells?: Vec3[];
@@ -306,6 +315,7 @@ export function Viewport({
   buildArea = BUILD_AREA,
   ghost,
   tool,
+  dragDraw = null,
   onPlace,
   onHover,
   landingCells = [],
@@ -328,12 +338,19 @@ export function Viewport({
   const mountRef = useRef<HTMLDivElement | null>(null);
   const stateRef = useRef<ViewportState>({});
   const toolRef = useRef<ToolId>(tool);
+  const dragDrawRef = useRef<DragDrawPhase>(dragDraw);
   const elevationRef = useRef<number>(activeElevation);
   const callbacksRef = useRef<Pick<ViewportProps, "onPlace" | "onHover">>({ onPlace, onHover });
 
   useEffect(() => {
     toolRef.current = tool;
   }, [tool]);
+
+  // Read by the pointer handlers, which run outside React's render, and so must
+  // see the draft as it stands at the moment of the press.
+  useEffect(() => {
+    dragDrawRef.current = dragDraw;
+  }, [dragDraw]);
 
   // Read by the picker, which runs from event handlers outside React's render.
   // Set here rather than in the effect that moves the plane so it is already
@@ -608,6 +625,8 @@ export function Viewport({
     };
 
     let drag = createViewportDragState();
+    // The box a left drag is drawing, or null while a left drag orbits.
+    let dragDrawing: DragDrawGesture | null = null;
     // Right-drag pans the camera rig: we translate cam.target (and therefore the
     // camera with it) along the camera's screen-space right/up axes.
     let panning = false;
@@ -625,11 +644,17 @@ export function Viewport({
       }
       if (e.button !== 0) return;
       drag = beginViewportDrag(drag, { x: e.clientX, y: e.clientY });
+      // A press with a box half-drawn starts drawing rather than orbiting, and
+      // the corner goes down here rather than on the release: the box has to
+      // follow the pointer while the button is still held.
+      syncMouse(e);
+      pointerKnown = true;
+      dragDrawing = beginDragDraw(dragDrawRef.current, pickCell());
+      if (dragDrawing?.anchored) callbacksRef.current.onPlace?.(dragDrawing.from);
     };
     const onMove = (e: MouseEvent) => {
       const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      syncMouse(e);
       pointerKnown = true;
       if (panning && e.buttons & 2) {
         const dx = e.clientX - panX;
@@ -649,7 +674,9 @@ export function Viewport({
       }
       const moved = moveViewportDrag(drag, { x: e.clientX, y: e.clientY }, e.buttons);
       drag = moved.state;
-      if (moved.delta) {
+      // While a box is being drawn the drag belongs to the box: the camera
+      // holds still and the preview follows the pointer instead.
+      if (moved.delta && !dragDrawing) {
         cam.yaw -= moved.delta.x * 0.008;
         cam.pitch = Math.max(0.12, Math.min(1.45, cam.pitch + moved.delta.y * 0.005));
         applyCamera(); // re-picks for the pointer's new position as it goes
@@ -662,10 +689,18 @@ export function Viewport({
         panning = false;
         return;
       }
+      if (dragDrawing) {
+        // Whether the pointer travelled or not: a press and release on one
+        // square is the first of the two clicks, and dragDrawRelease says so.
+        syncMouse(e);
+        const closeAt = dragDrawRelease(dragDrawing, pickCell());
+        dragDrawing = null;
+        drag = endViewportDrag(drag);
+        if (closeAt) callbacksRef.current.onPlace?.(closeAt);
+        return;
+      }
       if (drag.active && isViewportClick(drag, { x: e.clientX, y: e.clientY })) {
-        const rect = renderer.domElement.getBoundingClientRect();
-        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        syncMouse(e);
         ray.setFromCamera(mouse, camera);
         const pickedPart = ray.intersectObjects(partsGroup.children, true)[0];
         const partId = pickedPart ? partIdForObject(pickedPart.object) : undefined;
@@ -676,6 +711,13 @@ export function Viewport({
       }
       drag = endViewportDrag(drag);
     };
+
+    /** Put the ray's origin where this event happened, in device coordinates. */
+    function syncMouse(e: MouseEvent) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    }
 
     /** The cell under the pointer right now, on the current plane and camera. */
     function pickCell(): Vec3 | null {

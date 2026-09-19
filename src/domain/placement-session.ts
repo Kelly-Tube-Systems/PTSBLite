@@ -145,6 +145,32 @@ export function elevationKeysApply(tool: ToolId): boolean {
 }
 
 /**
+ * What a left drag across the grid does with the armed tool.
+ *
+ * Every tool but one orbits the camera, which is what a left drag has always
+ * done. The obstacle tool is the exception while its box is still being drawn:
+ * people reach for a drag the way they would in any other drawing tool, and got
+ * the view spinning with a corner anchored behind them. So a drag draws the box
+ * instead, in one of two phases —
+ *
+ * - `"anchor"`: nothing is down yet, so the press puts the first corner on the
+ *   grid and the release closes the footprint on the square it lands on.
+ * - `"close"`: a corner is already down from a first click, so the press adds
+ *   nothing and the release closes the footprint.
+ *
+ * `null` once the footprint is closed and the draft is waiting for its height
+ * and Place: there is nothing left to draw, and the camera should be free to
+ * look at what was drawn. See ADR-0044.
+ */
+export type DragDrawPhase = "anchor" | "close" | null;
+
+export function dragDrawPhase(session: PlacementSession): DragDrawPhase {
+  if (session.tool !== "obstacle") return null;
+  if (obstaclePlacementDraftHasFootprint(session.obstacleDraft)) return null;
+  return session.obstacleDraft ? "close" : "anchor";
+}
+
+/**
  * Whether `R` turns anything for the armed tool.
  *
  * Rotation reaches two things: the orientation a blower or terminal is set down

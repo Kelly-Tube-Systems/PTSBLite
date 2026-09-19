@@ -3,6 +3,7 @@ import { designFromScene, emptyDesign } from "@/domain/design-state";
 import {
   attemptPlacement,
   commitObstacleDraft,
+  dragDrawPhase,
   INITIAL_PLACEMENT_SESSION,
   placementGhost,
   placementLandingCells,
@@ -311,6 +312,34 @@ describe("commitObstacleDraft", () => {
       "obox"
     ]);
     expect(after.obstacleDraft).toBeNull();
+  });
+});
+
+describe("dragDrawPhase", () => {
+  it("leaves the drag to the camera for every other tool", () => {
+    for (const tool of ["cursor", "blower", "terminal", "tube", "bend", "erase"] as const) {
+      expect(dragDrawPhase(session({ tool }))).toBeNull();
+    }
+  });
+
+  it("draws from the press while the obstacle tool has nothing down", () => {
+    expect(dragDrawPhase(session({ tool: "obstacle" }))).toBe("anchor");
+  });
+
+  it("draws from the release once a first click has anchored a corner", () => {
+    expect(
+      dragDrawPhase(session({ tool: "obstacle", obstacleDraft: { cornerA: [0, 0, 0] } }))
+    ).toBe("close");
+  });
+
+  it("gives the drag back to the camera once the footprint is closed", () => {
+    // Nothing left to draw: the draft is waiting for its height and Place, and
+    // the visitor should be able to look at the box from another angle.
+    const drafted = session({
+      tool: "obstacle",
+      obstacleDraft: { cornerA: [0, 0, 0], cornerB: [2, 0, 2], baseY: 0, height: 1 }
+    });
+    expect(dragDrawPhase(drafted)).toBeNull();
   });
 });
 
