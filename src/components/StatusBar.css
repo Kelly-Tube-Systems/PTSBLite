@@ -7,40 +7,40 @@
 }
 
 .status-bar__validation {
-  padding: 8px 14px 12px;
+  padding: 9px 18px 13px;
   border-bottom: 1px solid var(--line);
 }
 
 .status-bar__row {
-  height: 44px;
+  height: 54px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 16px;
-  font-size: 13px;
+  gap: 16px;
+  padding: 0 19px;
+  font-size: 15px;
   white-space: nowrap;
 }
 
 .status-bar__toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 12px;
+  gap: 7px;
+  height: 37px;
+  padding: 0 14px;
   border-radius: 6px;
   background: transparent;
   border: 1px solid var(--line);
   color: var(--text-mut);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 15px;
   font-family: var(--font-sans);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .status-bar__dot {
-  width: 9px;
-  height: 9px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: var(--text-dim);
 }
@@ -71,7 +71,7 @@
 
 .status-bar__sep {
   width: 1px;
-  height: 14px;
+  height: 17px;
   background: var(--line);
 }
 
@@ -86,7 +86,7 @@
   white-space: nowrap;
   flex-shrink: 0;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .status-bar__meta-label {
@@ -109,8 +109,8 @@
  * assistive technology can reach it (ADR-0009).
  */
 .status-bar__meta-meter {
-  width: 56px;
-  height: 5px;
+  width: 68px;
+  height: 6px;
   margin-left: 2px;
   appearance: none;
   border: none;
@@ -137,14 +137,14 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  height: 32px;
-  padding: 0 14px;
+  height: 39px;
+  padding: 0 17px;
   border-radius: 6px;
   background: transparent;
   color: var(--text-mut);
   border: 1px solid var(--line);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
