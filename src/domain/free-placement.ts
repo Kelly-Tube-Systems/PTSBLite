@@ -1,25 +1,20 @@
 import { partRegistry, type PartRegistry } from "@/domain/part-registry";
 import { addPart } from "@/domain/design-state";
-import { pedestalCells, pedestalHeightAt } from "@/domain/pedestal";
 import { TERMINAL_HEIGHT_CELLS, terminalCells } from "@/domain/terminal";
 import { computeTopology } from "@/domain/topology";
 import type { BlowerPart, DesignState, Ghost, Part, TerminalPart, Vec3 } from "@/types";
 import { cellKey, vEq, vNeg } from "@/domain/vec3";
 
 /**
- * The three things that place freely. A blower with a pedestal is a blower —
- * it drives the same air, closes the same end of a system and carries the same
- * `type` once placed — so it snaps, turns and validates identically. What sets
- * it apart is the mast it grows underneath when it is raised off the floor,
- * which is geometry rather than behaviour. See pedestal.ts.
+ * The two things that place freely: the endpoints a valid system needs at each
+ * end (ADR-0019). Both go down anywhere legal and snap to an open port under
+ * the cursor.
  */
-export type FreePlacementType = "blower" | "blowerPedestal" | "terminal";
+export type FreePlacementType = "blower" | "terminal";
 
 export type FreePlacementMemory = Record<FreePlacementType, Vec3>;
 
-/** The two ghost shapes free placement can produce, and no others. Both kinds
- * of blower preview as one: a pedestal is a taller drawing of a blower, not a
- * different part. */
+/** The two ghost shapes free placement can produce, and no others. */
 export type FreePlacementGhost = Extract<Ghost, { type: "blower" | "terminal" }>;
 
 /** How many times `R` has been pressed since the tool was armed. */
@@ -63,7 +58,6 @@ export const FREE_PLACEMENT_ORIENTATIONS: Vec3[] = [
  */
 export const DEFAULT_FREE_PLACEMENT_MEMORY: FreePlacementMemory = {
   blower: UP,
-  blowerPedestal: UP,
   terminal: UP
 };
 
@@ -71,14 +65,10 @@ export const FREE_PLACEMENT_MESSAGES = {
   occupied: "That cell is already occupied.",
   outOfBounds: "Place inside the build area.",
   obstacle: "Place on an open grid cell, not an obstacle.",
-  // The mast has to reach what it stands on, so a pedestal blower is refused
-  // for something in the column beneath it as well as in its own cell. Said
-  // separately because "that cell is already occupied" points at the wrong
-  // cell — the one under the cursor is free, and the blocked one is below it.
-  pedestalBlocked: "The pedestal cannot reach the surface below — something is in the way.",
-  // Same reasoning one cell in the other direction: a terminal stands 2 ft
-  // tall, so the cell above the cursor has to be free — and out at the top of
-  // the build area there is no cell above it at all.
+  // A terminal stands 2 ft tall, so the cell above the cursor has to be free —
+  // and out at the top of the build area there is no cell above it at all.
+  // Said separately because "that cell is already occupied" would point at the
+  // wrong square: the one under the cursor is free.
   terminalHeadroom: `A terminal stands ${TERMINAL_HEIGHT_CELLS}ft tall — there is no room above that cell.`,
   // And once R has turned it onto its side the second foot is beside the
   // cursor rather than above it, so the message has to point somewhere else.
@@ -177,41 +167,19 @@ export function validateFreePlacementCell(
 }
 
 /**
- * The cells a free-placed part would claim: the one under the cursor, plus, for
- * a pedestal blower, the mast beneath it down to what it stands on.
- *
- * The whole `design` is what tells the mast that — the ground on floor 1, the
- * slab on floor 2, or the top of an obstacle under it — so it is an argument
- * rather than an assumption.
- */
-export function freePlacementFootprint(
-  type: FreePlacementType,
-  cell: Vec3,
-  design: DesignState,
-  orientation: Vec3,
-  registry: PartRegistry = partRegistry
-): Vec3[] {
-  const body = freePlacementBody(type, cell, orientation, registry);
-  if (type !== "blowerPedestal") return body;
-  return [...body, ...pedestalCells(cell, pedestalHeightAt(design, cell))];
-}
-
-/**
- * The unit itself, before anything it grows: one cell for a blower, two end to
- * end for a terminal, along whichever way it is turned (terminal.ts).
+ * The cells a free-placed part would claim: one for a blower, two end to end
+ * for a terminal, along whichever way it is turned (terminal.ts).
  *
  * The catalog's declared `cells` is checked against that rather than assumed,
  * for the reason `assertDeclaredCellCount` gives for bends: the field is load
  * bearing, and a catalog edit that disagreed with the geometry used to pass
- * unnoticed. The mast under a pedestal blower is deliberately outside the
- * check — it is how the unit is mounted, not part of the unit, and its length
- * depends on where it stands.
+ * unnoticed.
  */
-function freePlacementBody(
+export function freePlacementFootprint(
   type: FreePlacementType,
   cell: Vec3,
   orientation: Vec3,
-  registry: PartRegistry
+  registry: PartRegistry = partRegistry
 ): Vec3[] {
   const cells = type === "terminal" ? terminalCells(cell, orientation) : [cell];
   const declared = registry.get(type).cells ?? 1;
@@ -237,24 +205,18 @@ function validateFreePlacementFootprint(
 ): { ok: true } | { ok: false; message: string } {
   const ownCell = validateFreePlacementCell(design, cell);
   if (!ownCell.ok) return ownCell;
-  if (type === "terminal") {
-    const [, second] = terminalCells(cell, orientation);
-    if (!validateFreePlacementCell(design, second).ok) {
-      return {
-        ok: false,
-        message:
-          second[1] === cell[1]
-            ? FREE_PLACEMENT_MESSAGES.terminalClearance
-            : FREE_PLACEMENT_MESSAGES.terminalHeadroom
-      };
-    }
-    return { ok: true };
-  }
-  const [, ...mast] = freePlacementFootprint(type, cell, design, orientation);
-  for (const mastCell of mast) {
-    if (!validateFreePlacementCell(design, mastCell).ok) {
-      return { ok: false, message: FREE_PLACEMENT_MESSAGES.pedestalBlocked };
-    }
+  // Through `freePlacementFootprint` rather than `terminalCells` directly, so
+  // the catalog's declared `cells` is checked on the path every placement takes
+  // (see `assertDeclaredCellCount`).
+  const [, second] = freePlacementFootprint(type, cell, orientation);
+  if (second && !validateFreePlacementCell(design, second).ok) {
+    return {
+      ok: false,
+      message:
+        second[1] === cell[1]
+          ? FREE_PLACEMENT_MESSAGES.terminalClearance
+          : FREE_PLACEMENT_MESSAGES.terminalHeadroom
+    };
   }
   return { ok: true };
 }
@@ -277,14 +239,7 @@ export function freePlacementGhost({
   // until the ghost knows which way it is facing.
   const orientation = freePlacementOrientation(design, type, cell, memory, rotationSteps);
   if (!validateFreePlacementFootprint(design, type, cell, orientation).ok) return null;
-  if (type === "terminal") return { type, cell, axis: orientation };
-  if (type === "blower") return { type, cell, dir: orientation };
-  return {
-    type: "blower",
-    cell,
-    dir: orientation,
-    pedestalFeet: pedestalHeightAt(design, cell)
-  };
+  return type === "terminal" ? { type, cell, axis: orientation } : { type, cell, dir: orientation };
 }
 
 export function placeFreePart(
@@ -306,15 +261,7 @@ export function placeFreePart(
   const part: Part =
     type === "terminal"
       ? { id, type, cell, axis: orientation }
-      : type === "blower"
-        ? { id, type, cell, dir: orientation }
-        : {
-            id,
-            type: "blower",
-            cell,
-            dir: orientation,
-            pedestalFeet: pedestalHeightAt(design, cell)
-          };
+      : { id, type, cell, dir: orientation };
   return {
     ok: true,
     part,

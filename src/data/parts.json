@@ -7,14 +7,6 @@
     "cells": 1,
     "ports": 1
   },
-  "blowerPedestal": {
-    "type": "blower",
-    "name": "Blower Unit with Pedestal",
-    "partNo": "A444200",
-    "color": "#30363F",
-    "cells": 1,
-    "ports": 1
-  },
   "controlBox": {
     "type": "controlBox",
     "name": "Control Box",

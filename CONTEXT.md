@@ -18,7 +18,7 @@ The single most important distinction in this codebase, because the two look ali
 | Kind | Where | Status |
 |---|---|---|
 | Engineering constraints | `src/domain/validation.ts`, bend geometry, tube stock length | **Authoritative.** Derived from the real PTS system spec. Do not loosen, round, or "simplify" without a cited source. See ADR-0001. |
-| Part numbers | `partNo` in `src/data/parts.json` | **Real, all of them.** KTS numbers for the blower (plain and on a pedestal, one part), terminal, tube, split sleeve, bend and control box. The client, not the STEP folder, is the source: the tube's, the bend's and the control box's numbers are their 2026-09-17 corrections of what the folder carried. The bend's, `ALP08401`, is printed on the client's instruction without confirmation of which radius it describes — see [ADR-0037](docs/adr/0037-the-bend-takes-the-clients-number-on-his-say-so.md); the control box's, `AEA751032`, is a line on the parts list for a part nothing draws — see [ADR-0038](docs/adr/0038-the-control-box-is-a-parts-list-line-with-no-model.md). Also [ADR-0030](docs/adr/0030-the-terminal-and-pedestal-blower-take-their-real-numbers.md) and [ADR-0036](docs/adr/0036-the-client-corrects-the-tube-part-number.md). |
+| Part numbers | `partNo` in `src/data/parts.json` | **Real, all of them.** KTS numbers for the blower, terminal, tube, split sleeve, bend and control box. The client, not the STEP folder, is the source: the tube's, the bend's and the control box's numbers are their 2026-09-17 corrections of what the folder carried. The bend's, `ALP08401`, is printed on the client's instruction without confirmation of which radius it describes — see [ADR-0037](docs/adr/0037-the-bend-takes-the-clients-number-on-his-say-so.md); the control box's, `AEA751032`, is a line on the parts list for a part nothing draws — see [ADR-0038](docs/adr/0038-the-control-box-is-a-parts-list-line-with-no-model.md). Also [ADR-0030](docs/adr/0030-the-terminal-and-pedestal-blower-take-their-real-numbers.md) and [ADR-0036](docs/adr/0036-the-client-corrects-the-tube-part-number.md). |
 | Part names | `name` in `src/data/parts.json` | **Ours.** Viewport labels, not catalog entries; the KTS catalog names are in [ADR-0029](docs/adr/0029-real-part-numbers-arrive-in-part.md). |
 | Product scope limits | the exactly-2-terminals rule | **Provisional.** A v1 fence, not a physical truth. See ADR-0002. |
 
@@ -36,16 +36,9 @@ Obstacles are **not** parts. Modelled by `Part`.
 *Avoid:* "component", "element", "piece".
 
 **Blower** — the unit that drives air through the system. Has exactly one **port**, facing `dir`.
-A complete system has one at **each** end; see ADR-0019. The catalog stocks two: a plain one, and
-one **with a pedestal**.
-
-**Pedestal** — the mast under a blower placed with the pedestal tool: straight tube from the
-underside of the unit down to what it stands on — the floor of its storey, or the top of an
-impenetrable obstacle beneath it (ADR-0032) — its height stored as `pedestalFeet`. It is how the blower is mounted, not part of the run air travels through, so it is
-**drawn but not counted** — no BOM row, no tube footage, nothing against the 300 ft centerline. It
-does claim grid cells, unlike the room's own structure, because it is a physical column of tube
-that nothing may route through. See ADR-0020.
-*Avoid:* "stand", "riser" (a riser is tube that carries air).
+A complete system has one at **each** end; see ADR-0019. The catalog stocks one. There was a second,
+a blower **with a pedestal**, until the client junked the part on 2026-09-19 (ADR-0043); nothing in
+the model is uncounted geometry any more.
 
 **Remoting the blower** — running tubing and bends between a blower and its terminal rather than
 seating them together. The client's term. A legal layout, not a fault.
@@ -78,7 +71,7 @@ replaced.
 **Control box** — the external power supply a blower unit runs on, one per unit. The client's term.
 It reaches the BOM and nothing else: it is **not a Part**, has no geometry, no colour and no grid
 cells, is not in the Build drawer, and never appears in the viewport or in a PDF's views. A design
-with two blowers orders two of `AEA751032`, pedestal or not. See ADR-0038.
+with two blowers orders two of `AEA751032`. See ADR-0038.
 *Avoid:* "power box", "power supply" in UI copy — the folder's phrase, not the client's.
 
 **Obstacle** — a rectangular volume, in one of two kinds chosen when it is drawn. An
