@@ -31,6 +31,15 @@
   --font-mono:  var(--font-sans);
 }
 
+/* A layout metric rather than a design token, so it is outside the table above:
+   the width of the tool rail's Build and Erase drawers. Shared because two
+   components need the same number — the drawer sets its width from it, and the
+   Quick Start Guide steps aside by it when a drawer opens across the corner it
+   sits in. */
+:root {
+  --rail-drawer-w: 252px;
+}
+
 * {
   box-sizing: border-box;
 }
