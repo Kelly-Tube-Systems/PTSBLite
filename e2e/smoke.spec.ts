@@ -95,6 +95,38 @@ test("exports the BOM PDF through the real download path", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("moves the quick start guide out from under an open tool drawer", async ({ page }) => {
+  // Another one only a real browser can see: happy-dom has no layout, so no
+  // unit test can tell that two absolutely positioned panels land on the same
+  // corner. The client picked a tool and found the Quick Start Guide painted
+  // across the drawer it opened (Trello YzEkigr8).
+  await createDesign(page);
+
+  const guide = page.locator(".quickstart");
+  // Both drawers are always in the DOM; only the open one carries the class.
+  const drawer = page.locator(".left-rail__drawer--open");
+  const home = await guide.boundingBox();
+  expect(home).not.toBeNull();
+
+  await page.getByRole("button", { name: "Build", exact: true }).click();
+  await expect(drawer).toHaveCount(1);
+
+  // The two overlap vertically whatever happens — both run to the bottom of
+  // the window — so a positive horizontal gap is the whole of "neither covers
+  // the other". Polled because the guide slides rather than jumps.
+  await expect
+    .poll(async () => {
+      const g = await guide.boundingBox();
+      const d = await drawer.boundingBox();
+      return g && d ? g.x - (d.x + d.width) : -Infinity;
+    })
+    .toBeGreaterThan(0);
+
+  // And back to the corner the client asked for once the drawer is gone.
+  await page.keyboard.press("Escape");
+  await expect.poll(async () => (await guide.boundingBox())?.x).toBeCloseTo(home!.x, 0);
+});
+
 test("lets a short window scroll down to the rest of the setup form", async ({ page }) => {
   // happy-dom has no layout, so this can only be caught in a real browser. The
   // client opened the app in a window too short for the whole setup form and
