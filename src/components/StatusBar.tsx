@@ -56,7 +56,16 @@ export function StatusBar({ design, warnings, expanded, onToggle, onFinalize }: 
         <Meta label="PARTS" value={`${design.parts.length}`} />
 
         <div className="status-bar__spacer" />
-        <button type="button" className="status-bar__finalize" onClick={onFinalize}>
+        {/* The same state drives Finalize, so the button goes green at exactly
+            the moment the label beside it says the checks pass. It stays
+            clickable in every state: a design that is still short of valid is
+            when you most want the dialog's issue list. */}
+        <button
+          type="button"
+          className="status-bar__finalize"
+          data-state={state}
+          onClick={onFinalize}
+        >
           <Icons.Bom size={15} /> Finalize
         </button>
       </div>
