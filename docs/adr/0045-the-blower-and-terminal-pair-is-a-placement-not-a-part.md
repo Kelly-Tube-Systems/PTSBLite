@@ -1,4 +1,4 @@
-# ADR-0043: The blower-and-terminal pair is a placement, not a part
+# ADR-0045: The blower-and-terminal pair is a placement, not a part
 
 - **Status:** Accepted
 - **Date:** 2026-09-19
