@@ -645,7 +645,7 @@ export default function App({ platform }: AppProps) {
         ? ghostElevation(ghostState)
         : activeElevation;
 
-  // Whether a left drag draws the obstacle box instead of orbiting, which the
+  // Whether a left drag draws the obstacle box instead of panning, which the
   // viewport acts on and the controls legend describes.
   const dragDraw = dragDrawPhase(placement);
 

@@ -462,12 +462,15 @@ describe("a two-floor design", () => {
     const legend = () => within(document.getElementById("controls-legend-list") as HTMLElement);
 
     expect(viewport.props?.dragDraw).toBeNull();
-    expect(legend().queryByText("Orbit")).toBeTruthy();
+    expect(legend().queryByText("Pan")).toBeTruthy();
 
     fireEvent.keyDown(window, { key: "o" });
     expect(viewport.props?.dragDraw).toBe("anchor");
     expect(legend().queryByText("Draw box")).toBeTruthy();
-    expect(legend().queryByText("Orbit")).toBeNull();
+    expect(legend().queryByText("Pan")).toBeNull();
+    // The orbit is on the right button (ADR-0046), which the box never borrows,
+    // so that row stays put while the left drag is lent out.
+    expect(legend().queryByText("Orbit")).toBeTruthy();
 
     // A first corner down by click: the release of the next drag closes it.
     clickCell([0, 0, 0]);
@@ -478,7 +481,7 @@ describe("a two-floor design", () => {
     clickCell([2, 0, 2]);
     expect(placeButton()).toBeTruthy();
     expect(viewport.props?.dragDraw).toBeNull();
-    expect(legend().queryByText("Orbit")).toBeTruthy();
+    expect(legend().queryByText("Pan")).toBeTruthy();
   });
 
   it("offers the rotate keys only where they still turn something", async () => {

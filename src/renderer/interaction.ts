@@ -6,7 +6,7 @@ import type { ToolId, Vec3 } from "@/types";
 /**
  * Pointer interaction, as pure functions over plain values.
  *
- * Orbiting, click-versus-drag discrimination and cell picking are the parts of
+ * Camera dragging, click-versus-drag discrimination and cell picking are the parts of
  * the viewport with real logic and no GPU, so they are kept testable and out of
  * the effect that owns the renderer.
  */
@@ -83,7 +83,7 @@ export function endViewportDrag(state: ViewportDragState): ViewportDragState {
 }
 
 /**
- * A left press that is drawing a box rather than orbiting the camera.
+ * A left press that is drawing a box rather than panning the camera.
  *
  * The gesture is remembered from the press because the release has to know two
  * things the phase alone cannot tell it: which square the press was on, and
@@ -97,7 +97,7 @@ export type DragDrawGesture = {
 };
 
 /**
- * The gesture a left press starts, or null when the drag orbits as usual —
+ * The gesture a left press starts, or null when the drag pans as usual —
  * every tool but a part-drawn obstacle, and a press with no cell under it.
  */
 export function beginDragDraw(phase: DragDrawPhase, cell: Vec3 | null): DragDrawGesture | null {
