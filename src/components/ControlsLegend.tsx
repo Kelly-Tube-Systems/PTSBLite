@@ -32,19 +32,19 @@ type Control = {
  *
  * The client asked for exactly this list, with two entries — drag to change a
  * part's orientation, and drag to move a placed part — that the app has no
- * bindings for and that would both need the left drag the camera orbit already
+ * bindings for and that would both need the left drag the camera pan already
  * owns. Those are still with him; this legend describes what is actually here,
  * which is the only thing a legend may do.
  *
  * A "Right click — Erase" row sat under the first one until the client asked
- * for it to go. It was stale as well as unwanted: right-drag pan has the right
- * button, as the Pan row two below it said, and erasing is the Eraser in the
- * Erase drawer followed by a left click. The row outlived the binding.
+ * for it to go. It was stale as well as unwanted: the right button drags the
+ * camera, as the row two below it said, and erasing is the Eraser in the Erase
+ * drawer followed by a left click. The row outlived the binding.
  */
 const CONTROLS: Control[] = [
   { icon: Icons.MouseLeft, input: "Left click", action: "Place" },
   // One input, two rows. The left drag draws the obstacle box while one is
-  // part-drawn (ADR-0044) and orbits the rest of the time, including once that
+  // part-drawn (ADR-0044) and pans the rest of the time, including once that
   // box is closed and waiting for Place — so the row follows the drag itself
   // rather than the armed tool. A legend may only say what the app does.
   {
@@ -54,12 +54,14 @@ const CONTROLS: Control[] = [
     applies: ({ dragDraw }) => dragDraw !== null
   },
   {
-    icon: Icons.Orbit,
+    icon: Icons.Pan,
     input: "Left click drag",
-    action: "Orbit",
+    action: "Pan",
     applies: ({ dragDraw }) => dragDraw === null
   },
-  { icon: Icons.Pan, input: "Right click drag", action: "Pan" },
+  // The orbit has the right button (ADR-0046), which no tool ever borrows, so
+  // this row is the one camera move that is always true.
+  { icon: Icons.Orbit, input: "Right click drag", action: "Orbit" },
   { icon: Icons.Scroll, input: "Scroll", action: "Zoom" },
   {
     icon: Icons.Keys,

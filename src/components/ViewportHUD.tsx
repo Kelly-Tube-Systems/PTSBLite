@@ -1,4 +1,5 @@
 import { Icons } from "@/components/Icons";
+import { useReadyPulse } from "@/components/ready-pulse";
 import {
   obstaclePlacementDraftHasFootprint,
   type ObstacleKind,
@@ -45,6 +46,7 @@ export function ViewportHUD({
   // The domain clamps this too; disabling here is what stops the control
   // advertising a value it would then silently refuse.
   const atCeiling = obstacleReady && obstacleDraft.height >= obstacleMaxHeight;
+  const pulse = useReadyPulse(obstacleReady);
   return (
     <div className="hud nosel">
       {tool === "obstacle" && (
@@ -87,9 +89,16 @@ export function ViewportHUD({
           is its "you can use me now" — it pulses on arrival rather than on a
           state change, and carries the accent the other two wear when live.
           Testers were drawing a footprint and not noticing they had been handed
-          a height and a Place button. */}
+          a height and a Place button.
+
+          It is the box that pulses, so it is the box that catches the press:
+          any button inside it is the user having found the thing, whether that
+          is Place, a height step or the close cross. */}
       {obstacleReady && (
-        <div className="hud__obstacle-controls ready-pulse">
+        <div
+          className={`hud__obstacle-controls${pulse.pulsing ? " ready-pulse" : ""}`}
+          onClickCapture={pulse.dismiss}
+        >
           <Icons.Obstacle size={12} className="hud__obstacle-icon" />
           {/* Height only: an obstacle stands on the floor of the storey it was
               drawn on, so there is no base to set. */}

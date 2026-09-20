@@ -11,7 +11,7 @@ import {
   DEFAULT_FREE_PLACEMENT_ROTATION,
   freePlacementGhost,
   freePlacementLandingCells,
-  freePlacementOrientation,
+  freePlacementSeat,
   placeFreePart,
   rememberFreePlacementOrientation,
   type FreePlacementMemory,
@@ -166,10 +166,11 @@ export function elevationKeysApply(tool: ToolId): boolean {
 /**
  * What a left drag across the grid does with the armed tool.
  *
- * Every tool but one orbits the camera, which is what a left drag has always
- * done. The obstacle tool is the exception while its box is still being drawn:
- * people reach for a drag the way they would in any other drawing tool, and got
- * the view spinning with a corner anchored behind them. So a drag draws the box
+ * Every tool but one leaves the drag to the camera, which is what a left drag
+ * has always done. The obstacle tool is the exception while its box is still
+ * being drawn: people reach for a drag the way they would in any other drawing
+ * tool, and got the camera moving with a corner anchored behind them. So a drag
+ * draws the box
  * instead, in one of two phases —
  *
  * - `"anchor"`: nothing is down yet, so the press puts the first corner on the
@@ -368,20 +369,19 @@ export function attemptPlacement(
     // that rule (ADR-0019).
     case "blower":
     case "terminal": {
-      // The same orientation the ghost previews, resolved the same way, so what
-      // gets placed is what was on screen. It is worked out here rather than
-      // read back off the ghost because a refused ghost is null, and a terminal
-      // refused for want of room has to be refused in the orientation it was
-      // turned to — otherwise the message names the wrong blocked cell.
+      // The same seat the ghost previews, resolved the same way, so what gets
+      // placed is what was on screen — including the cell, which for a terminal
+      // seating on a port is a step along from the one under the cursor.
       const type: FreePlacementType = session.tool;
-      const orientation = freePlacementOrientation(
+      const seat = freePlacementSeat(
         design,
         type,
         cell,
         session.freePlacementMemory,
         session.freePlacementRotation
       );
-      const placed = placeFreePart(design, { id: occupantId, type, cell, orientation });
+      const orientation = seat.orientation;
+      const placed = placeFreePart(design, { id: occupantId, type, cell: seat.cell, orientation });
       if (!placed.ok) return unchanged({ status: "error", message: placed.message });
       // Once an endpoint is down the height setting goes back to the floor of
       // the storey it was placed from. The client chose this over leaving the

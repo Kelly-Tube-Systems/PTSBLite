@@ -179,6 +179,27 @@ describe("attemptPlacement", () => {
     expect(remoted.result.design.parts.at(-1)).toMatchObject({ id: "t1", cell: [6, 0, 0] });
   });
 
+  it("seats a terminal on a blower that faces west, where the click used to do nothing", () => {
+    // The ghost and the click resolve the same seat, so the part lands in the
+    // two squares in front of the blower rather than being refused for running
+    // its second foot back through it. The run then leaves from the far end.
+    const design = designFromScene({
+      parts: [{ id: "b1", type: "blower", cell: [10, 0, 10], dir: [-1, 0, 0] }],
+      obstacles: []
+    });
+
+    const { result } = attemptPlacement(session({ tool: "terminal" }), design, [9, 0, 10], "t1");
+    expect(result.status).toBe("committed");
+    if (result.status !== "committed") return;
+    expect(result.design.parts.at(-1)).toMatchObject({
+      id: "t1",
+      cell: [8, 0, 10],
+      axis: [-1, 0, 0]
+    });
+    expect(result.design.grid.query([9, 0, 10])).toBe("t1");
+    expect(result.design.grid.query([10, 0, 10])).toBe("b1");
+  });
+
   it("places a blower and its terminal on one click, from the one id it is given", () => {
     const { session: after, result } = attemptPlacement(
       session({ tool: "blowerTerminal" }),

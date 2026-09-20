@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { designFromScene, emptyDesign } from "@/domain/design-state";
 import {
   DEFAULT_FREE_PLACEMENT_MEMORY,
+  FREE_PLACEMENT_ORIENTATIONS,
   freePlacementGhost,
   freePlacementFootprint,
   placeFreePart,
@@ -10,7 +11,9 @@ import {
   rotateOrientation,
   UP
 } from "@/domain/free-placement";
+import { terminalCells } from "@/domain/terminal";
 import { computeTopology } from "@/domain/topology";
+import { vAdd } from "@/domain/vec3";
 import type { DesignState, Vec3 } from "@/types";
 import { expectGridMatchesDesign } from "@/test/design-invariants";
 
@@ -110,6 +113,57 @@ describe("free placement orientation", () => {
         rotationSteps: 0
       })
     ).toMatchObject({ type: "terminal", axis: [1, 0, 0] });
+  });
+
+  it("seats a terminal in front of a blower facing any of the five headings", () => {
+    // West and north used to be refused outright. The snap gives the terminal
+    // the blower's own axis, and a terminal's 2 ft body always runs the
+    // positive way along that axis, so for the two headings that point back
+    // along one the body ran through the blower's own cell: no ghost, and a
+    // click that did nothing. It seats a cell further along instead, filling
+    // the same two squares in front of the blower either way.
+    for (const dir of FREE_PLACEMENT_ORIENTATIONS) {
+      const blowerCell: Vec3 = [10, 0, 10];
+      const design = designFromScene({
+        parts: [{ id: "b1", type: "blower", cell: blowerCell, dir }],
+        obstacles: []
+      });
+      const portCell = computeTopology(design).openPorts()[0].cell;
+
+      const ghost = freePlacementGhost({
+        type: "terminal",
+        design,
+        cell: portCell,
+        memory: DEFAULT_FREE_PLACEMENT_MEMORY,
+        rotationSteps: 0
+      });
+
+      expect(ghost).toMatchObject({ type: "terminal", axis: dir });
+      const body = terminalCells(ghost?.cell ?? [0, 0, 0], dir);
+      expect(body).toContainEqual(portCell);
+      expect(body).toContainEqual(vAdd(portCell, dir));
+      expect(body).not.toContainEqual(blowerCell);
+    }
+  });
+
+  it("gives up the seat once R turns the terminal off the port's heading", () => {
+    // Seating is what the port's own direction buys. Turned away from it the
+    // terminal is an ordinary placement at the square under the cursor, which
+    // is where the ghost has to be for the cursor to mean anything.
+    const design = designFromScene({
+      parts: [{ id: "b1", type: "blower", cell: [10, 0, 10], dir: [-1, 0, 0] }],
+      obstacles: []
+    });
+
+    expect(
+      freePlacementGhost({
+        type: "terminal",
+        design,
+        cell: [9, 0, 10],
+        memory: DEFAULT_FREE_PLACEMENT_MEMORY,
+        rotationSteps: 1
+      })
+    ).toMatchObject({ type: "terminal", cell: [9, 0, 10], axis: [0, 0, -1] });
   });
 
   it("cycles the visible orientation forward and backward from the current default", () => {

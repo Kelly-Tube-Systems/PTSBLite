@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import "@/components/TopBar.css";
 import { Icons } from "@/components/Icons";
+import { useReadyPulse } from "@/components/ready-pulse";
 import { STANDARD_VIEWS, type CameraView } from "@/renderer/camera-views";
 
 export type TopBarProps = {
@@ -43,6 +44,11 @@ export function TopBar({
   onToggleMarkers
 }: TopBarProps) {
   const autoBuildReady = !autoBuilding && autoBuildUnavailable === null;
+  // Having something to route is what the tell is about, so the pulse hangs off
+  // that rather than off `autoBuildReady`: the moment routing is under way is
+  // not a moment the button stopped being usable, and treating it as one would
+  // start the button pulsing again at whoever just pressed it.
+  const pulse = useReadyPulse(autoBuildUnavailable === null);
   return (
     <div className="topbar nosel">
       <div className="topbar__brand">{productName}</div>
@@ -71,13 +77,17 @@ export function TopBar({
       >
         <Icons.Redo size={21} />
       </button>
-      {/* Pulses at the moment it stops being grey, which is the same moment
-          Finalize and the obstacle strip announce themselves. */}
+      {/* Starts pulsing at the moment it stops being grey, which is the same
+          moment Finalize and the obstacle strip announce themselves, and keeps
+          it up until it is pressed. */}
       <button
         type="button"
-        className={`topbtn accent topbar-no-drag${autoBuildReady ? " ready-pulse" : ""}`}
+        className={`topbtn accent topbar-no-drag${pulse.pulsing ? " ready-pulse" : ""}`}
         title={autoBuildUnavailable ?? "Route the open ports"}
-        onClick={onAutoBuild}
+        onClick={() => {
+          pulse.dismiss();
+          onAutoBuild();
+        }}
         disabled={!autoBuildReady}
       >
         <Icons.Auto size={19} /> {autoBuilding ? "Routing…" : "Auto-Build"}

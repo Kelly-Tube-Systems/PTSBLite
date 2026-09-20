@@ -163,7 +163,7 @@ test("keeps the tool pill clear of both bottom corner panels", async ({ page }) 
 test("draws an obstacle box by dragging one corner to the other", async ({ page }) => {
   // The press, the drag and the release only meet in a real browser: happy-dom
   // has no raycaster, and the unit suites can prove the phase and the gesture
-  // maths but not that a held button draws a box instead of orbiting the camera
+  // maths but not that a held button draws a box instead of moving the camera
   // (Trello EcZrRueR).
   const errors = collectPageErrors(page);
   await createDesign(page);
@@ -178,7 +178,7 @@ test("draws an obstacle box by dragging one corner to the other", async ({ page 
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
   // More than one step, so the pointer really travels: a jump from press to
-  // release would pass even if a drag still orbited.
+  // release would pass even if a drag still moved the camera.
   await page.mouse.move(to.x, to.y, { steps: 12 });
   await page.mouse.up();
 

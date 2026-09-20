@@ -232,11 +232,13 @@ body {
    already learned somewhere else is one you do not have to be taught again.
 
    The pulse rides on whatever colour the control already wears and fades to
-   nothing, so nothing is left blinking at a user who has seen it. Applying the
-   class is what starts it, which makes React's own render the trigger — no
-   effect has to watch for the transition. */
+   nothing between beats. It ran three beats and stopped until the client
+   watched testers miss it anyway; it now runs until the control is pressed,
+   and `useReadyPulse` is what takes the class off at that point. Applying the
+   class is still what starts it, which makes React's own render the trigger —
+   no effect has to watch for the transition. */
 .ready-pulse {
-  animation: ready-pulse 1.1s ease-out 3;
+  animation: ready-pulse 1.1s ease-out infinite;
 }
 
 /* An outline rather than a box-shadow: two of the three already cast a shadow

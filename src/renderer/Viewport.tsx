@@ -250,7 +250,7 @@ export type ViewportProps = {
   ghost: Ghost | null;
   tool: ToolId;
   /**
-   * Whether a left drag draws with the armed tool instead of orbiting, and
+   * Whether a left drag draws with the armed tool instead of panning, and
    * which half of the box the press and release supply. See `dragDrawPhase`.
    */
   dragDraw?: DragDrawPhase;
@@ -626,26 +626,28 @@ export function Viewport({
     };
 
     let drag = createViewportDragState();
-    // The box a left drag is drawing, or null while a left drag orbits.
+    // The box a left drag is drawing, or null while a left drag pans.
     let dragDrawing: DragDrawGesture | null = null;
-    // Right-drag pans the camera rig: we translate cam.target (and therefore the
-    // camera with it) along the camera's screen-space right/up axes.
-    let panning = false;
-    let panX = 0;
-    let panY = 0;
+    // Right-drag orbits (ADR-0046). The two camera moves traded buttons at the
+    // client's request; which button carries which is all that changed.
+    let orbiting = false;
+    let orbitX = 0;
+    let orbitY = 0;
+    // Panning translates cam.target (and therefore the camera with it) along
+    // the camera's screen-space right/up axes.
     const panRight = new THREE.Vector3();
     const panUp = new THREE.Vector3();
 
     const onDown = (e: MouseEvent) => {
       if (e.button === 2) {
-        panning = true;
-        panX = e.clientX;
-        panY = e.clientY;
+        orbiting = true;
+        orbitX = e.clientX;
+        orbitY = e.clientY;
         return;
       }
       if (e.button !== 0) return;
       drag = beginViewportDrag(drag, { x: e.clientX, y: e.clientY });
-      // A press with a box half-drawn starts drawing rather than orbiting, and
+      // A press with a box half-drawn starts drawing rather than panning, and
       // the corner goes down here rather than on the release: the box has to
       // follow the pointer while the button is still held.
       syncMouse(e);
@@ -657,20 +659,14 @@ export function Viewport({
       const rect = renderer.domElement.getBoundingClientRect();
       syncMouse(e);
       pointerKnown = true;
-      if (panning && e.buttons & 2) {
-        const dx = e.clientX - panX;
-        const dy = e.clientY - panY;
-        panX = e.clientX;
-        panY = e.clientY;
-        // World units per screen pixel at the target plane, so the scene tracks
-        // the cursor 1:1 and panning feels consistent at any zoom level.
-        const worldPerPixel =
-          (2 * cam.distance * Math.tan((camera.fov * Math.PI) / 180 / 2)) / rect.height;
-        camera.updateMatrixWorld();
-        camera.matrixWorld.extractBasis(panRight, panUp, new THREE.Vector3());
-        cam.target.addScaledVector(panRight, -dx * worldPerPixel);
-        cam.target.addScaledVector(panUp, dy * worldPerPixel);
-        applyCamera();
+      if (orbiting && e.buttons & 2) {
+        const dx = e.clientX - orbitX;
+        const dy = e.clientY - orbitY;
+        orbitX = e.clientX;
+        orbitY = e.clientY;
+        cam.yaw -= dx * 0.008;
+        cam.pitch = Math.max(0.12, Math.min(1.45, cam.pitch + dy * 0.005));
+        applyCamera(); // re-picks for the pointer's new position as it goes
         return;
       }
       const moved = moveViewportDrag(drag, { x: e.clientX, y: e.clientY }, e.buttons);
@@ -678,16 +674,22 @@ export function Viewport({
       // While a box is being drawn the drag belongs to the box: the camera
       // holds still and the preview follows the pointer instead.
       if (moved.delta && !dragDrawing) {
-        cam.yaw -= moved.delta.x * 0.008;
-        cam.pitch = Math.max(0.12, Math.min(1.45, cam.pitch + moved.delta.y * 0.005));
-        applyCamera(); // re-picks for the pointer's new position as it goes
+        // World units per screen pixel at the target plane, so the scene tracks
+        // the cursor 1:1 and panning feels consistent at any zoom level.
+        const worldPerPixel =
+          (2 * cam.distance * Math.tan((camera.fov * Math.PI) / 180 / 2)) / rect.height;
+        camera.updateMatrixWorld();
+        camera.matrixWorld.extractBasis(panRight, panUp, new THREE.Vector3());
+        cam.target.addScaledVector(panRight, -moved.delta.x * worldPerPixel);
+        cam.target.addScaledVector(panUp, moved.delta.y * worldPerPixel);
+        applyCamera();
       } else {
         rehover();
       }
     };
     const onUp = (e: MouseEvent) => {
       if (e.button === 2) {
-        panning = false;
+        orbiting = false;
         return;
       }
       if (dragDrawing) {
