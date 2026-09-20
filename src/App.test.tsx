@@ -245,6 +245,23 @@ describe("the obstacle height and Place box", () => {
     clickCell([8, 0, 8]);
     expect(box()?.classList.contains("ready-pulse")).toBe(true);
   });
+
+  // The client had the obstacle glyph taken off the head of the strip: at 12px
+  // it read as a broken image. The row starts at "Height" and nothing else moved.
+  it("carries no glyph ahead of the height label", async () => {
+    await renderApp();
+
+    fireEvent.keyDown(window, { key: "o" });
+    clickCell([0, 0, 0]);
+    clickCell([2, 0, 2]);
+
+    const box = document.querySelector(".hud__obstacle-controls");
+    expect(box?.firstElementChild?.classList.contains("hud__stepper")).toBe(true);
+    // Everything else the strip carries is still there.
+    expect(screen.getByRole("button", { name: /Increase obstacle height/ })).toBeTruthy();
+    expect(placeButton()).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cancel obstacle placement" })).toBeTruthy();
+  });
 });
 
 describe("in-flight interactions", () => {
