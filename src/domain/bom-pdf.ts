@@ -5,6 +5,7 @@ import {
   ACCENT,
   BAND,
   DIM,
+  drawCenteredText,
   drawRightText,
   drawText,
   drawWatermark,
@@ -68,11 +69,33 @@ const VIEWS_PER_PAGE = 2;
 const WORDMARK_WIDTH = 168;
 /** From the top of the sheet to the top of the mark. */
 const WORDMARK_TOP_GAP = 40;
-/** Between the mark and the rule under it. */
+/** Between the letterhead's last line and the rule under it. */
 const MASTHEAD_RULE_GAP = 13;
 /** Between the two lines of the masthead rule, thick over thin. */
 const MASTHEAD_RULE_SPACING = 3.5;
 const BANNER_WIDTH = 320;
+
+/**
+ * How to reach Kelly Systems, which the client asked to have on the sheet: a
+ * reader handed a printed BOM had the mark at the top of it and no way to act
+ * on what it said.
+ *
+ * His five details, in his own spelling down to the ZIP+4 and the dotted phone
+ * number, set on two centred lines rather than five: this is the head of a
+ * one-page parts list, and a five-line address block there costs the table more
+ * room than it is worth. The middle dot is the separator the parts list already
+ * uses ("Straight Tube · 6ft").
+ */
+const CONTACT_LINES = [
+  "Kelly Systems, Inc. · 422 N. Western Avenue · Chicago, IL 60612-1491",
+  "sales@kellytubesystems.com · 312.733.3224"
+] as const;
+/** Small enough to read as stationery rather than as a line of the document. */
+const CONTACT_SIZE = 7.5;
+/** From the foot of the mark to the first line's baseline. */
+const CONTACT_TOP_GAP = 14;
+/** Between the contact lines' baselines. */
+const CONTACT_LEADING = 10;
 
 /**
  * Render a design's bill of materials to PDF bytes.
@@ -182,11 +205,16 @@ export async function generateBomPdf(
 }
 
 /**
- * The Kelly Systems mark centred at the head of the page, over a rule.
+ * The Kelly Systems mark centred at the head of the page, with the company's
+ * contact details under it, over a rule.
  *
  * Vector, from the same artwork the viewport's background watermark is drawn
  * from (`src/data/kelly-systems-wordmark.ts`), so it stays sharp however far a
  * reader zooms into the PDF or however finely it prints.
+ *
+ * The contact lines print the same on every BOM — they are Kelly's own details,
+ * not anything a design decides — and they take their room from the letterhead
+ * rather than from the parts table, which keeps the space it had.
  *
  * Returns the y the document's own first line sits under.
  */
@@ -194,9 +222,17 @@ function drawMasthead(p: Painter): number {
   const top = PAGE_HEIGHT - WORDMARK_TOP_GAP;
   drawWordmark(p, (PAGE_WIDTH - WORDMARK_WIDTH) / 2, top, { width: WORDMARK_WIDTH });
 
+  let baseline = top - wordmarkHeight(WORDMARK_WIDTH) - CONTACT_TOP_GAP;
+  for (const line of CONTACT_LINES) {
+    drawCenteredText(p, line, PAGE_WIDTH / 2, baseline, { size: CONTACT_SIZE, color: DIM });
+    baseline -= CONTACT_LEADING;
+  }
+  // The loop leaves the baseline one line past the last one it drew.
+  const lastLine = baseline + CONTACT_LEADING;
+
   // Thick over thin: the pair of rules is what makes a sheet read as issued
   // stationery rather than something typed up.
-  const rule = top - wordmarkHeight(WORDMARK_WIDTH) - MASTHEAD_RULE_GAP;
+  const rule = lastLine - MASTHEAD_RULE_GAP;
   const right = PAGE_WIDTH - MARGIN_X;
   p.page.drawLine({
     start: { x: MARGIN_X, y: rule },
