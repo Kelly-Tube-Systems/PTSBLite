@@ -146,6 +146,110 @@ describe("free placement orientation", () => {
     }
   });
 
+  it("offers a blower's port with the cursor on the blower's own square", () => {
+    // The client's case: height plane on the floor, cursor on the square the
+    // blower stands in. The snap was never the problem — the aim was. Until
+    // this, the square carried only the plane's height, so nothing lifted and
+    // the height keys had to be reached for first.
+    const design = designFromScene({
+      parts: [{ id: "b1", type: "blower", cell: [10, 0, 10], dir: [0, 1, 0] }],
+      obstacles: []
+    });
+
+    expect(
+      freePlacementGhost({
+        type: "terminal",
+        design,
+        cell: [10, 0, 10],
+        memory: DEFAULT_FREE_PLACEMENT_MEMORY,
+        rotationSteps: 0
+      })
+    ).toMatchObject({ type: "terminal", cell: [10, 1, 10], axis: [0, 1, 0] });
+  });
+
+  it("reaches a blower standing off the floor from the square beneath it", () => {
+    // A blower up at 4 ft has its port at 5 ft, and the cursor is still down on
+    // the floor plane. The square is the blower's whatever height the blower is
+    // at, so the port on offer is the same one.
+    const design = designFromScene({
+      parts: [{ id: "b1", type: "blower", cell: [10, 4, 10], dir: [0, 1, 0] }],
+      obstacles: []
+    });
+
+    expect(
+      freePlacementGhost({
+        type: "terminal",
+        design,
+        cell: [10, 0, 10],
+        memory: DEFAULT_FREE_PLACEMENT_MEMORY,
+        rotationSteps: 0
+      })
+    ).toMatchObject({ type: "terminal", cell: [10, 5, 10], axis: [0, 1, 0] });
+  });
+
+  it("offers the open top of a riser rather than the blower it stands on", () => {
+    // The remote-blower build: the blower's own port is taken by the tube, so
+    // the one port still open in that square is five feet up. Aiming at the
+    // square offers that one, because it offers whichever is open.
+    const design = designFromScene({
+      parts: [
+        { id: "b1", type: "blower", cell: [10, 0, 10], dir: [0, 1, 0] },
+        { id: "t1", type: "tube", from: [10, 1, 10], to: [10, 6, 10] }
+      ],
+      obstacles: []
+    });
+
+    expect(
+      freePlacementGhost({
+        type: "terminal",
+        design,
+        cell: [10, 0, 10],
+        memory: DEFAULT_FREE_PLACEMENT_MEMORY,
+        rotationSteps: 0
+      })
+    ).toMatchObject({ type: "terminal", cell: [10, 6, 10], axis: [0, 1, 0] });
+  });
+
+  it("leaves the square ordinary once the plane is above the part", () => {
+    // The elevation keys keep their say: a port below the plane belongs to
+    // something the aim is already past, so the terminal goes down where the
+    // cursor is instead of being dragged back to the floor.
+    const design = designFromScene({
+      parts: [{ id: "b1", type: "blower", cell: [10, 0, 10], dir: [0, 1, 0] }],
+      obstacles: []
+    });
+
+    expect(
+      freePlacementGhost({
+        type: "terminal",
+        design,
+        cell: [10, 8, 10],
+        memory: DEFAULT_FREE_PLACEMENT_MEMORY,
+        rotationSteps: 0
+      })
+    ).toMatchObject({ type: "terminal", cell: [10, 8, 10] });
+  });
+
+  it("gives up a lifted port once R turns the terminal off its heading", () => {
+    // Same rule as a port under the cursor: turned away from the port, the
+    // terminal is an ordinary placement on the square the cursor is on — which
+    // here is back down on the floor plane, under the blower.
+    const design = designFromScene({
+      parts: [{ id: "b1", type: "blower", cell: [10, 4, 10], dir: [0, 1, 0] }],
+      obstacles: []
+    });
+
+    expect(
+      freePlacementGhost({
+        type: "terminal",
+        design,
+        cell: [10, 0, 10],
+        memory: DEFAULT_FREE_PLACEMENT_MEMORY,
+        rotationSteps: 1
+      })
+    ).toMatchObject({ type: "terminal", cell: [10, 0, 10], axis: [1, 0, 0] });
+  });
+
   it("gives up the seat once R turns the terminal off the port's heading", () => {
     // Seating is what the port's own direction buys. Turned away from it the
     // terminal is an ordinary placement at the square under the cursor, which
@@ -306,8 +410,14 @@ describe("free placement commits", () => {
     // A terminal is 2 ft tall, so the cell above the cursor has to be free.
     // "That cell is already occupied" would point at the wrong square: the one
     // under the cursor is empty, and the blocked one is above it.
+    // The blower overhead has its outlet taken, so the square below it offers
+    // nothing to lift to and the aim stays on the cursor's own cell — which is
+    // the case this refusal is about.
     const lowCeiling = designFromScene({
-      parts: [{ id: "b1", type: "blower", cell: [4, 1, 4], dir: [1, 0, 0] }],
+      parts: [
+        { id: "b1", type: "blower", cell: [4, 1, 4], dir: [1, 0, 0] },
+        { id: "u1", type: "tube", from: [5, 1, 4], to: [8, 1, 4] }
+      ],
       obstacles: []
     });
     const attempt = {

@@ -343,7 +343,7 @@ function PartCard({
       <div className="part-card__preview">
         <PartThumbnail type={entry.type} color={entry.color} seatedTerminalColor={second?.color} />
       </div>
-      <div>
+      <div className="part-card__text">
         <div className="part-card__name">{name}</div>
         <div className="part-card__part-no">{partNo}</div>
       </div>
