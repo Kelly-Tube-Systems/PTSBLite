@@ -745,13 +745,17 @@ export default function App({ platform }: AppProps) {
               rather than each against the viewport, so the pill in the middle
               keeps clear of the two corner boxes at whatever width the window
               happens to be. The centre cell stays in the row when the cursor
-              tool leaves no pill to put in it. */}
+              tool leaves no pill to put in it.
+
+              The legend takes the left corner and the guide the right, which is
+              the order the client asked for; source order is what places them,
+              so the swap is here rather than in either stylesheet. */}
           <div className="viewport-bottom">
-            <QuickStartGuide />
+            <ControlsLegend tool={tool} dragDraw={dragDraw} />
             <div className="viewport-bottom__center">
               <ActiveToolBar tool={tool} elevation={armedElevation} floor={activeFloor} />
             </div>
-            <ControlsLegend tool={tool} dragDraw={dragDraw} />
+            <QuickStartGuide />
           </div>
         </div>
       </div>

@@ -105,8 +105,8 @@ body {
 }
 
 /* The bottom of the viewport, shared by the three panels that live there: the
-   Quick Start Guide in the left corner, the active-tool pill centred, and the
-   controls legend in the right corner.
+   controls legend in the left corner, the active-tool pill centred, and the
+   Quick Start Guide in the right corner.
 
    Each of the three used to be positioned against the viewport on its own, with
    nothing relating them, so the centred pill simply painted underneath the two
