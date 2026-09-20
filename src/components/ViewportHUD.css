@@ -21,7 +21,7 @@
   border: 1px solid color-mix(in oklab, var(--accent) 35%, transparent);
   border-radius: 6px;
   padding: 7px 8px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   pointer-events: auto;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
 }
@@ -38,7 +38,7 @@
   background: color-mix(in oklab, var(--accent) 17%, var(--panel-2));
   color: var(--accent);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -65,13 +65,19 @@
 
 .hud__stepper-label {
   color: var(--text-mut);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .hud__stepper-value {
   font-family: var(--font-mono);
   color: var(--accent);
-  min-width: 46px;
+  /* Wide enough for the tallest obstacle the build area allows, so stepping
+     past 9ft does not shove the buttons outwards, and no wider — the client
+     asked for the − and + up against the reading, and the old 46px reservation
+     was what held them off it. Tabular figures keep the digits from shuffling
+     underneath as the number changes. */
+  min-width: 4ch;
+  font-variant-numeric: tabular-nums;
   text-align: center;
 }
 
@@ -86,7 +92,7 @@
   background: var(--panel-2);
   color: var(--text);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
   padding: 0;
 }

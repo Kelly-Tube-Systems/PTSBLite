@@ -821,6 +821,21 @@ describe("the erase drawer", () => {
   });
 });
 
+describe("the bottom of the viewport", () => {
+  it("puts the controls legend in the left corner and the quick start guide in the right", async () => {
+    // Source order is what places the three, so the client's swap lives in the
+    // markup and nowhere else (Trello sOmRvSTZ).
+    const { container } = await renderApp();
+
+    const row = container.querySelector(".viewport-bottom");
+    expect(Array.from(row?.children ?? []).map((el) => el.className)).toEqual([
+      "legend nosel",
+      "viewport-bottom__center",
+      "quickstart nosel"
+    ]);
+  });
+});
+
 describe("left rail accessibility", () => {
   it("gives every icon-only rail control an accessible name", async () => {
     await renderApp();
