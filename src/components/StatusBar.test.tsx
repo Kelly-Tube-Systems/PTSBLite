@@ -2,7 +2,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { StatusBar } from "@/components/StatusBar";
 import { designFromScene, emptyDesign } from "@/domain/design-state";
-import type { Part, Warning } from "@/types";
+import { partRegistry } from "@/domain/part-registry";
+import type { Part, ToolId, Warning } from "@/types";
 
 const blower: Part = { id: "b", type: "blower", cell: [0, 0, 0], dir: [1, 0, 0] };
 
@@ -13,7 +14,21 @@ const failing: Warning = {
   detail: "One end of the run has no blower."
 };
 
-function bar({ parts = [], warnings = [] }: { parts?: Part[]; warnings?: Warning[] }) {
+type BarProps = {
+  parts?: Part[];
+  warnings?: Warning[];
+  tool?: ToolId;
+  elevation?: number;
+  floor?: 1 | 2 | null;
+};
+
+function bar({
+  parts = [],
+  warnings = [],
+  tool = "cursor",
+  elevation = 0,
+  floor = null
+}: BarProps) {
   return (
     <StatusBar
       design={parts.length ? designFromScene({ parts, obstacles: [] }) : emptyDesign()}
@@ -21,16 +36,68 @@ function bar({ parts = [], warnings = [] }: { parts?: Part[]; warnings?: Warning
       expanded={false}
       onToggle={() => {}}
       onFinalize={() => {}}
+      tool={tool}
+      elevation={elevation}
+      floor={floor}
     />
   );
 }
 
 const finalizeButton = () => screen.getByRole("button", { name: /Finalize/ });
 
-function statusBar(props: { parts?: Part[]; warnings?: Warning[] }) {
+function statusBar(props: BarProps) {
   render(bar(props));
   return finalizeButton();
 }
+
+/** What the rail says the armed tool is, or null when it says nothing. */
+function toolReadout() {
+  return document.querySelector('[data-meta="tool"] .status-bar__meta-value')?.textContent ?? null;
+}
+
+/** The elevation the rail reads out, floor and all, or null when there is none. */
+function elevationReadout() {
+  const meta = document.querySelector('[data-meta="elevation"]');
+  return meta ? meta.textContent : null;
+}
+
+/**
+ * The client tried the tool pill sharing the bottom of the viewport with the
+ * two corner panels and asked for it to go into the rail instead
+ * (ADR-0048): "Can we put the info pf the tool pill into the blank space on
+ * the footer rail?". So the rail is where the armed tool is named.
+ */
+describe("the active tool readout", () => {
+  it("names the armed tool and its catalog part number", () => {
+    render(bar({ tool: "blower" }));
+    const { name, partNo } = partRegistry.get("blower");
+    expect(toolReadout()).toBe(`${name} · ${partNo}`);
+  });
+
+  it("says nothing about a tool while the cursor is armed, which places nothing", () => {
+    render(bar({ tool: "cursor" }));
+    expect(toolReadout()).toBeNull();
+    expect(elevationReadout()).toBeNull();
+  });
+
+  it("reads out the placement elevation and its floor", () => {
+    render(bar({ tool: "tube", elevation: 12, floor: 2 }));
+    expect(elevationReadout()).toContain("12 ft");
+    expect(elevationReadout()).toContain("Floor 2");
+  });
+
+  it("leaves the floor off a single-floor design, which has only the one", () => {
+    render(bar({ tool: "tube", elevation: 3, floor: null }));
+    expect(elevationReadout()).toContain("3 ft");
+    expect(elevationReadout()).not.toContain("Floor");
+  });
+
+  it("offers no elevation for a tool that puts nothing at a height", () => {
+    render(bar({ tool: "erase" }));
+    expect(toolReadout()).toBe("Erase");
+    expect(elevationReadout()).toBeNull();
+  });
+});
 
 /**
  * The client asked for Finalize to turn green on a valid system, the way

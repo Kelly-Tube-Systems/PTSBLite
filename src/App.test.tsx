@@ -71,6 +71,10 @@ const canRedo = () => !(redoButton() as HTMLButtonElement).disabled;
 /** The obstacle HUD's commit button, present only once a draft has a footprint. */
 const placeButton = () => screen.queryByRole("button", { name: "Place" });
 
+/** The height the footer rail reads out for the armed tool, or null for none. */
+const elevationReadout = () =>
+  document.querySelector('[data-meta="elevation"] .status-bar__meta-value')?.textContent ?? null;
+
 /** Arm the blower, which has no keyboard shortcut: it lives in the Build drawer. */
 function armBlower() {
   fireEvent.click(screen.getByRole("button", { name: "Build" }));
@@ -81,20 +85,21 @@ describe("tool selection by keyboard", () => {
   it("switches tools with the documented shortcuts and reports the active tool", async () => {
     await renderApp();
 
-    // Cursor is the default, and the tool pill is hidden while it is active.
+    // Cursor is the default, and the rail's tool readout is absent while it is
+    // active.
     expect(screen.queryByText("Obstacle volume")).not.toBeTruthy();
 
     fireEvent.keyDown(window, { key: "o" });
     expect(screen.getByText("Obstacle volume")).toBeTruthy();
 
-    // Scoped to the tool pill: the left rail's Erase drawer button names the
+    // Scoped to the readout: the left rail's Erase drawer button names the
     // tool too, and it is on screen whatever tool is armed.
-    const pill = { selector: ".active-tool-bar__tool" };
+    const readout = { selector: '[data-meta="tool"] .status-bar__meta-value' };
     fireEvent.keyDown(window, { key: "x" });
-    expect(screen.getByText("Erase", pill)).toBeTruthy();
+    expect(screen.getByText("Erase", readout)).toBeTruthy();
 
     fireEvent.keyDown(window, { key: "v" });
-    expect(screen.queryByText("Erase", pill)).not.toBeTruthy();
+    expect(screen.queryByText("Erase", readout)).not.toBeTruthy();
   });
 
   it("returns to the cursor tool on Escape", async () => {
@@ -462,25 +467,24 @@ describe("a two-floor design", () => {
     fireEvent.keyDown(window, { key: "]" });
     fireEvent.keyDown(window, { key: "]" });
 
-    expect(screen.getByText(/EL 2 ft/)).toBeTruthy();
+    expect(elevationReadout()).toBe("2 ft");
   });
 
   it("offers the elevation keys only where they still do something", async () => {
-    // The client's complaint: the obstacle tool advertised [ and ] in both the
-    // controls legend and the tool pill, after its volume stopped following the
-    // placement plane.
+    // The client's complaint: the obstacle tool advertised [ and ] after its
+    // volume stopped following the placement plane. The controls legend is the
+    // one place the keys are offered now — the rail reads out what the tool is
+    // and where it will place, not what the keyboard does (ADR-0048).
     await renderApp();
     const legend = () => within(document.getElementById("controls-legend-list") as HTMLElement);
 
     armBlower();
     expect(legend().queryByText("Elevation")).toBeTruthy();
-    expect(screen.queryByText("elevation")).toBeTruthy();
 
     fireEvent.keyDown(window, { key: "o" });
     expect(legend().queryByText("Elevation")).toBeNull();
-    expect(screen.queryByText("elevation")).toBeNull();
     // Where the volume will stand is still reported; only the dead keys go.
-    expect(screen.getByText(/EL 0 ft/)).toBeTruthy();
+    expect(elevationReadout()).toBe("0 ft");
 
     // Back to a tool the keys move, and they are offered again.
     armBlower();
@@ -526,11 +530,9 @@ describe("a two-floor design", () => {
 
     armBlower();
     expect(legend().queryByText("Rotate")).toBeTruthy();
-    expect(screen.queryByText("rotate")).toBeTruthy();
 
     fireEvent.keyDown(window, { key: "o" });
     expect(legend().queryByText("Rotate")).toBeNull();
-    expect(screen.queryByText("rotate")).toBeNull();
 
     // Back to a tool the keys turn, and they are offered again.
     armBlower();
@@ -581,7 +583,7 @@ describe("a two-floor design", () => {
 
   it("reads the floor, not the plane, while the obstacle tool is armed", async () => {
     // An obstacle stands on the floor of the storey being worked on, so the
-    // pill would be lying if it echoed a plane the volume ignores.
+    // rail would be lying if it echoed a plane the volume ignores.
     await renderApp();
     fireEvent.click(screen.getByRole("button", { name: /^New$/ }));
     fireEvent.click(screen.getByLabelText(/Add 2nd floor/));
@@ -590,11 +592,11 @@ describe("a two-floor design", () => {
     fireEvent.keyDown(window, { key: "o" });
     fireEvent.keyDown(window, { key: "]" });
     fireEvent.keyDown(window, { key: "]" });
-    expect(screen.getByText(/EL 0 ft/)).toBeTruthy();
+    expect(elevationReadout()).toBe("0 ft");
 
     // Upstairs it reads that floor's own floor.
     fireEvent.click(screen.getByRole("button", { name: "Floor 2" }));
-    expect(screen.getByText(new RegExp(`EL ${DEFAULT_ROOM.height + 1} ft`))).toBeTruthy();
+    expect(elevationReadout()).toBe(`${DEFAULT_ROOM.height + 1} ft`);
   });
 });
 
@@ -823,14 +825,15 @@ describe("the erase drawer", () => {
 
 describe("the bottom of the viewport", () => {
   it("puts the controls legend in the left corner and the quick start guide in the right", async () => {
-    // Source order is what places the three, so the client's swap lives in the
-    // markup and nowhere else (Trello sOmRvSTZ).
+    // Source order is what places the two, so the client's swap lives in the
+    // markup and nowhere else (Trello sOmRvSTZ). Two and not three: the tool
+    // readout that used to float between them is in the footer rail now
+    // (ADR-0048), which is also why nothing else may appear in this row.
     const { container } = await renderApp();
 
     const row = container.querySelector(".viewport-bottom");
     expect(Array.from(row?.children ?? []).map((el) => el.className)).toEqual([
       "legend nosel",
-      "viewport-bottom__center",
       "quickstart nosel"
     ]);
   });

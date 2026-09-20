@@ -176,8 +176,8 @@ a catalog entry with a name and a number and no colour, geometry, footprint or B
 and `PartCatalogEntry.color` is optional to say so. A second unmodelled part would fit the same
 shape; a request to *draw* the box would not, and is new geometry.
 
-**Part `name` values are ours, not KTS's.** They label the parts palette, the active-tool bar and
-the BOM rows. The KTS catalog names are recorded in ADR-0029 and are what to quote when ordering.
+**Part `name` values are ours, not KTS's.** They label the parts palette, the footer rail's
+active-tool readout and the BOM rows. The KTS catalog names are recorded in ADR-0029 and are what to quote when ordering.
 
 **The blower and terminal are the real CAD; everything else is drawn by eye.** The client asked on
 2026-09-15 for exact models from the STEP files that arrived on 2026-09-10, and for them to keep the

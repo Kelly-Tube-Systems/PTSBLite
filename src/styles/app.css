@@ -104,20 +104,16 @@ body {
   background: var(--ink);
 }
 
-/* The bottom of the viewport, shared by the three panels that live there: the
-   controls legend in the left corner, the active-tool pill centred, and the
-   Quick Start Guide in the right corner.
+/* The bottom of the viewport: the controls legend in the left corner and the
+   Quick Start Guide in the right one.
 
-   Each of the three used to be positioned against the viewport on its own, with
-   nothing relating them, so the centred pill simply painted underneath the two
-   boxes. The narrower the window the more of the pill they took — the height
-   readout and the key hints are at its ends and went first — which is why a fix
-   measured on one screen looked wrong on the client's. He asked for the panels
-   to be sized against each other instead.
-
-   So they share a row: the boxes keep their own widths and the pill gets
-   everything they leave, centred in it. Nothing here is a measured number, so
-   the clearance holds at any width, with either box open or collapsed. */
+   A third panel used to float between them — the active-tool pill, centred
+   along the bottom — and the two boxes covered its ends on a narrow window.
+   Sizing the three against each other kept them clear of one another, but the
+   client tried it and asked for the floating box to go instead: its readout is
+   in the footer rail now (ADR-0048), where there is no panel to collide with
+   at any width. What is left is two boxes in two corners, which is why they
+   only need holding apart. */
 .viewport-bottom {
   position: absolute;
   left: 12px;
@@ -126,24 +122,11 @@ body {
   z-index: 6;
   display: flex;
   align-items: flex-end;
+  justify-content: space-between;
   gap: 12px;
   /* The row is an arrangement and nothing else — the viewport keeps the pointer
      except where one of the panels takes it back. */
   pointer-events: none;
-}
-
-/* The pill's share of the row: exactly what the two boxes leave, whatever that
-   is. The pill answers a squeeze by wrapping its own segments onto another
-   line, which costs height and nothing else, so it is the one of the three that
-   gives.
-
-   No `min-width: 0` here on purpose — the automatic minimum is the pill's own,
-   and a cell allowed to reach zero would put the pill back underneath the
-   boxes, which is the bug this is here to fix. */
-.viewport-bottom__center {
-  flex: 1;
-  display: flex;
-  justify-content: center;
 }
 
 /* Shared controls. These live here rather than beside a component because more

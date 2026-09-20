@@ -1,9 +1,8 @@
 /* Deliberately the controls legend's chrome: the two panels are peers and the
    client asked for the same styling. */
 .quickstart {
-  /* Placed by `.viewport-bottom`, which shares the bottom of the viewport
-     between the controls legend, the tool pill and this. The guide keeps the
-     width its contents ask for there; the pill is what gives. */
+  /* Placed by `.viewport-bottom`, which holds this corner and the controls
+     legend's apart. The guide keeps the width its contents ask for. */
   pointer-events: auto;
   /* The two columns set the width when the guide is open; collapsed, it
      shrinks back to its own title rather than leaving a wide empty bar. */

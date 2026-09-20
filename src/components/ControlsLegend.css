@@ -1,10 +1,10 @@
 /* Left-hand corner, opposite the quick start guide. */
 .legend {
-  /* Placed by `.viewport-bottom`, which shares the bottom of the viewport
-     between this, the tool pill and the quick start guide. */
+  /* Placed by `.viewport-bottom`, which holds this corner and the quick start
+     guide's apart. */
   pointer-events: auto;
-  /* Fixed width, so the pill beside it takes the shrinking rather than the
-     legend's rows losing their key caps to a wrap. */
+  /* Fixed width: the rows keep their key caps rather than losing them to a
+     wrap, whatever the window does. */
   flex-shrink: 0;
   width: 208px;
   border-radius: 9px;
@@ -25,8 +25,7 @@
    when the drawer closes, which is any click outside the rail.
 
    A margin rather than a transform, so the step aside is a real change of width
-   in the row: a transform would have slid the legend over the pill it is
-   supposed to be sharing the bottom with. The pill re-centres as it goes.
+   in the row rather than a panel sliding over whatever it passes.
 
    This belongs to the left corner rather than to either box, so it moved here
    with the legend when the two were swapped. */

@@ -80,6 +80,16 @@ const CONTROLS: Control[] = [
     ),
     action: "Elevation",
     applies: ({ tool }) => elevationKeysApply(tool)
+  },
+  // Escape put itself back in the legend when the tool pill was folded into the
+  // footer rail (ADR-0048): the pill was carrying this one hint, and the rail
+  // reads out what the tool is rather than what the keys do. It belongs with
+  // the other keys, which is here. Nothing to cancel under the cursor tool.
+  {
+    icon: Icons.Keys,
+    input: <kbd>Esc</kbd>,
+    action: "Cancel",
+    applies: ({ tool }) => tool !== "cursor"
   }
 ];
 
