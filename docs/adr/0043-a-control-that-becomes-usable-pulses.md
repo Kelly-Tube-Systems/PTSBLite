@@ -1,7 +1,9 @@
 # ADR-0043: A control that becomes usable says so the same way everywhere
 
-- **Status:** Accepted
+- **Status:** Accepted, amended
 - **Date:** 2026-09-19
+- **Amended:** 2026-09-20 — the pulse runs until the control is pressed rather than for three
+  beats. See the amendment below.
 
 Multi-user testing turned up one consistent complaint: people do not understand the obstacle tool.
 Asked where testers actually lost the thread, the client narrowed it to the end of the sequence —
@@ -53,6 +55,34 @@ is on screen only when there is something to do with it.
   for some readers that is the problem rather than the fix.
 - **Repeated transitions pulse repeatedly.** A design that goes valid, breaks, and goes valid again
   pulses Finalize each time. That is the intended reading — it is the moment, not the state.
+
+## Amendment, 2026-09-20
+
+The client tried it and asked for one thing back:
+
+> Make the flash/glow for each of the 3 box/buttons flash until it is pressed. Also, make the
+> finalize flash/glow every time a valid system = true.
+
+**The pulse now runs until the control is pressed.** The animation is `infinite` rather than three
+beats, and what stops it is the press — `useReadyPulse` in `src/components/ready-pulse.ts` holds
+that one bit of state for all three controls, so the rule cannot drift between them.
+
+This reverses the reasoning in "Applying the class is the trigger" only in part. Applying the class
+still starts the pulse and no effect watches for the transition; what is new is that taking the
+class off is now an event (the press) as well as a state change (the control ceasing to be usable).
+The consequence below that said the pulse "fires on the transition and then stops" no longer holds:
+it fires on the transition and waits.
+
+The second sentence of the client's message is the re-arming rule, and it is the one this ADR
+already had — a design that goes valid, breaks and goes valid again pulses Finalize each time, a
+press ago or not. It survives because `useReadyPulse` forgets the press when the control stops
+being usable, rather than on a timer. Auto-Build hangs its pulse on having something to route and
+not on the button's own enabled state, so the moment spent routing is not read as the button going
+away and coming back at the person who just pressed it.
+
+**A control that is usable and has not been pressed now pulses indefinitely.** That is the point,
+and it is also the cost: this is motion on screen for as long as the user ignores it. Reduced
+motion still drops the movement entirely.
 
 ## What this does not answer
 

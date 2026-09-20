@@ -209,6 +209,39 @@ describe("penetrable obstacles", () => {
   });
 });
 
+describe("the obstacle height and Place box", () => {
+  // The box is what pulses, so any button in it counts as having found it —
+  // the client asked for the flash to last "until it is pressed" (ADR-0043,
+  // amended), and a height step is as much a press as Place is.
+  it("keeps the ready tell up until something in it is used", async () => {
+    await renderApp();
+    const box = () => document.querySelector(".hud__obstacle-controls");
+
+    fireEvent.keyDown(window, { key: "o" });
+    clickCell([0, 0, 0]);
+    clickCell([2, 0, 2]);
+    expect(box()?.classList.contains("ready-pulse")).toBe(true);
+
+    fireEvent.click(screen.getByRole("button", { name: /Increase obstacle height/ }));
+    expect(box()?.classList.contains("ready-pulse")).toBe(false);
+  });
+
+  it("tells again on the next footprint", async () => {
+    await renderApp();
+    const box = () => document.querySelector(".hud__obstacle-controls");
+
+    fireEvent.keyDown(window, { key: "o" });
+    clickCell([0, 0, 0]);
+    clickCell([2, 0, 2]);
+    act(() => placeButton()?.click());
+    expect(box()).toBeNull();
+
+    clickCell([6, 0, 6]);
+    clickCell([8, 0, 8]);
+    expect(box()?.classList.contains("ready-pulse")).toBe(true);
+  });
+});
+
 describe("in-flight interactions", () => {
   it("cancels a half-built obstacle when the tool changes", async () => {
     await renderApp();
@@ -603,6 +636,24 @@ describe("Auto-Build", () => {
       expect(screen.getByText(/Auto-Build complete/)).toBeTruthy();
     });
     expect(autoBuild().disabled).toBe(true);
+  });
+
+  // ADR-0043, amended: the tell that a control has become usable runs until it
+  // is pressed. Auto-Build hangs it on having something to route, so the pause
+  // while it routes is not read as the button going away and coming back.
+  it("keeps the ready tell up until it is pressed", async () => {
+    await renderApp();
+    const autoBuild = () => screen.getByRole<HTMLButtonElement>("button", { name: /^Auto-Build$/ });
+
+    expect(autoBuild().classList.contains("ready-pulse")).toBe(false);
+    placeARoutablePair();
+    expect(autoBuild().classList.contains("ready-pulse")).toBe(true);
+
+    fireEvent.click(autoBuild());
+    await waitFor(() => {
+      expect(screen.getByText(/Auto-Build complete/)).toBeTruthy();
+    });
+    expect(autoBuild().classList.contains("ready-pulse")).toBe(false);
   });
 
   it("paints the routing state before the search blocks the thread", async () => {
