@@ -5,7 +5,7 @@ import { KELLY_WORDMARK_PATHS } from "@/data/kelly-systems-wordmark";
 import { generateBomPdf } from "@/domain/bom-pdf";
 import { designFromScene, emptyDesign } from "@/domain/design-state";
 import { bomRows } from "@/domain/parts";
-import { ACCENT } from "@/domain/pdf-typesetting";
+import { ACCENT, MARGIN_X } from "@/domain/pdf-typesetting";
 import type { DesignMetadata, DesignState, Part } from "@/types";
 
 /**
@@ -80,6 +80,58 @@ function turnsOn(stream: string): number[] {
       angles.push(Math.round((Math.atan2(b, a) * 180) / Math.PI));
   });
   return [...new Set(angles)].sort((x, y) => x - y);
+}
+
+/**
+ * Every line of text a page draws, with the point it was drawn at.
+ *
+ * The writer sets a text matrix per line and shows the line as hex, so a
+ * page's typesetting can be read back as positioned strings — which is what
+ * lets a test check that one block of the document sits clear of another.
+ */
+function drawnLines(stream: string): { x: number; y: number; text: string }[] {
+  return [...stream.matchAll(/1 0 0 1 (-?[\d.]+) (-?[\d.]+) Tm\s*<([0-9A-Fa-f]+)>\s*Tj/g)].map(
+    (m) => ({
+      x: Number(m[1]),
+      y: Number(m[2]),
+      text: Buffer.from(m[3], "hex").toString("latin1")
+    })
+  );
+}
+
+/**
+ * The top edge of the tagline banner, read off the page's own operators: the
+ * image is placed at its bottom left and scaled by its drawn size, so the
+ * translate and the scale together say where its top is.
+ */
+function bannerTop(stream: string): number {
+  const at = stream.search(/\/Image-\S+ Do/);
+  if (at < 0) throw new Error("no banner on the page");
+  // An image is drawn into the unit square, so the block that draws one first
+  // concatenates the matrices that put it where it goes: among them one
+  // translate, to its bottom left corner, and one scale, the size it prints at.
+  // The rest are identities.
+  const matrices = [
+    ...stream
+      .slice(stream.lastIndexOf("q", at), at)
+      .matchAll(/(-?[\d.]+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+) cm/g)
+  ].map((m) => m.slice(1, 7).map(Number));
+  const bottom = matrices.find((m) => m[5] !== 0)?.[5];
+  const height = matrices.find((m) => m[3] !== 1)?.[3];
+  if (bottom === undefined || height === undefined) throw new Error("the banner is drawn at 0x0");
+  return bottom + height;
+}
+
+/** The base font a page is set to where it draws `text`. */
+function fontDrawing(doc: PDFDocument, bytes: Uint8Array, text: string): string {
+  const stream = streamShowing(bytes, text);
+  const hex = Buffer.from(text, "latin1").toString("hex").toUpperCase();
+  const at = Math.max(stream.indexOf(hex), stream.indexOf(text));
+  const settings = [...stream.slice(0, at).matchAll(/\/(\S+) [\d.]+ Tf/g)];
+  const key = settings.at(-1)?.[1];
+  if (key === undefined) throw new Error(`no font is set before "${text}"`);
+  const fonts = doc.getPage(0).node.Resources()?.lookupMaybe(PDFName.of("Font"), PDFDict);
+  return String(fonts?.lookupMaybe(PDFName.of(key), PDFDict)?.get(PDFName.of("BaseFont")));
 }
 
 const sampleParts: Part[] = [
@@ -254,6 +306,69 @@ describe("the Kelly Systems letterhead on the parts list page", () => {
       expect(text).toContain(row.name);
       expect(text).toContain(row.partNo);
     }
+  });
+});
+
+describe("the client's disclaimer on the parts list", () => {
+  /**
+   * His wording, spelled out here rather than imported from the module: the
+   * whole point of the card is that what he wrote reaches the sheet unedited,
+   * and a test that imported the same constant could not tell us that.
+   */
+  const DISCLAIMER =
+    "The BOM is to give a rough idea of what a KEL2020 system might look like and rough idea " +
+    "of the pieces involved. This tool may allow systems and scenarios that cannot exist in " +
+    "real life. To better understand your project's needs, please reach out to KELLY TUBE " +
+    "SYSTEMS so we can discuss your specific application.";
+
+  /**
+   * A long system in a room the size of the whole build area, so every row of
+   * the parts list carries its largest quantity and its note.
+   */
+  const longRun: Part[] = [
+    { id: "b1", type: "blower", cell: [-140, 0, 0], dir: [1, 0, 0] },
+    { id: "t1", type: "terminal", cell: [-139, 0, 0], axis: [1, 0, 0] },
+    { id: "u1", type: "tube", from: [-137, 0, 0], to: [139, 0, 0] },
+    { id: "t2", type: "terminal", cell: [140, 0, 0], axis: [1, 0, 0] }
+  ];
+  const bigRoom = { room: { width: 300, depth: 300, height: 12 } };
+
+  it("prints it word for word, though it is set over several lines", async () => {
+    // Wrapped to the measure, so the sheet shows it as a block of lines; closing
+    // those back up has to give back exactly what he wrote, capitals and all.
+    const text = extractText(await generateBomPdf(designWith(sampleParts)));
+    expect(text.split("\n").join(" ")).toContain(DISCLAIMER);
+  });
+
+  it("sets it in italics, as he asked", async () => {
+    const bytes = await generateBomPdf(designWith(sampleParts));
+    const doc = await PDFDocument.load(bytes);
+    expect(fontDrawing(doc, bytes, "The BOM is to give a rough idea")).toBe("/Helvetica-Oblique");
+  });
+
+  it.each([
+    ["a short design", sampleParts, undefined],
+    ["a long one", longRun, bigRoom]
+  ])("keeps it between the parts list and the banner on %s", async (_case, parts, metadata) => {
+    // It is laid out up from the foot of the sheet rather than down from the
+    // last row, so the taller list is the one that would collide with it.
+    const bytes = await generateBomPdf(designWith(parts, metadata));
+    const stream = streamShowing(bytes, PARTS_LIST_PAGE);
+    const lines = drawnLines(stream);
+    const disclaimer = lines.filter((l) => l.text.length > 20 && DISCLAIMER.includes(l.text));
+    // Everything the sheet says above the banner: the letterhead and the parts
+    // list. The "Generated with" line is under it and is not in the comparison.
+    const above = lines.filter(
+      (l) => !disclaimer.includes(l) && !l.text.startsWith("Generated with")
+    );
+
+    expect(disclaimer.length).toBeGreaterThan(1);
+    expect(Math.max(...disclaimer.map((l) => l.y))).toBeLessThan(
+      Math.min(...above.map((l) => l.y))
+    );
+    expect(Math.min(...disclaimer.map((l) => l.y))).toBeGreaterThan(bannerTop(stream));
+    // And inside the margins, which is what says the wrapping measured right.
+    expect(Math.min(...disclaimer.map((l) => l.x))).toBeGreaterThan(MARGIN_X);
   });
 });
 
