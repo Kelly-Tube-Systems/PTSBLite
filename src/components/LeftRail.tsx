@@ -22,12 +22,17 @@ type BuildPart = {
   withRegKey?: string;
 };
 
+/**
+ * The parts, in the order the client reaches for them rather than the order
+ * they were added: the combo that starts a system, then the run between its
+ * ends, then the two single units for the systems the combo does not suit.
+ */
 const BUILD_PARTS: BuildPart[] = [
-  { id: "blower", regKey: "blower" },
-  { id: "terminal", regKey: "terminal" },
   { id: "blowerTerminal", regKey: "blower", withRegKey: "terminal" },
   { id: "tube", regKey: "tube6" },
-  { id: "bend", regKey: "bend90" }
+  { id: "bend", regKey: "bend90" },
+  { id: "terminal", regKey: "terminal" },
+  { id: "blower", regKey: "blower" }
 ];
 
 const BUILD_TOOLS = new Set<ToolId>(BUILD_PARTS.map((p) => p.id));
