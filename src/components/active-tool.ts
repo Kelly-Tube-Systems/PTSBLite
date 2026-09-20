@@ -6,7 +6,7 @@ import type { ToolId } from "@/types";
  *
  * This used to be a pill floating along the bottom of the viewport, where the
  * two corner panels could cover it; the readout now lives in the rail
- * (ADR-0047) and this is what it reads.
+ * (ADR-0048) and this is what it reads.
  *
  * Part names and numbers come from the catalog rather than being restated
  * here — ADR-0001 requires user-facing copy to interpolate reference data.

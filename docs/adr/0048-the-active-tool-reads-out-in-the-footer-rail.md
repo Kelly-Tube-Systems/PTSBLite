@@ -1,4 +1,4 @@
-# ADR-0047: The active tool reads out in the footer rail
+# ADR-0048: The active tool reads out in the footer rail
 
 - **Status:** Accepted
 - **Date:** 2026-09-20

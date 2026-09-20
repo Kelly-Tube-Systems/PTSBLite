@@ -137,7 +137,7 @@ test("reads the active tool out in the footer rail, clear of the rail's own cont
   // The tool readout used to float along the bottom of the viewport, where the
   // quick start guide and the controls legend covered its ends. The client
   // reported that twice (Trello U5EBg7gR) and then asked for the floating box
-  // to go into the rail instead (ADR-0047, Trello M5RYJLHW).
+  // to go into the rail instead (ADR-0048, Trello M5RYJLHW).
   //
   // Nothing in the viewport can reach the rail, so what is left to prove is
   // that the readout fits between the design's own numbers and Finalize. That

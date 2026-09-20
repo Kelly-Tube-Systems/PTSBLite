@@ -64,7 +64,7 @@ function elevationReadout() {
 /**
  * The client tried the tool pill sharing the bottom of the viewport with the
  * two corner panels and asked for it to go into the rail instead
- * (ADR-0047): "Can we put the info pf the tool pill into the blank space on
+ * (ADR-0048): "Can we put the info pf the tool pill into the blank space on
  * the footer rail?". So the rail is where the armed tool is named.
  */
 describe("the active tool readout", () => {

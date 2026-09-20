@@ -111,7 +111,7 @@ body {
    along the bottom — and the two boxes covered its ends on a narrow window.
    Sizing the three against each other kept them clear of one another, but the
    client tried it and asked for the floating box to go instead: its readout is
-   in the footer rail now (ADR-0047), where there is no panel to collide with
+   in the footer rail now (ADR-0048), where there is no panel to collide with
    at any width. What is left is two boxes in two corners, which is why they
    only need holding apart. */
 .viewport-bottom {

@@ -474,7 +474,7 @@ describe("a two-floor design", () => {
     // The client's complaint: the obstacle tool advertised [ and ] after its
     // volume stopped following the placement plane. The controls legend is the
     // one place the keys are offered now — the rail reads out what the tool is
-    // and where it will place, not what the keyboard does (ADR-0047).
+    // and where it will place, not what the keyboard does (ADR-0048).
     await renderApp();
     const legend = () => within(document.getElementById("controls-legend-list") as HTMLElement);
 
@@ -828,7 +828,7 @@ describe("the bottom of the viewport", () => {
     // Source order is what places the two, so the client's swap lives in the
     // markup and nowhere else (Trello sOmRvSTZ). Two and not three: the tool
     // readout that used to float between them is in the footer rail now
-    // (ADR-0047), which is also why nothing else may appear in this row.
+    // (ADR-0048), which is also why nothing else may appear in this row.
     const { container } = await renderApp();
 
     const row = container.querySelector(".viewport-bottom");

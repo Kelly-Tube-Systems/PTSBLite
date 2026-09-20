@@ -16,7 +16,7 @@ export type StatusBarProps = {
    * Anchored here rather than in the top bar, where Auto-Build now sits — the
    * client asked for the two to trade places. */
   onFinalize: () => void;
-  /** The armed tool, read out in the rail's empty middle (ADR-0047). */
+  /** The armed tool, read out in the rail's empty middle (ADR-0048). */
   tool: ToolId;
   /** Y of the active placement plane, shown so the elevation keys are not blind. */
   elevation: number;
@@ -76,7 +76,7 @@ export function StatusBar({
         <div className="status-bar__spacer" />
         {/* The armed tool reads out here, in the empty stretch of rail the
             client pointed at, rather than in a box floating over the bottom of
-            the viewport where the corner panels covered it (ADR-0047). It is
+            the viewport where the corner panels covered it (ADR-0048). It is
             written as the rail's own metadata — the same label, value and
             separator as LENGTH and PARTS — because that is what it is. The
             spacer either side centres it in whatever the rail has spare, and

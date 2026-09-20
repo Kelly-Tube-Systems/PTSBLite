@@ -742,7 +742,7 @@ export default function App({ platform }: AppProps) {
           />
           {/* The two corner panels, laid out against each other rather than
               each against the viewport. Nothing floats between them any more:
-              the active tool reads out in the footer rail (ADR-0047).
+              the active tool reads out in the footer rail (ADR-0048).
 
               The legend takes the left corner and the guide the right, which is
               the order the client asked for; source order is what places them,
