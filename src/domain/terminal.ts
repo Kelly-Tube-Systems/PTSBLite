@@ -66,6 +66,23 @@ export function terminalCells(cell: Vec3, axis: Vec3): Vec3[] {
 }
 
 /**
+ * Where a terminal is stored so that its body fills `cell` and the next cell
+ * along `dir`: the two cells in front of whatever it is seating against.
+ *
+ * Which of the two it is stored in depends on the way it is turned, and that is
+ * the whole reason the seat is computed rather than assumed to be `cell`. The
+ * body always runs the positive way along its axis ({@link terminalBodyDir}),
+ * so a terminal seating on a port facing +X starts in the nearer of the two
+ * cells and one seating on a port facing -X in the further — the same two cells
+ * either way, entered from opposite ends. Storing it in `cell` regardless would
+ * put its second foot back through the part it was seating against, which is no
+ * placement at all rather than a wrong-looking one.
+ */
+export function terminalSeatCell(cell: Vec3, dir: Vec3): Vec3 {
+  return vEq(terminalBodyDir(dir), dir) ? cell : vAdd(cell, dir);
+}
+
+/**
  * The body cell a port facing `dir` leaves from: the far end of the body for
  * the port that points that way, the placed cell for the one facing back.
  *
