@@ -38,6 +38,18 @@ export type BomPdfOptions = {
   views?: BomPdfView[];
 };
 
+/**
+ * What the document calls itself: its heading, its PDF title, and the name it
+ * downloads under, all one line so the three cannot drift apart.
+ *
+ * The client's wording, with the date he wrote as `[date: 00/00/00]`: "Kelly
+ * Systems PTSBLite BOM [date: 00/00/00]". The date it carries is the date the
+ * BOM was exported, which is why nothing else on the page prints one.
+ */
+export function bomDocumentTitle(productName: string, date = formatDocumentDate()): string {
+  return `Kelly Systems ${productName} BOM ${date}`;
+}
+
 /** How wide a view is drawn, centred, with room for two on a page. */
 const VIEW_WIDTH = 460;
 const VIEW_GAP = 26;
@@ -76,7 +88,10 @@ export async function generateBomPdf(
   const productName = options.productName ?? "PTSBLite";
   const rows = bomRows(design).filter((row) => row.qty > 0);
 
+  const title = bomDocumentTitle(productName, date);
+
   const doc = await PDFDocument.create();
+  doc.setTitle(title);
   // Standard fonts, encoded WinAnsi — see ADR-0004 and `sanitize`.
   const sans = await doc.embedFont(StandardFonts.Helvetica);
   const sansBold = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -87,8 +102,7 @@ export async function generateBomPdf(
   const right = PAGE_WIDTH - MARGIN_X;
   let y = drawMasthead(p) - 30;
 
-  drawText(p, "Bill of Materials", MARGIN_X, y, { size: 20, font: sansBold });
-  drawRightText(p, date, right, y, { size: 9, color: DIM });
+  drawText(p, title, MARGIN_X, y, { size: 20, font: sansBold });
   y -= 26;
 
   const { width, depth, height } = design.metadata.room;
