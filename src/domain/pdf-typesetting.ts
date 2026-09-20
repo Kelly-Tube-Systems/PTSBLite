@@ -3,9 +3,15 @@ import { KELLY_WORDMARK_BOX, KELLY_WORDMARK_PATHS } from "@/data/kelly-systems-w
 
 /** Typesetting primitives for the bill-of-materials PDF. */
 
-/** Long-form document date, e.g. "May 26, 2026". Defaults to today. */
+/**
+ * The date the document was exported, e.g. "05/26/26". Defaults to today.
+ *
+ * Digits rather than the long "May 26, 2026" it once read: the date is part of
+ * the document's title now, and the client wrote that title with the date as
+ * `00/00/00`.
+ */
 export function formatDocumentDate(date = new Date()): string {
-  return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  return date.toLocaleDateString("en-US", { year: "2-digit", month: "2-digit", day: "2-digit" });
 }
 
 export const PAGE_WIDTH = 612;

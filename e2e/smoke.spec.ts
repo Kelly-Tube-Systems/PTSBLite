@@ -90,7 +90,9 @@ test("exports the BOM PDF through the real download path", async ({ page }) => {
   // Exercises the WebGL view capture, pdf-lib, and the object-URL download.
   await page.getByRole("button", { name: "Download PDF" }).click();
   const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe("BOM.pdf");
+  // The document's own title, dated the day it was taken, with the date's
+  // slashes turned into something a file name can hold.
+  expect(download.suggestedFilename()).toMatch(/^Kelly Systems PTSBLite BOM \d\d-\d\d-\d\d\.pdf$/);
 
   expect(errors).toEqual([]);
 });

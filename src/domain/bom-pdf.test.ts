@@ -29,6 +29,13 @@ function imagesOn(doc: PDFDocument, index: number): number {
 }
 
 /**
+ * A line only the parts list page draws, for finding that page's operators by.
+ * The column heading rather than the document's own title: the title carries
+ * the export date, which changes by the day.
+ */
+const PARTS_LIST_PAGE = "DESCRIPTION";
+
+/**
  * The operators of the page that typesets a given line, found by the line
  * itself: the writer encodes drawn text as hex, so both spellings are searched.
  */
@@ -130,6 +137,32 @@ describe("generateBomPdf", () => {
     expect(text).toContain("PTSBLite");
   });
 
+  it("heads the page with the document's title, dated", async () => {
+    // The client's own wording, with the date he wrote as "[date: 00/00/00]".
+    const text = extractText(
+      await generateBomPdf(designWith(sampleParts), {
+        productName: "PTSBLite",
+        date: "09/20/26"
+      })
+    );
+    expect(text).toContain("Kelly Systems PTSBLite BOM 09/20/26");
+  });
+
+  it("carries the title in the PDF's own metadata too", async () => {
+    // What a reader's viewer shows in its tab, and what a file manager reads.
+    const doc = await PDFDocument.load(
+      await generateBomPdf(designWith(sampleParts), { date: "09/20/26" })
+    );
+    expect(doc.getTitle()).toBe("Kelly Systems PTSBLite BOM 09/20/26");
+  });
+
+  it("prints the date once, in the title", async () => {
+    // It used to sit against the right margin as well; two printings of one
+    // date read as a mistake on a one-page document.
+    const text = extractText(await generateBomPdf(designWith(sampleParts), { date: "09/20/26" }));
+    expect(text.split("09/20/26").length - 1).toBe(1);
+  });
+
   it("prints no money of any kind", async () => {
     // The defining constraint of PTSBLite. A currency symbol, a decimal
     // amount, or any of the quote's money headings reaching this document means
@@ -169,7 +202,7 @@ describe("the Kelly Systems letterhead on the parts list page", () => {
     // thing on the page that has to be Kelly's green rather than near-black.
     const fill = `${ACCENT.red} ${ACCENT.green} ${ACCENT.blue} rg`;
     const bytes = await generateBomPdf(designWith(sampleParts));
-    expect(streamShowing(bytes, "Bill of Materials")).toContain(fill);
+    expect(streamShowing(bytes, PARTS_LIST_PAGE)).toContain(fill);
   });
 
   it("carries the tagline banner, and carries it only here", async () => {
@@ -231,7 +264,7 @@ describe("the views appended to a BOM", () => {
       views: [shot("North-west")]
     });
     expect(turnsOn(streamShowing(bytes, "North-west"))).toEqual([45]);
-    expect(turnsOn(streamShowing(bytes, "Bill of Materials"))).toEqual([0]);
+    expect(turnsOn(streamShowing(bytes, PARTS_LIST_PAGE))).toEqual([0]);
   });
 
   it("draws the watermark as the logo artwork, not the words", async () => {
@@ -247,7 +280,7 @@ describe("the views appended to a BOM", () => {
     // The first page carries the branding its own way — one mark, the
     // masthead's — and a document with no pictures in it gets no watermark.
     const bytes = await generateBomPdf(designWith(sampleParts));
-    expect(marksOn(streamShowing(bytes, "Bill of Materials"))).toBe(1);
+    expect(marksOn(streamShowing(bytes, PARTS_LIST_PAGE))).toBe(1);
   });
 
   it("captions each view with the angle it was taken from", async () => {

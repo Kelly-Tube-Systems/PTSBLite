@@ -9,7 +9,7 @@ import { StatusBar } from "@/components/StatusBar";
 import { TopBar } from "@/components/TopBar";
 import { ViewportHUD } from "@/components/ViewportHUD";
 import { WelcomeScreen, type DesignSetup } from "@/components/WelcomeScreen";
-import { generateBomPdf } from "@/domain/bom-pdf";
+import { bomDocumentTitle, generateBomPdf } from "@/domain/bom-pdf";
 import { serializeDesign } from "@/domain/design-file";
 import {
   isWorthKeeping,
@@ -801,10 +801,14 @@ export default function App({ platform }: AppProps) {
 }
 
 /**
- * What the exported BOM is called. A constant now that designs carry no name:
- * the room's dimensions are the only thing that distinguishes one from
- * another, and they belong in the document rather than the filename.
+ * What the exported BOM is called — the title printed on its first page, so a
+ * downloads folder reads the way the documents in it do, and two BOMs taken on
+ * different days no longer land as "BOM.pdf" and "BOM (1).pdf".
+ *
+ * Designs carry no name, so the export date is the only thing separating one
+ * from another; the room's dimensions belong in the document.
  */
 function bomFilename(): string {
-  return "BOM.pdf";
+  // A file name cannot hold the date's slashes.
+  return `${bomDocumentTitle(PRODUCT_NAME).replaceAll("/", "-")}.pdf`;
 }
