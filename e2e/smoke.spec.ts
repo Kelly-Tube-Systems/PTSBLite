@@ -160,6 +160,43 @@ test("keeps the tool pill clear of both bottom corner panels", async ({ page }) 
   await expect.poll(gaps).toBeGreaterThan(0);
 });
 
+test("shows every Build drawer part name and number in full", async ({ page }) => {
+  // The client could not read the parts he was picking from: the pair tile said
+  // "Blower Unit + Terminal St…" over "A444200 + A4449…", and the bend and the
+  // tube were cut too (Trello y96W8oWm). Only a real browser can see it — the
+  // text is all present in the DOM either way, and happy-dom has no layout to
+  // clip it with.
+  //
+  // 1200px is the app's own minimum width, and the drawer is a fixed width, so
+  // this is the worst case rather than one of many.
+  await page.setViewportSize({ width: 1200, height: 800 });
+  await createDesign(page);
+  await page.getByRole("button", { name: "Build", exact: true }).click();
+
+  const clipped = await page.$$eval(".part-card", (cards) =>
+    cards.flatMap((card) =>
+      [".part-card__name", ".part-card__part-no"].flatMap((selector) => {
+        const el = card.querySelector(selector);
+        if (!el) return [`${selector} missing`];
+        // Both axes: an ellipsis hides overflow sideways, and a name allowed to
+        // wrap into a card that cannot grow would hide it downwards instead.
+        const cut =
+          el.scrollWidth > el.clientWidth + 0.5 || el.scrollHeight > el.clientHeight + 0.5;
+        return cut ? [`${el.textContent}`] : [];
+      })
+    )
+  );
+
+  expect(clipped).toEqual([]);
+  // The drawer holds all five without needing to scroll, at the shortest window
+  // the app is used in — the wrapped names make the cards taller.
+  await page.setViewportSize({ width: 1200, height: 600 });
+  const drawer = page.locator(".left-rail__drawer--open");
+  await expect
+    .poll(() => drawer.evaluate((el) => el.scrollHeight - el.clientHeight))
+    .toBeLessThanOrEqual(0);
+});
+
 test("draws an obstacle box by dragging one corner to the other", async ({ page }) => {
   // The press, the drag and the release only meet in a real browser: happy-dom
   // has no raycaster, and the unit suites can prove the phase and the gesture
