@@ -95,17 +95,21 @@ test("exports the BOM PDF through the real download path", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test("moves the quick start guide out from under an open tool drawer", async ({ page }) => {
+test("moves the bottom-left panel out from under an open tool drawer", async ({ page }) => {
   // Another one only a real browser can see: happy-dom has no layout, so no
   // unit test can tell that two absolutely positioned panels land on the same
-  // corner. The client picked a tool and found the Quick Start Guide painted
+  // corner. The client picked a tool and found the panel in that corner painted
   // across the drawer it opened (Trello YzEkigr8).
+  //
+  // The panel is the controls legend since the client swapped the two corner
+  // boxes (Trello sOmRvSTZ). Stepping aside belongs to the corner rather than
+  // to either box, so this watches whichever one holds it.
   await createDesign(page);
 
-  const guide = page.locator(".quickstart");
+  const corner = page.locator(".legend");
   // Both drawers are always in the DOM; only the open one carries the class.
   const drawer = page.locator(".left-rail__drawer--open");
-  const home = await guide.boundingBox();
+  const home = await corner.boundingBox();
   expect(home).not.toBeNull();
 
   await page.getByRole("button", { name: "Build", exact: true }).click();
@@ -113,18 +117,18 @@ test("moves the quick start guide out from under an open tool drawer", async ({ 
 
   // The two overlap vertically whatever happens — both run to the bottom of
   // the window — so a positive horizontal gap is the whole of "neither covers
-  // the other". Polled because the guide slides rather than jumps.
+  // the other". Polled because the panel slides rather than jumps.
   await expect
     .poll(async () => {
-      const g = await guide.boundingBox();
+      const c = await corner.boundingBox();
       const d = await drawer.boundingBox();
-      return g && d ? g.x - (d.x + d.width) : -Infinity;
+      return c && d ? c.x - (d.x + d.width) : -Infinity;
     })
     .toBeGreaterThan(0);
 
   // And back to the corner the client asked for once the drawer is gone.
   await page.keyboard.press("Escape");
-  await expect.poll(async () => (await guide.boundingBox())?.x).toBeCloseTo(home!.x, 0);
+  await expect.poll(async () => (await corner.boundingBox())?.x).toBeCloseTo(home!.x, 0);
 });
 
 test("keeps the tool pill clear of both bottom corner panels", async ({ page }) => {
@@ -142,19 +146,21 @@ test("keeps the tool pill clear of both bottom corner panels", async ({ page }) 
   await page.getByRole("button", { name: "Blower Unit", exact: true }).click();
 
   const gaps = async () => {
-    const [pill, guide, legend] = await Promise.all(
-      [".active-tool-bar", ".quickstart", ".legend"].map((sel) => page.locator(sel).boundingBox())
+    const [pill, left, right] = await Promise.all(
+      // The legend holds the left corner and the guide the right since the
+      // client swapped them (Trello sOmRvSTZ).
+      [".active-tool-bar", ".legend", ".quickstart"].map((sel) => page.locator(sel).boundingBox())
     );
-    if (!pill || !guide || !legend) return null;
+    if (!pill || !left || !right) return null;
     // All three sit on the bottom of the window and overlap vertically, so a
     // positive horizontal gap on each side is the whole of "nothing covers the
     // pill" — the same reasoning as the drawer test above.
-    return Math.min(pill.x - (guide.x + guide.width), legend.x - (pill.x + pill.width));
+    return Math.min(pill.x - (left.x + left.width), right.x - (pill.x + pill.width));
   };
 
   expect(await gaps()).toBeGreaterThan(0);
 
-  // And with the Build drawer open, which slides the guide further across the
+  // And with the Build drawer open, which slides the legend further across the
   // bottom and leaves the pill less room still.
   await page.getByRole("button", { name: "Build", exact: true }).click();
   await expect.poll(gaps).toBeGreaterThan(0);
