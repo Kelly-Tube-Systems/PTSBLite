@@ -184,6 +184,33 @@ describe("the Kelly Systems letterhead on the parts list page", () => {
     expect(imagesOn(doc, 1)).toBe(2);
   });
 
+  it("says how to reach Kelly Systems", async () => {
+    // The client's five details, in his own spelling: a printed sheet that
+    // carries the mark and no way to act on it was the thing he asked to fix.
+    const text = extractText(await generateBomPdf(designWith(sampleParts)));
+    for (const detail of [
+      "Kelly Systems, Inc.",
+      "422 N. Western Avenue",
+      "Chicago, IL 60612-1491",
+      "sales@kellytubesystems.com",
+      "312.733.3224"
+    ]) {
+      expect(text).toContain(detail);
+    }
+  });
+
+  it("carries the contact details on the parts list page alone", async () => {
+    // The pages of pictures are branded by the watermark; a second copy of the
+    // address on each of them would be a letterhead repeated mid-document.
+    const bytes = await generateBomPdf(designWith(sampleParts), {
+      views: [shot("North-west"), shot("Top-down")]
+    });
+    expect(streamShowing(bytes, "Bill of Materials")).toBe(
+      streamShowing(bytes, "sales@kellytubesystems.com")
+    );
+    expect(extractText(bytes).split("312.733.3224").length - 1).toBe(1);
+  });
+
   it("leaves the parts list itself alone", async () => {
     // The branding is furniture around the table, so every row the BOM has a
     // quantity for still has to reach the page — and no price with it.

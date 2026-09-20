@@ -250,3 +250,23 @@ export function drawRightText(
     color: opts.color ?? INK
   });
 }
+
+/** Text centred on `centerX`, the way a letterhead's lines sit under its mark. */
+export function drawCenteredText(
+  p: Painter,
+  text: string,
+  centerX: number,
+  y: number,
+  opts: { size: number; font?: PDFFont; color?: ReturnType<typeof rgb> }
+): void {
+  const font = opts.font ?? p.sans;
+  const safe = sanitize(text);
+  const width = font.widthOfTextAtSize(safe, opts.size);
+  p.page.drawText(safe, {
+    x: centerX - width / 2,
+    y,
+    size: opts.size,
+    font,
+    color: opts.color ?? INK
+  });
+}
