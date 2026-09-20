@@ -13,6 +13,7 @@ import {
 } from "@/domain/placement-session";
 import { DEFAULT_FREE_PLACEMENT_ROTATION } from "@/domain/free-placement";
 import type { BuildArea } from "@/types";
+import { expectGridMatchesDesign } from "@/test/design-invariants";
 
 const AREA: BuildArea = { width: 20, depth: 20, height: 8 };
 
@@ -198,6 +199,26 @@ describe("attemptPlacement", () => {
     });
     expect(result.design.grid.query([9, 0, 10])).toBe("t1");
     expect(result.design.grid.query([10, 0, 10])).toBe("b1");
+  });
+
+  it("seats a terminal on the port above the square the click lands on", () => {
+    // The click resolves the seat the ghost previewed, lift included: a click
+    // on the blower's own square at floor height puts the terminal up on the
+    // port rather than refusing the square as occupied.
+    const design = designFromScene({
+      parts: [{ id: "b1", type: "blower", cell: [10, 4, 10], dir: [0, 1, 0] }],
+      obstacles: []
+    });
+
+    const { result } = attemptPlacement(session({ tool: "terminal" }), design, [10, 0, 10], "t1");
+    expect(result.status).toBe("committed");
+    if (result.status !== "committed") return;
+    expect(result.design.parts.at(-1)).toMatchObject({
+      id: "t1",
+      cell: [10, 5, 10],
+      axis: [0, 1, 0]
+    });
+    expectGridMatchesDesign(result.design);
   });
 
   it("places a blower and its terminal on one click, from the one id it is given", () => {
