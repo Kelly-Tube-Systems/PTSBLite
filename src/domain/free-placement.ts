@@ -134,14 +134,29 @@ export type FreePlacementSeat = { cell: Vec3; orientation: Vec3 };
  * for want of room has to be refused in the orientation it was turned to —
  * otherwise the message names the wrong blocked cell.
  *
- * The cell is the one under the cursor, except for a terminal seating on a
- * port. A terminal is 2 ft long and its body always runs the positive way along
- * its axis, so on a port that faces back along an axis — west or north, or
- * straight down — storing it in the port cell runs its second foot back through
- * the part it was seating against. `terminalSeatCell` starts it one further
- * along instead, so the body fills the two cells in front of the port whichever
- * way that port faces. Rotating off the port's heading gives up the seat: it is
- * an ordinary placement at the hovered cell again, in the direction `R` chose.
+ * The cell is the port's landing cell when there is a port to take, and the one
+ * under the cursor otherwise. Those are the same square while the cursor is
+ * already at the port's height, and part company only for a terminal aimed at
+ * the square a part itself stands in: `openPortsInColumn` answers what that
+ * square has open, and the terminal goes up to it. The cursor picks the square,
+ * the square carries the port's height — the same division of labour the
+ * placement plane has had since ADR-0035.
+ *
+ * The lift is the terminal's alone. A terminal is the part that gets hung on
+ * something already standing — a blower's outlet, the open end of a riser — and
+ * the client's case is aiming at the blower from the floor rather than reaching
+ * for the height keys first. A blower is the part being stood somewhere, so
+ * pointing at an occupied square with one still means what it always did: that
+ * square is taken.
+ *
+ * A terminal takes one more step. It is 2 ft long and its body always runs the
+ * positive way along its axis, so on a port that faces back along an axis —
+ * west or north, or straight down — storing it in the port cell runs its second
+ * foot back through the part it was seating against. `terminalSeatCell` starts
+ * it one further along instead, so the body fills the two cells in front of the
+ * port whichever way that port faces. Rotating off the port's heading gives up
+ * the port altogether: it is an ordinary placement at the hovered cell again,
+ * in the direction `R` chose.
  */
 export function freePlacementSeat(
   design: DesignState,
@@ -150,11 +165,17 @@ export function freePlacementSeat(
   memory: FreePlacementMemory,
   rotationSteps: FreePlacementRotation
 ): FreePlacementSeat {
-  const snapDir = computeTopology(design).openPortsNear(cell)[0]?.dir;
-  const base = snapDir ? (type === "terminal" ? snapDir : vNeg(snapDir)) : memory[type];
+  const topology = computeTopology(design);
+  const snap =
+    topology.openPortsNear(cell)[0] ??
+    (type === "terminal" ? topology.openPortsInColumn(cell)[0] : undefined);
+  const base = snap ? (type === "terminal" ? snap.dir : vNeg(snap.dir)) : memory[type];
   const orientation = resolveFreePlacementOrientation(base, rotationSteps);
-  const seated = type === "terminal" && snapDir && vEq(orientation, snapDir);
-  return { cell: seated ? terminalSeatCell(cell, snapDir) : cell, orientation };
+  if (!snap || !vEq(orientation, base)) return { cell, orientation };
+  return {
+    cell: type === "terminal" ? terminalSeatCell(snap.cell, snap.dir) : snap.cell,
+    orientation
+  };
 }
 
 export function rememberFreePlacementOrientation(
