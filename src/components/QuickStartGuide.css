@@ -1,10 +1,10 @@
 /* Deliberately the controls legend's chrome, in the corner the legend left:
    the two panels are peers and the client asked for the same styling. */
 .quickstart {
-  position: absolute;
-  left: 12px;
-  bottom: 12px;
-  z-index: 6;
+  /* Placed by `.viewport-bottom`, which shares the bottom of the viewport
+     between this, the tool pill and the controls legend. The guide keeps the
+     width its contents ask for there; the pill is what gives. */
+  pointer-events: auto;
   /* The two columns set the width when the guide is open; collapsed, it
      shrinks back to its own title rather than leaving a wide empty bar. */
   width: fit-content;
@@ -14,7 +14,7 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   overflow: hidden;
   /* Matches the drawer's own slide, so the two move together. */
-  transition: transform 0.16s ease;
+  transition: margin-left 0.16s ease;
 }
 
 /* The tool rail's Build and Erase drawers open across this corner and run the
@@ -23,9 +23,13 @@
    which rules out one panel covering the other: the guide steps aside instead,
    by exactly the drawer's width, which leaves it the same 12px clear of the
    drawer that it normally keeps from the rail. It slides back when the drawer
-   closes, which is any click outside the rail. */
+   closes, which is any click outside the rail.
+
+   A margin rather than a transform, so the step aside is a real change of
+   width in the row: a transform would have slid the guide over the pill it is
+   supposed to be sharing the bottom with. The pill re-centres as it goes. */
 .app-main:has(.left-rail__drawer--open) .quickstart {
-  transform: translateX(var(--rail-drawer-w));
+  margin-left: var(--rail-drawer-w);
 }
 
 .quickstart__toggle {

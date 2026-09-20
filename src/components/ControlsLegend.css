@@ -1,10 +1,12 @@
 /* Right-hand side, opposite the quick start guide that now holds the corner
    the legend used to. */
 .legend {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  z-index: 6;
+  /* Placed by `.viewport-bottom`, which shares the bottom of the viewport
+     between the quick start guide, the tool pill and this. */
+  pointer-events: auto;
+  /* Fixed width, so the pill beside it takes the shrinking rather than the
+     legend's rows losing their key caps to a wrap. */
+  flex-shrink: 0;
   width: 208px;
   border-radius: 9px;
   border: 1px solid var(--line);

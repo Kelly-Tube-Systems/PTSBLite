@@ -127,6 +127,39 @@ test("moves the quick start guide out from under an open tool drawer", async ({ 
   await expect.poll(async () => (await guide.boundingBox())?.x).toBeCloseTo(home!.x, 0);
 });
 
+test("keeps the tool pill clear of both bottom corner panels", async ({ page }) => {
+  // The same class of bug as the one above and the same reason it needs a real
+  // browser: the pill is centred along the bottom and the quick start guide and
+  // controls legend hold the two corners it runs into. The client reported it
+  // twice (Trello U5EBg7gR) because the first fix was measured on one window
+  // and his was narrower, so the width is the test.
+  //
+  // 1200px is the app's own minimum (`#root` in app.css), which is where the
+  // two boxes leave the pill least room. Anything wider only helps.
+  await page.setViewportSize({ width: 1200, height: 800 });
+  await createDesign(page);
+  await page.getByRole("button", { name: "Build", exact: true }).click();
+  await page.getByRole("button", { name: "Blower Unit", exact: true }).click();
+
+  const gaps = async () => {
+    const [pill, guide, legend] = await Promise.all(
+      [".active-tool-bar", ".quickstart", ".legend"].map((sel) => page.locator(sel).boundingBox())
+    );
+    if (!pill || !guide || !legend) return null;
+    // All three sit on the bottom of the window and overlap vertically, so a
+    // positive horizontal gap on each side is the whole of "nothing covers the
+    // pill" — the same reasoning as the drawer test above.
+    return Math.min(pill.x - (guide.x + guide.width), legend.x - (pill.x + pill.width));
+  };
+
+  expect(await gaps()).toBeGreaterThan(0);
+
+  // And with the Build drawer open, which slides the guide further across the
+  // bottom and leaves the pill less room still.
+  await page.getByRole("button", { name: "Build", exact: true }).click();
+  await expect.poll(gaps).toBeGreaterThan(0);
+});
+
 test("draws an obstacle box by dragging one corner to the other", async ({ page }) => {
   // The press, the drag and the release only meet in a real browser: happy-dom
   // has no raycaster, and the unit suites can prove the phase and the gesture
