@@ -1,6 +1,6 @@
 import { partRegistry, type PartRegistry } from "@/domain/part-registry";
 import { addPart } from "@/domain/design-state";
-import { TERMINAL_HEIGHT_CELLS, terminalCells } from "@/domain/terminal";
+import { TERMINAL_HEIGHT_CELLS, terminalCells, terminalSeatCell } from "@/domain/terminal";
 import { computeTopology } from "@/domain/topology";
 import type { BlowerPart, DesignState, Ghost, Part, TerminalPart, Vec3 } from "@/types";
 import { cellKey, vEq, vNeg } from "@/domain/vec3";
@@ -120,27 +120,41 @@ export function resolveFreePlacementOrientation(base: Vec3, steps: FreePlacement
   return rotateOrientation(base, steps);
 }
 
+/** Where an armed part would be set down: the cell it is stored in, and which
+ * way it faces. */
+export type FreePlacementSeat = { cell: Vec3; orientation: Vec3 };
+
 /**
- * The orientation an armed part would be set down in: where it would snap, or
- * what it was last turned to, carried `steps` further round the ring.
+ * Both halves of that answer, worked out together so the ghost and the click
+ * that follows it cannot disagree.
  *
- * Worked out on its own rather than read off the ghost, because a terminal's
- * footprint now depends on it: the ghost is refused when the cells that
- * orientation needs are taken, and the click that follows still has to report
- * *which* orientation was refused rather than fall back to a different one and
- * name the wrong blocked cell.
+ * The orientation is where the part would snap, or what it was last turned to,
+ * carried `steps` further round the ring. It is worked out here rather than
+ * read off the ghost because a refused ghost is null, and a terminal refused
+ * for want of room has to be refused in the orientation it was turned to —
+ * otherwise the message names the wrong blocked cell.
+ *
+ * The cell is the one under the cursor, except for a terminal seating on a
+ * port. A terminal is 2 ft long and its body always runs the positive way along
+ * its axis, so on a port that faces back along an axis — west or north, or
+ * straight down — storing it in the port cell runs its second foot back through
+ * the part it was seating against. `terminalSeatCell` starts it one further
+ * along instead, so the body fills the two cells in front of the port whichever
+ * way that port faces. Rotating off the port's heading gives up the seat: it is
+ * an ordinary placement at the hovered cell again, in the direction `R` chose.
  */
-export function freePlacementOrientation(
+export function freePlacementSeat(
   design: DesignState,
   type: FreePlacementType,
   cell: Vec3,
   memory: FreePlacementMemory,
   rotationSteps: FreePlacementRotation
-): Vec3 {
-  return resolveFreePlacementOrientation(
-    defaultFreePlacementOrientation(design, type, cell, memory),
-    rotationSteps
-  );
+): FreePlacementSeat {
+  const snapDir = computeTopology(design).openPortsNear(cell)[0]?.dir;
+  const base = snapDir ? (type === "terminal" ? snapDir : vNeg(snapDir)) : memory[type];
+  const orientation = resolveFreePlacementOrientation(base, rotationSteps);
+  const seated = type === "terminal" && snapDir && vEq(orientation, snapDir);
+  return { cell: seated ? terminalSeatCell(cell, snapDir) : cell, orientation };
 }
 
 export function rememberFreePlacementOrientation(
@@ -149,17 +163,6 @@ export function rememberFreePlacementOrientation(
   orientation: Vec3
 ): FreePlacementMemory {
   return { ...memory, [type]: orientation };
-}
-
-export function defaultFreePlacementOrientation(
-  design: DesignState,
-  type: FreePlacementType,
-  cell: Vec3,
-  memory: FreePlacementMemory
-): Vec3 {
-  const snapPort = computeTopology(design).openPortsNear(cell)[0];
-  if (!snapPort) return memory[type];
-  return type === "terminal" ? snapPort.dir : vNeg(snapPort.dir);
 }
 
 export function validateFreePlacementCell(
@@ -245,12 +248,15 @@ export function freePlacementGhost({
   memory: FreePlacementMemory;
   rotationSteps: number;
 }): FreePlacementGhost | null {
-  // Orientation first: a terminal turned on its side claims a different pair of
-  // cells from one standing up, so which cells have to be free is not known
-  // until the ghost knows which way it is facing.
-  const orientation = freePlacementOrientation(design, type, cell, memory, rotationSteps);
-  if (!validateFreePlacementFootprint(design, type, cell, orientation).ok) return null;
-  return type === "terminal" ? { type, cell, axis: orientation } : { type, cell, dir: orientation };
+  // Seat first: a terminal turned on its side claims a different pair of cells
+  // from one standing up, and one seating on a port starts a cell further along
+  // than the cursor, so which cells have to be free is not known until the
+  // ghost knows where it is going and which way it is facing.
+  const seat = freePlacementSeat(design, type, cell, memory, rotationSteps);
+  if (!validateFreePlacementFootprint(design, type, seat.cell, seat.orientation).ok) return null;
+  return type === "terminal"
+    ? { type, cell: seat.cell, axis: seat.orientation }
+    : { type, cell: seat.cell, dir: seat.orientation };
 }
 
 export function placeFreePart(

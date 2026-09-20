@@ -5,9 +5,9 @@ import {
   type FreePlacementMemory,
   type FreePlacementRotation
 } from "@/domain/free-placement";
-import { terminalBodyDir, terminalCells } from "@/domain/terminal";
+import { terminalCells, terminalSeatCell } from "@/domain/terminal";
 import type { DesignState, Vec3 } from "@/types";
-import { vAdd, vEq, vScale } from "@/domain/vec3";
+import { vAdd } from "@/domain/vec3";
 
 /**
  * The blower and terminal placed together, in one click.
@@ -32,18 +32,13 @@ export const BLOWER_TERMINAL_MESSAGES = {
  * Where the terminal sits: its body fills the two cells in front of the
  * blower's port, running away from the unit along the blower's own direction.
  *
- * Which of those two cells the terminal is *stored* in depends on the way it is
- * turned, and that is the whole reason the seat is computed rather than assumed
- * to be the port cell. A terminal's body runs along `terminalBodyDir`, which
- * normalizes an axis to its positive direction (terminal.ts), so a terminal on
- * a blower facing +X is stored in the nearer of the two cells and one on a
- * blower facing -X in the further — the same two cells either way, entered from
- * opposite ends. Storing it in the port cell regardless would put its second
- * foot back inside the blower for the two negative headings.
+ * The port cell is one step along `dir`, and `terminalSeatCell` does the rest —
+ * the same arithmetic a terminal seating on any other open port goes through,
+ * since "fill the two cells in front of this port" is one rule whether the port
+ * belongs to the blower this pair arrives with or to a part already down.
  */
 export function blowerTerminalSeatCell(blowerCell: Vec3, dir: Vec3): Vec3 {
-  const body = terminalBodyDir(dir);
-  return vAdd(blowerCell, vEq(body, dir) ? dir : vScale(dir, 2));
+  return terminalSeatCell(vAdd(blowerCell, dir), dir);
 }
 
 /** Every cell the pair claims: the blower's, and the terminal's two. */

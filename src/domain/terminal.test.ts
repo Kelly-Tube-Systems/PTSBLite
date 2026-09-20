@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { designFromScene } from "@/domain/design-state";
 import { partCells } from "@/domain/occupant-footprints";
 import { partRegistry } from "@/domain/part-registry";
-import { terminalCells, terminalPortAnchor } from "@/domain/terminal";
+import { terminalCells, terminalPortAnchor, terminalSeatCell } from "@/domain/terminal";
 import { computePartPorts, computeTopology } from "@/domain/topology";
 import type { TerminalPart, Vec3 } from "@/types";
 import { expectGridMatchesDesign } from "@/test/design-invariants";
@@ -111,6 +111,25 @@ describe("a terminal turned on its side lies down", () => {
     expect(partCells(terminal([4, 3, 6], [-1, 0, 0]))).toEqual([
       [4, 3, 6],
       [5, 3, 6]
+    ]);
+  });
+
+  it("seats in the two cells in front of a port, whichever way it faces", () => {
+    // The body runs the positive way along its axis, so which of the two cells
+    // it is stored in depends on the heading — the near one going out along an
+    // axis, the far one coming back along it. Same two cells either way.
+    expect(terminalCells(terminalSeatCell([4, 0, 6], [1, 0, 0]), [1, 0, 0])).toEqual([
+      [4, 0, 6],
+      [5, 0, 6]
+    ]);
+    expect(terminalCells(terminalSeatCell([4, 0, 6], [-1, 0, 0]), [-1, 0, 0])).toEqual([
+      [3, 0, 6],
+      [4, 0, 6]
+    ]);
+    // And hanging off a downward port, the two cells below it.
+    expect(terminalCells(terminalSeatCell([4, 3, 6], [0, -1, 0]), [0, -1, 0])).toEqual([
+      [4, 2, 6],
+      [4, 3, 6]
     ]);
   });
 
