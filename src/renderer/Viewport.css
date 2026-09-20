@@ -28,7 +28,8 @@
   mask-position: center;
 }
 
-/* A tool is armed, so the pointer is aiming at a cell rather than orbiting. */
+/* A tool is armed, so the pointer is aiming at a cell rather than dragging the
+   camera. */
 .viewport-canvas--placing {
   cursor: crosshair;
 }

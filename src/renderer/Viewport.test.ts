@@ -149,7 +149,7 @@ describe("pickPointerCell", () => {
   });
 });
 
-describe("Viewport orbit drag handling", () => {
+describe("Viewport camera drag handling", () => {
   it("ignores window mouse movement when the drag did not start in the viewport", () => {
     const drag = createViewportDragState();
     const moved = moveViewportDrag(drag, { x: 240, y: 120 }, 1);

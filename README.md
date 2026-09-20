@@ -41,8 +41,8 @@ The app shows this list in a legend at the bottom-left of the viewport.
 |---|---|
 | Left click | Place |
 | Right click | Erase |
-| Left-drag | Orbit |
-| Right-drag | Pan |
+| Left-drag | Pan |
+| Right-drag | Orbit |
 | Wheel | Zoom |
 | `V` / `O` / `X` | Select / obstacle / erase |
 | `R` / `Shift`+`R` | Rotate the placement ghost |

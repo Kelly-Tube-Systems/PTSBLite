@@ -230,7 +230,7 @@ and probably multi-select.
 **Part labels and an About screen.** Both existed and were removed. Nothing on screen names the
 running build, so `appVersion` on a stored design is the only way to identify it.
 
-**The camera has no free framing.** Dragging orbits, right-dragging pans, the wheel zooms, and the
+**The camera has no free framing.** Dragging pans, right-dragging orbits, the wheel zooms, and the
 View menu snaps to one of five named angles or back to the opening framing
 (`renderer/camera-views.ts`). There is no way to save a view, to frame a selection, or to set a
 distance numerically, and the five angles are constants — they are also what the exported PDF is
