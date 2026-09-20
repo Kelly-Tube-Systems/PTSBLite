@@ -18,7 +18,8 @@ import {
   PAGE_HEIGHT,
   PAGE_WIDTH,
   type Painter,
-  wordmarkHeight
+  wordmarkHeight,
+  wrapText
 } from "@/domain/pdf-typesetting";
 import { MAX_CENTERLINE_FEET } from "@/domain/validation";
 import type { DesignState } from "@/types";
@@ -98,6 +99,32 @@ const CONTACT_TOP_GAP = 14;
 const CONTACT_LEADING = 10;
 
 /**
+ * What the sheet says about itself, in the client's words and his capitals.
+ *
+ * The BOM prints what the app built, and nothing on it said that the app is a
+ * sketching tool or that what it lets a user build is not always buildable. He
+ * asked for that said on the sheet itself, and gave the wording — so it is
+ * quoted, not tidied.
+ */
+export const DISCLAIMER =
+  "The BOM is to give a rough idea of what a KEL2020 system might look like and rough idea of " +
+  "the pieces involved. This tool may allow systems and scenarios that cannot exist in real " +
+  "life. To better understand your project's needs, please reach out to KELLY TUBE SYSTEMS so " +
+  "we can discuss your specific application.";
+
+/**
+ * The measure the disclaimer wraps to: the banner's width and a little over,
+ * which sets the note as a block over the banner rather than as a paragraph
+ * running the full width of the parts table above it.
+ */
+const DISCLAIMER_WIDTH = 400;
+/** A footnote's size — the stationery's, not the document's. */
+const DISCLAIMER_SIZE = 7.5;
+const DISCLAIMER_LEADING = 10;
+/** Between the disclaimer's last baseline and the top edge of the banner. */
+const DISCLAIMER_BANNER_GAP = 16;
+
+/**
  * Render a design's bill of materials to PDF bytes.
  *
  * `BomRow` cannot carry prices, so this document cannot expose commercial
@@ -118,9 +145,10 @@ export async function generateBomPdf(
   // Standard fonts, encoded WinAnsi — see ADR-0004 and `sanitize`.
   const sans = await doc.embedFont(StandardFonts.Helvetica);
   const sansBold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const italic = await doc.embedFont(StandardFonts.HelveticaOblique);
   const mono = await doc.embedFont(StandardFonts.Courier);
   const page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-  const p: Painter = { page, sans, sansBold, mono };
+  const p: Painter = { page, sans, sansBold, italic, mono };
 
   const right = PAGE_WIDTH - MARGIN_X;
   let y = drawMasthead(p) - 30;
@@ -192,7 +220,8 @@ export async function generateBomPdf(
     color: HAIRLINE
   });
 
-  await drawTaglineBanner(doc, page);
+  const bannerTop = await drawTaglineBanner(doc, page);
+  drawDisclaimer(p, bannerTop);
 
   drawText(p, `Generated with ${productName}`, MARGIN_X, MARGIN_TOP - 20, {
     size: 8,
@@ -257,8 +286,10 @@ function drawMasthead(p: Painter): number {
  * The bytes are inlined at build time rather than fetched: this module is the
  * document, and a PDF that has to wait on a network round trip for its
  * letterhead is a PDF that can fail to download.
+ *
+ * Returns the banner's top edge, which is what the disclaimer sits above.
  */
-async function drawTaglineBanner(doc: PDFDocument, page: PDFPage): Promise<void> {
+async function drawTaglineBanner(doc: PDFDocument, page: PDFPage): Promise<number> {
   const image = await doc.embedPng(assetBytes(taglineDataUrl));
   const height = (image.height / image.width) * BANNER_WIDTH;
   page.drawImage(image, {
@@ -267,6 +298,34 @@ async function drawTaglineBanner(doc: PDFDocument, page: PDFPage): Promise<void>
     width: BANNER_WIDTH,
     height
   });
+  return MARGIN_TOP + height;
+}
+
+/**
+ * The client's disclaimer, centred in italics in the space between the parts
+ * list and the banner.
+ *
+ * Laid out upwards from the banner rather than downwards from the last parts
+ * row: it belongs to the foot of the sheet, and the table above it varies in
+ * height with the design. The table cannot reach it — the BOM has one row per
+ * part type, six of them, so its foot sits some 300 points clear even when
+ * every row carries a note.
+ *
+ * Grey and small, so it reads as a footnote about the parts list rather than as
+ * a line of it. It is a note about what the tool can express, not terms of sale:
+ * the document still carries no prices (ADR-0011).
+ */
+function drawDisclaimer(p: Painter, bannerTop: number): void {
+  const lines = wrapText(p.italic, DISCLAIMER, DISCLAIMER_SIZE, DISCLAIMER_WIDTH);
+  let baseline = bannerTop + DISCLAIMER_BANNER_GAP + (lines.length - 1) * DISCLAIMER_LEADING;
+  for (const line of lines) {
+    drawCenteredText(p, line, PAGE_WIDTH / 2, baseline, {
+      size: DISCLAIMER_SIZE,
+      font: p.italic,
+      color: DIM
+    });
+    baseline -= DISCLAIMER_LEADING;
+  }
 }
 
 /** The bytes behind a `?inline` asset import, which arrives as a data URL. */

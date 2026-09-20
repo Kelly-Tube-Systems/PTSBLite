@@ -73,8 +73,39 @@ export type Painter = {
   page: PDFPage;
   sans: PDFFont;
   sansBold: PDFFont;
+  /** Helvetica-Oblique, for the client's disclaimer. A standard font, so no
+   * new dependency and no embedded file — see ADR-0004. */
+  italic: PDFFont;
   mono: PDFFont;
 };
+
+/**
+ * `text` broken on spaces into lines no wider than `maxWidth` when set in
+ * `font` at `size`.
+ *
+ * Measured on the sanitized text, since that is what is drawn: a character the
+ * encoding replaces is not the width of the one it replaced.
+ *
+ * A word wider than the measure takes a line of its own and overhangs rather
+ * than being hyphenated or cut. Nothing the document typesets is that long, and
+ * a silent truncation of the client's own wording would be worse than a line
+ * that runs wide.
+ */
+export function wrapText(font: PDFFont, text: string, size: number, maxWidth: number): string[] {
+  const lines: string[] = [];
+  let line = "";
+  for (const word of sanitize(text).split(/\s+/).filter(Boolean)) {
+    const candidate = line === "" ? word : `${line} ${word}`;
+    if (line !== "" && font.widthOfTextAtSize(candidate, size) > maxWidth) {
+      lines.push(line);
+      line = word;
+      continue;
+    }
+    line = candidate;
+  }
+  if (line !== "") lines.push(line);
+  return lines;
+}
 
 export function drawText(
   p: Painter,
