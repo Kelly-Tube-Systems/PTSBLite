@@ -131,39 +131,56 @@ test("moves the bottom-left panel out from under an open tool drawer", async ({ 
   await expect.poll(async () => (await corner.boundingBox())?.x).toBeCloseTo(home!.x, 0);
 });
 
-test("keeps the tool pill clear of both bottom corner panels", async ({ page }) => {
-  // The same class of bug as the one above and the same reason it needs a real
-  // browser: the pill is centred along the bottom and the quick start guide and
-  // controls legend hold the two corners it runs into. The client reported it
-  // twice (Trello U5EBg7gR) because the first fix was measured on one window
-  // and his was narrower, so the width is the test.
+test("reads the active tool out in the footer rail, clear of the rail's own contents", async ({
+  page
+}) => {
+  // The tool readout used to float along the bottom of the viewport, where the
+  // quick start guide and the controls legend covered its ends. The client
+  // reported that twice (Trello U5EBg7gR) and then asked for the floating box
+  // to go into the rail instead (ADR-0047, Trello M5RYJLHW).
   //
-  // 1200px is the app's own minimum (`#root` in app.css), which is where the
-  // two boxes leave the pill least room. Anything wider only helps.
+  // Nothing in the viewport can reach the rail, so what is left to prove is
+  // that the readout fits between the design's own numbers and Finalize. That
+  // is a text-measurement question no unit suite can answer: happy-dom lays
+  // nothing out. 1200px is the app's own minimum (`#root` in app.css), where
+  // the rail is tightest; anything wider only helps.
   await page.setViewportSize({ width: 1200, height: 800 });
   await createDesign(page);
   await page.getByRole("button", { name: "Build", exact: true }).click();
-  await page.getByRole("button", { name: "Blower Unit", exact: true }).click();
+  // The bend's name and number make the longest label any tool has, so it is
+  // the one that has to fit.
+  await page.getByRole("button", { name: "90° Bend (3ft radius)" }).click();
+
+  // The floating box is gone rather than moved.
+  await expect(page.locator(".active-tool-bar")).toHaveCount(0);
 
   const gaps = async () => {
-    const [pill, left, right] = await Promise.all(
-      // The legend holds the left corner and the guide the right since the
-      // client swapped them (Trello sOmRvSTZ).
-      [".active-tool-bar", ".legend", ".quickstart"].map((sel) => page.locator(sel).boundingBox())
-    );
-    if (!pill || !left || !right) return null;
-    // All three sit on the bottom of the window and overlap vertically, so a
-    // positive horizontal gap on each side is the whole of "nothing covers the
-    // pill" — the same reasoning as the drawer test above.
-    return Math.min(pill.x - (left.x + left.width), right.x - (pill.x + pill.width));
+    const [tool, parts, finalize] = await Promise.all([
+      page.locator('.status-bar__meta[data-meta="tool"]').boundingBox(),
+      page.locator(".status-bar__meta", { hasText: "PARTS" }).boundingBox(),
+      page.locator(".status-bar__finalize").boundingBox()
+    ]);
+    if (!tool || !parts || !finalize) return null;
+    // Everything in the rail sits on one 54px row and overlaps vertically, so a
+    // positive horizontal gap on each side is the whole of "the readout fits" —
+    // the same reasoning as the drawer test above.
+    return Math.min(tool.x - (parts.x + parts.width), finalize.x - (tool.x + tool.width));
   };
 
   expect(await gaps()).toBeGreaterThan(0);
 
-  // And with the Build drawer open, which slides the legend further across the
-  // bottom and leaves the pill less room still.
-  await page.getByRole("button", { name: "Build", exact: true }).click();
+  // And with a height on the readout too, which is the longest it ever gets.
+  await page.keyboard.press("]");
+  await expect(page.locator('[data-meta="elevation"]')).toBeVisible();
   await expect.poll(gaps).toBeGreaterThan(0);
+
+  // The panels that used to cover it cannot reach the rail at all: the viewport
+  // they are positioned in ends where the rail begins.
+  const [guide, rail] = await Promise.all([
+    page.locator(".quickstart").boundingBox(),
+    page.locator(".status-bar").boundingBox()
+  ]);
+  expect(guide!.y + guide!.height).toBeLessThanOrEqual(rail!.y);
 });
 
 test("draws an obstacle box by dragging one corner to the other", async ({ page }) => {

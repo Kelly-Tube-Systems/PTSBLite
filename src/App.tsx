@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { ActiveToolBar } from "@/components/ActiveToolBar";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ControlsLegend } from "@/components/ControlsLegend";
 import { QuickStartGuide } from "@/components/QuickStartGuide";
@@ -741,20 +740,15 @@ export default function App({ platform }: AppProps) {
             onObstacleConfirm={commitObstacle}
             onObstacleCancel={cancelObstacleDraft}
           />
-          {/* The three panels along the bottom are laid out against each other
-              rather than each against the viewport, so the pill in the middle
-              keeps clear of the two corner boxes at whatever width the window
-              happens to be. The centre cell stays in the row when the cursor
-              tool leaves no pill to put in it.
+          {/* The two corner panels, laid out against each other rather than
+              each against the viewport. Nothing floats between them any more:
+              the active tool reads out in the footer rail (ADR-0047).
 
               The legend takes the left corner and the guide the right, which is
               the order the client asked for; source order is what places them,
               so the swap is here rather than in either stylesheet. */}
           <div className="viewport-bottom">
             <ControlsLegend tool={tool} dragDraw={dragDraw} />
-            <div className="viewport-bottom__center">
-              <ActiveToolBar tool={tool} elevation={armedElevation} floor={activeFloor} />
-            </div>
             <QuickStartGuide />
           </div>
         </div>
@@ -765,6 +759,9 @@ export default function App({ platform }: AppProps) {
         expanded={statusOpen}
         onToggle={() => setStatusOpen((s) => !s)}
         onFinalize={() => setFinalizeOpen(true)}
+        tool={tool}
+        elevation={armedElevation}
+        floor={activeFloor}
       />
       {finalizeOpen && (
         <FinalizeModal

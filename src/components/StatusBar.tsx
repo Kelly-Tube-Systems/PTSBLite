@@ -1,9 +1,10 @@
+import { activeToolLabel, toolShowsElevation } from "@/components/active-tool";
 import { Icons } from "@/components/Icons";
 import { useReadyPulse } from "@/components/ready-pulse";
 import { ValidationSummary } from "@/components/ValidationSummary";
 import { totalPathLength } from "@/domain/parts";
 import { MAX_CENTERLINE_FEET } from "@/domain/validation";
-import type { DesignState, Warning } from "@/types";
+import type { DesignState, ToolId, Warning } from "@/types";
 import "@/components/StatusBar.css";
 
 export type StatusBarProps = {
@@ -15,9 +16,24 @@ export type StatusBarProps = {
    * Anchored here rather than in the top bar, where Auto-Build now sits — the
    * client asked for the two to trade places. */
   onFinalize: () => void;
+  /** The armed tool, read out in the rail's empty middle (ADR-0047). */
+  tool: ToolId;
+  /** Y of the active placement plane, shown so the elevation keys are not blind. */
+  elevation: number;
+  /** Which floor that plane is on, or null for a single-floor design. */
+  floor: 1 | 2 | null;
 };
 
-export function StatusBar({ design, warnings, expanded, onToggle, onFinalize }: StatusBarProps) {
+export function StatusBar({
+  design,
+  warnings,
+  expanded,
+  onToggle,
+  onFinalize,
+  tool,
+  elevation,
+  floor
+}: StatusBarProps) {
   const errors = warnings.filter((w) => w.level === "error").length;
   const warns = warnings.filter((w) => w.level === "warn").length;
   const len = totalPathLength(design);
@@ -58,6 +74,32 @@ export function StatusBar({ design, warnings, expanded, onToggle, onFinalize }: 
         <Meta label="PARTS" value={`${design.parts.length}`} />
 
         <div className="status-bar__spacer" />
+        {/* The armed tool reads out here, in the empty stretch of rail the
+            client pointed at, rather than in a box floating over the bottom of
+            the viewport where the corner panels covered it (ADR-0047). It is
+            written as the rail's own metadata — the same label, value and
+            separator as LENGTH and PARTS — because that is what it is. The
+            spacer either side centres it in whatever the rail has spare, and
+            the whole group is absent under the cursor tool, which places
+            nothing. */}
+        {tool !== "cursor" && (
+          <>
+            <Meta name="tool" label="TOOL" value={activeToolLabel(tool)} />
+            {toolShowsElevation(tool) && (
+              <>
+                <Sep />
+                <Meta
+                  name="elevation"
+                  label="EL"
+                  value={`${elevation} ft`}
+                  hint={floor !== null ? `· Floor ${floor}` : undefined}
+                  accent
+                />
+              </>
+            )}
+            <div className="status-bar__spacer" />
+          </>
+        )}
         {/* The same state drives Finalize, so the button goes green at exactly
             the moment the label beside it says the checks pass. It stays
             clickable in every state: a design that is still short of valid is
@@ -89,13 +131,19 @@ function Meta({
   value,
   hint,
   used,
-  capacity
+  capacity,
+  name,
+  accent = false
 }: {
   label: string;
   value: string;
   hint?: string;
   used?: number;
   capacity?: number;
+  /** Names the readout for the suites, which need this one and not its neighbours. */
+  name?: string;
+  /** For a value that changes under the keyboard and wants finding again. */
+  accent?: boolean;
 }) {
   const load =
     used !== undefined && capacity !== undefined
@@ -106,9 +154,11 @@ function Meta({
           : "ok"
       : null;
   return (
-    <div className="status-bar__meta">
+    <div className="status-bar__meta" data-meta={name}>
       <span className="status-bar__meta-label">{label}</span>
-      <span className="status-bar__meta-value">{value}</span>
+      <span className={`status-bar__meta-value${accent ? " status-bar__meta-value--accent" : ""}`}>
+        {value}
+      </span>
       {hint && <span className="status-bar__meta-hint">{hint}</span>}
       {used !== undefined && capacity !== undefined && (
         <progress
