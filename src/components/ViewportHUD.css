@@ -21,7 +21,7 @@
   border: 1px solid color-mix(in oklab, var(--accent) 35%, transparent);
   border-radius: 6px;
   padding: 7px 8px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   pointer-events: auto;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
 }
@@ -38,7 +38,7 @@
   background: color-mix(in oklab, var(--accent) 17%, var(--panel-2));
   color: var(--accent);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -57,21 +57,25 @@
   padding: 0;
 }
 
+/* Tight enough that the label, the two steps and the reading read as one
+   control rather than four things sharing a strip. */
 .hud__stepper {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .hud__stepper-label {
   color: var(--text-mut);
-  font-size: 11px;
+  font-size: 12px;
 }
 
+/* The width it reserves is set per draft, from the ceiling that draft can
+   reach; tabular figures keep the digits from shuffling inside it. */
 .hud__stepper-value {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   color: var(--accent);
-  min-width: 46px;
   text-align: center;
 }
 
@@ -86,7 +90,7 @@
   background: var(--panel-2);
   color: var(--text);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12.5px;
   line-height: 1;
   padding: 0;
 }

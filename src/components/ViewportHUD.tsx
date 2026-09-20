@@ -105,6 +105,7 @@ export function ViewportHUD({
           <ObstacleStepper
             label="Height"
             value={`${obstacleDraft.height}ft`}
+            widest={`${obstacleMaxHeight}ft`}
             onDecrement={() => onObstacleHeightChange(obstacleDraft.height - 1)}
             onIncrement={() => onObstacleHeightChange(obstacleDraft.height + 1)}
             disableDecrement={obstacleDraft.height <= 1}
@@ -174,6 +175,7 @@ function pluralize(count: number, noun: string): string {
 function ObstacleStepper({
   label,
   value,
+  widest,
   onDecrement,
   onIncrement,
   disableDecrement = false,
@@ -181,6 +183,8 @@ function ObstacleStepper({
 }: {
   label: string;
   value: string;
+  /** The longest reading this stepper can reach, so the row reserves its width. */
+  widest: string;
   onDecrement: () => void;
   onIncrement: () => void;
   disableDecrement?: boolean;
@@ -198,7 +202,14 @@ function ObstacleStepper({
       >
         −
       </button>
-      <span className="hud__stepper-value">{value}</span>
+      {/* Reserving room for this draft's own ceiling rather than for the tallest
+          the build area allows: the reading cannot jump the buttons about as it
+          gains a digit, and inside a 12 ft room it no longer holds open a gap
+          wide enough for a value it will never show. The ceiling is fixed once
+          the footprint is drawn, so the width is stable while the box is up. */}
+      <span className="hud__stepper-value" style={{ minWidth: `${widest.length}ch` }}>
+        {value}
+      </span>
       <button
         type="button"
         className="hud__stepper-button"
