@@ -1,4 +1,5 @@
 import { Icons } from "@/components/Icons";
+import { useReadyPulse } from "@/components/ready-pulse";
 import { ValidationSummary } from "@/components/ValidationSummary";
 import { totalPathLength } from "@/domain/parts";
 import { MAX_CENTERLINE_FEET } from "@/domain/validation";
@@ -22,6 +23,7 @@ export function StatusBar({ design, warnings, expanded, onToggle, onFinalize }: 
   const len = totalPathLength(design);
   const okState = warnings.length === 0 && design.parts.length > 0;
   const state = okState ? "ok" : errors ? "error" : warns ? "warn" : "none";
+  const pulse = useReadyPulse(okState);
   return (
     <div className="status-bar nosel">
       {expanded && warnings.length > 0 && (
@@ -59,14 +61,17 @@ export function StatusBar({ design, warnings, expanded, onToggle, onFinalize }: 
         {/* The same state drives Finalize, so the button goes green at exactly
             the moment the label beside it says the checks pass. It stays
             clickable in every state: a design that is still short of valid is
-            when you most want the dialog's issue list. Passing is also the
-            moment it pulses, the same tell Auto-Build and the obstacle strip
-            give when they become usable. */}
+            when you most want the dialog's issue list. Passing also starts it
+            pulsing, the same tell Auto-Build and the obstacle strip give when
+            they become usable, and it pulses until someone presses it. */}
         <button
           type="button"
-          className={`status-bar__finalize${okState ? " ready-pulse" : ""}`}
+          className={`status-bar__finalize${pulse.pulsing ? " ready-pulse" : ""}`}
           data-state={state}
-          onClick={onFinalize}
+          onClick={() => {
+            pulse.dismiss();
+            onFinalize();
+          }}
         >
           <Icons.Bom size={18} /> Finalize
         </button>
