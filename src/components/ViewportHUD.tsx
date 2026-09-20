@@ -99,7 +99,9 @@ export function ViewportHUD({
           className={`hud__obstacle-controls${pulse.pulsing ? " ready-pulse" : ""}`}
           onClickCapture={pulse.dismiss}
         >
-          <Icons.Obstacle size={12} className="hud__obstacle-icon" />
+          {/* No obstacle glyph at the head of the strip: at 12px the dashed
+              square read as a broken image rather than as an obstacle, and the
+              client asked for it to go. The box starts at "Height". */}
           {/* Height only: an obstacle stands on the floor of the storey it was
               drawn on, so there is no base to set. */}
           <ObstacleStepper
