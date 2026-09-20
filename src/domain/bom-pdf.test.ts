@@ -238,7 +238,7 @@ describe("the Kelly Systems letterhead on the parts list page", () => {
     const bytes = await generateBomPdf(designWith(sampleParts), {
       views: [shot("North-west"), shot("Top-down")]
     });
-    expect(streamShowing(bytes, "Bill of Materials")).toBe(
+    expect(streamShowing(bytes, PARTS_LIST_PAGE)).toBe(
       streamShowing(bytes, "sales@kellytubesystems.com")
     );
     expect(extractText(bytes).split("312.733.3224").length - 1).toBe(1);
