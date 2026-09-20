@@ -10,7 +10,8 @@
   border-right: 1px solid var(--line);
   /* Above the Quick Start Guide and the controls legend, both z-index 6. The
      Build and Erase drawers open out of this rail and run its full height, so
-     they cross the bottom-left corner the guide sits in; a menu you have just
+     they cross the bottom-left corner the controls legend sits in; a menu you
+     have just
      opened should not be painted over by the panel it opens across. This value
      is the one that decides it — the drawer and the tooltips are inside the
      stacking context the rail makes, so their own z-index only orders them

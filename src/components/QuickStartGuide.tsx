@@ -47,9 +47,9 @@ const COLUMNS: Step[][] = [
 ];
 
 /**
- * The quick start guide, anchored bottom-left of the viewport where the
- * controls legend used to sit. Collapsible, like the legend, so it can be got
- * out of the way once the route is known.
+ * The quick start guide, anchored bottom-right of the viewport, opposite the
+ * controls legend. Collapsible, like the legend, so it can be got out of the
+ * way once the route is known.
  */
 export function QuickStartGuide() {
   const [open, setOpen] = useState(true);
