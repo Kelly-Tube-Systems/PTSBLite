@@ -153,6 +153,28 @@ describe("Topology open and connected ports", () => {
     expect(topology.openPortsNear([5, 0, 0])).toEqual([]);
   });
 
+  it("reports the open ports of a square, nearest first and none below the aim", () => {
+    // What the cursor can ask from the floor: point at a square and get the
+    // ports whatever stands in it has going spare, whether that is a foot up or
+    // five. The order is nearest first, so the first one is the one the aim
+    // reaches soonest.
+    const design = designFromScene({
+      parts: [
+        { id: "b1", type: "blower", cell: [4, 1, 4], dir: [0, 1, 0] },
+        { id: "t1", type: "terminal", cell: [4, 6, 4], axis: [0, 1, 0] }
+      ],
+      obstacles: []
+    });
+
+    const topology = computeTopology(design);
+
+    expect(topology.openPortsInColumn([4, 0, 4]).map((p) => p.partId)).toEqual(["b1", "t1", "t1"]);
+    // Aim above the blower and its port is behind the cursor, not on offer.
+    expect(topology.openPortsInColumn([4, 5, 4]).map((p) => p.partId)).toEqual(["t1", "t1"]);
+    // A different square offers nothing, however tall the neighbour is.
+    expect(topology.openPortsInColumn([5, 0, 4])).toEqual([]);
+  });
+
   it("marks adjacent reciprocal ports as connected", () => {
     const design = designFromScene({
       parts: [

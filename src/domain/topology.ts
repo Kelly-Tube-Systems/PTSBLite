@@ -228,6 +228,30 @@ export class Topology {
   }
 
   /**
+   * The open ports a part standing in this cell's square offers from that
+   * square or above it, nearest first.
+   *
+   * `openPortsNear` answers "is there a port whose landing cell is this one",
+   * which needs the cursor already at the port's height. This answers the
+   * question the cursor can ask from the floor: point at the square a blower
+   * stands in and its open port is the one on offer, whether the blower sits on
+   * the floor, up on an obstacle, or at the top of a riser five feet of tube
+   * above it. The port is found by the cell it leaves *from* — the part's own
+   * square — so a port facing sideways is offered from its owner's square just
+   * as an upward one is.
+   *
+   * Only at or above the aimed cell: the placement plane is what the cursor
+   * aims along, and a port below it belongs to something the pointer is already
+   * past. That also leaves the elevation keys their say — raise the plane over
+   * a part and the square is an ordinary one again.
+   */
+  openPortsInColumn(cell: Vec3): Port[] {
+    return this.openPorts()
+      .filter((p) => p.from[0] === cell[0] && p.from[2] === cell[2] && p.from[1] >= cell[1])
+      .sort((a, b) => a.from[1] - b.from[1]);
+  }
+
+  /**
    * An identifier shared by every part reachable from this one through joined
    * ports. Two open ports with the same run are already two ends of the same
    * pipework, so joining them would close a loop rather than extend the system.
