@@ -741,9 +741,18 @@ export default function App({ platform }: AppProps) {
             onObstacleConfirm={commitObstacle}
             onObstacleCancel={cancelObstacleDraft}
           />
-          <QuickStartGuide />
-          <ControlsLegend tool={tool} dragDraw={dragDraw} />
-          <ActiveToolBar tool={tool} elevation={armedElevation} floor={activeFloor} />
+          {/* The three panels along the bottom are laid out against each other
+              rather than each against the viewport, so the pill in the middle
+              keeps clear of the two corner boxes at whatever width the window
+              happens to be. The centre cell stays in the row when the cursor
+              tool leaves no pill to put in it. */}
+          <div className="viewport-bottom">
+            <QuickStartGuide />
+            <div className="viewport-bottom__center">
+              <ActiveToolBar tool={tool} elevation={armedElevation} floor={activeFloor} />
+            </div>
+            <ControlsLegend tool={tool} dragDraw={dragDraw} />
+          </div>
         </div>
       </div>
       <StatusBar

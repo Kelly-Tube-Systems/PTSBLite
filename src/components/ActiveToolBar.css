@@ -1,16 +1,25 @@
+/* Centred in the space `.viewport-bottom` leaves between the quick start guide
+   and the controls legend, rather than in the viewport: centring it in the
+   viewport is what used to slide its two ends underneath those boxes. */
 .active-tool-bar {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
   background: rgba(11, 14, 19, 0.92);
   border: 1px solid var(--line-2);
-  border-radius: 999px;
+  /* Past half the bar's height, so a single row renders as the pill it has
+     always been. It only reads as a radius at all once the space is tight
+     enough for the contents to wrap onto a second line. */
+  border-radius: 22px;
   padding: 9px 18px;
   font-size: 14px;
   color: var(--text);
   display: flex;
-  gap: 12px;
+  /* The one concession to a narrow window: rather than run under the boxes or
+     have an end clipped off, the pill stacks its own segments and grows
+     upwards, where there is nothing to collide with. Each segment stays whole —
+     the whitespace rule below holds inside them. */
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 100%;
+  gap: 6px 12px;
   align-items: center;
   /* The pill is a readout, not a target — clicks belong to the viewport under it. */
   pointer-events: none;
