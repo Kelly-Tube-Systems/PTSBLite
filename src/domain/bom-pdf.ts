@@ -198,7 +198,7 @@ export async function generateBomPdf(
   for (const row of rows) {
     drawText(p, row.name, MARGIN_X, y, { size: 10 });
     drawText(p, row.partNo, partNoX, y, { size: 9, font: mono, color: DIM });
-    drawRightText(p, String(row.qty), qtyRight, y, { size: 10, font: mono });
+    drawRightText(p, row.qtyLabel ?? String(row.qty), qtyRight, y, { size: 10, font: mono });
     y -= 13;
     if (row.note) {
       drawText(p, row.note, MARGIN_X, y, { size: 8, color: MUT });

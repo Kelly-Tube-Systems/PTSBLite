@@ -24,10 +24,13 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function storedDesign(): string {
+/** One stock length of straight tube, for the BOM rows that count feet. */
+const TUBE_RUN_PART: Part = { id: "u", type: "tube", from: [3, 0, 0], to: [9, 0, 0] };
+
+function storedDesign(extra: Part[] = []): string {
   const blower: Part = { id: "b", type: "blower", cell: [0, 0, 0], dir: [1, 0, 0] };
   return JSON.stringify(
-    serializeDesign(designFromScene({ parts: [blower], obstacles: [] }), "test")
+    serializeDesign(designFromScene({ parts: [blower, ...extra], obstacles: [] }), "test")
   );
 }
 
@@ -64,6 +67,20 @@ describe("PTSBLite", () => {
     fireEvent.click(screen.getByRole("button", { name: "Finalize" }));
 
     expect(screen.getByRole("button", { name: /Download PDF/ })).toBeTruthy();
+  });
+
+  it("quotes straight tube as units and feet in the on-screen BOM", async () => {
+    // The same quantity the PDF prints (2026-09-21): Kelly orders tube by the
+    // foot, and Nick reads this table before he ever exports one.
+    window.localStorage.setItem(SESSION_KEY, storedDesign([TUBE_RUN_PART]));
+    await renderApp();
+
+    const dialog = screen.getByRole("dialog", { name: /Welcome back/ });
+    fireEvent.click(within(dialog).getByRole("button", { name: /Continue design/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Finalize" }));
+
+    const bom = screen.getByRole("dialog", { name: "Finalize" }).textContent ?? "";
+    expect(bom).toContain("1/(6ft)");
   });
 
   it("uses the PTSBLite name", async () => {
