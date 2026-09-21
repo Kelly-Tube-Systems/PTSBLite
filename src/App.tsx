@@ -385,11 +385,22 @@ export default function App({ platform }: AppProps) {
     dispatchPlacement({ type: "cancel-obstacle-draft" });
   }, []);
 
+  /**
+   * Place the drawn box, and hand the visitor back to the select tool.
+   *
+   * Every other tool stays armed so the next click places another part. The
+   * obstacle tool does not, because the client asked for it not to (ADR-0049):
+   * a box is drawn deliberately and one at a time, and Place is the end of that
+   * job rather than the start of the next one. Only a committed Place disarms —
+   * a rejected volume leaves the tool armed with its draft, so the footprint
+   * can be redrawn where it fits.
+   */
   const commitObstacle = useCallback(() => {
     const { session, result } = commitObstacleDraft(placement, design, newOccupantId(design, "o"));
     dispatchPlacement({ type: "apply-attempt", session });
     applyPlacementResult(result);
-  }, [applyPlacementResult, design, placement]);
+    if (result.status === "committed") selectTool("cursor");
+  }, [applyPlacementResult, design, placement, selectTool]);
 
   const setObstacleKind = useCallback((kind: ObstacleKind) => {
     dispatchPlacement({ type: "set-obstacle-kind", kind });

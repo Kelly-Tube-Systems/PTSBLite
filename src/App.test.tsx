@@ -179,7 +179,9 @@ describe("undo and redo history", () => {
     fireEvent.keyDown(window, { key: "z", metaKey: true });
     expect(canRedo()).toBe(true);
 
-    // A fresh edit after an undo must discard the redo branch.
+    // A fresh edit after an undo must discard the redo branch. The tool is
+    // re-armed because Place hands back to the select tool (ADR-0049).
+    fireEvent.keyDown(window, { key: "o" });
     clickCell([4, 0, 4]);
     clickCell([5, 0, 5]);
     act(() => placeButton()?.click());
@@ -205,7 +207,9 @@ describe("penetrable obstacles", () => {
     expect(obstacles).toHaveLength(1);
     expect(obstacles[0]).toMatchObject({ penetrable: true });
 
-    // The next draft keeps the choice; switching back is explicit.
+    // The next draft keeps the choice; switching back is explicit. Place
+    // disarms the tool (ADR-0049), so the selector comes back with it.
+    fireEvent.keyDown(window, { key: "o" });
     expect(
       screen
         .getByRole<HTMLButtonElement>("button", { name: "Penetrable" })
@@ -241,9 +245,31 @@ describe("the obstacle height and Place box", () => {
     act(() => placeButton()?.click());
     expect(box()).toBeNull();
 
+    // Place hands back to the select tool (ADR-0049), so a second box starts
+    // with the tool being armed again.
+    fireEvent.keyDown(window, { key: "o" });
     clickCell([6, 0, 6]);
     clickCell([8, 0, 8]);
     expect(box()?.classList.contains("ready-pulse")).toBe(true);
+  });
+
+  // "Obstacle tool resets to select tool after successful 'place'." The rail's
+  // tool readout is the whole of it being disarmed: it is absent under the
+  // cursor tool, and a click on the grid no longer starts a box (ADR-0049).
+  it("hands back to the select tool once the box is placed", async () => {
+    await renderApp();
+
+    fireEvent.keyDown(window, { key: "o" });
+    clickCell([0, 0, 0]);
+    clickCell([2, 0, 2]);
+    expect(screen.getByText("Obstacle volume")).toBeTruthy();
+
+    act(() => placeButton()?.click());
+
+    expect(screen.queryByText("Obstacle volume")).toBeNull();
+    clickCell([6, 0, 6]);
+    expect(placeButton()).toBeNull();
+    expect(viewport.props?.scene.obstacles ?? []).toHaveLength(1);
   });
 
   // The client had the obstacle glyph taken off the head of the strip: at 12px
