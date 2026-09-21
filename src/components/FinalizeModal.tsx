@@ -85,7 +85,9 @@ export function FinalizeModal({ design, warnings, onClose, onExport }: FinalizeM
                       {r.note && <span className="bom__part-note">{r.note}</span>}
                     </div>
                   </td>
-                  <td className={`bom__num bom__qty${r.qty ? "" : " bom__qty--zero"}`}>{r.qty}</td>
+                  <td className={`bom__num bom__qty${r.qty ? "" : " bom__qty--zero"}`}>
+                    {r.qtyLabel ?? r.qty}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -96,6 +96,9 @@
 
 .bom__qty {
   color: var(--text);
+  /* The tube row reads "10/(60ft)", and a browser will happily break a line at
+     that slash. One quantity is one thing to read. */
+  white-space: nowrap;
 }
 .bom__qty--zero {
   color: var(--text-dim);

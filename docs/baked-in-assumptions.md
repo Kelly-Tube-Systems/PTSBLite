@@ -213,7 +213,11 @@ WebGL exports the parts list alone rather than failing.
 the product's scope and needs an explicit new decision.
 
 **The stock-tube purchasing rule is an open question**, not a decision. `bomRows` currently uses
-`ceil(total tube feet / 6)`, which assumes offcuts are not reused. See issue #48.
+`ceil(total tube feet / 6)`, which assumes offcuts are not reused. See issue #48. The client asked
+for the tube quantity to read as units and feet together — `"10/(60ft)"`, 2026-09-21 — so that
+assumption is now on the page: the footage in the quantity is what the stock adds up to, and the
+note under the row is what the run measures. A design routing 15 ft orders `3/(18ft)` and is told
+`15.0ft total`. Nobody has said yet whether the 3 ft of offcut is waste or is cut into the next run.
 
 ---
 

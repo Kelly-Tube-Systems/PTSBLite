@@ -236,6 +236,14 @@ describe("generateBomPdf", () => {
     expect(text).toContain("AEA751032");
   });
 
+  it("prints the straight tube quantity as units and feet", async () => {
+    // The client orders tube by the foot (2026-09-21), and the PDF is the copy
+    // that reaches Kelly, so the QTY column carries both figures. The sample
+    // run is one 6 ft length; bom.test.ts covers the arithmetic over several.
+    const text = extractText(await generateBomPdf(designWith(sampleParts)));
+    expect(text).toContain("1/(6ft)");
+  });
+
   it("leaves the control box off a design with no blower in it", async () => {
     const noBlower = sampleParts.filter((p) => p.type !== "blower");
     const text = extractText(await generateBomPdf(designWith(noBlower)));

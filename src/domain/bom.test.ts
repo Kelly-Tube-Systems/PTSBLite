@@ -76,6 +76,25 @@ describe("BOM derivation", () => {
     expect(byKey.bend90.partNo).toBe("ALP08401");
   });
 
+  it("bomRows quotes straight tube as units and the feet they add up to", () => {
+    // Kelly buys tube by the foot, so the client asked for both in the one
+    // quantity: "10/(60ft)" is ten 6 ft lengths (2026-09-21). The sample run
+    // measures 15 ft, which is three lengths — 18 ft of stock, not 15.
+    const byKey = Object.fromEntries(bomRows(designWith(sampleParts)).map((r) => [r.key, r]));
+    expect(byKey.tube6.qtyLabel).toBe("3/(18ft)");
+    // The count stays a number: the label is for the page, and the PDF filters
+    // empty rows on `qty` rather than parsing this back out.
+    expect(byKey.tube6.qty).toBe(3);
+  });
+
+  it("bomRows labels no other row that way", () => {
+    // Every other line is a plain count of pieces, so a bare number says it all.
+    const rows = bomRows(designWith(sampleParts));
+    for (const row of rows.filter((r) => r.key !== "tube6")) {
+      expect(row.qtyLabel).toBeUndefined();
+    }
+  });
+
   it("bomRows puts every blower on the one unannotated row", () => {
     // There is one kind of blower again: the pedestal variant was junked by the
     // client (ADR-0043), and with it the note that counted how many stood on a

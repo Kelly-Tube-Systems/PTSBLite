@@ -41,6 +41,9 @@ export function tubeFeet(input: readonly Part[] | DesignState): number {
     .reduce((a, p) => a + partLength(p), 0);
 }
 
+/** Stock length of a straight tube, in feet (`parts.json`, ADR-0001). */
+export const TUBE_STOCK_FEET = 6;
+
 /**
  * One line of the bill of materials: what the design needs, and how many.
  *
@@ -52,6 +55,12 @@ export type BomRow = {
   name: string;
   partNo: string;
   qty: number;
+  /**
+   * What to print in the QTY column when the count alone does not say enough.
+   * Absent on every row that reads as a plain number. `qty` stays the count
+   * either way, so nothing downstream has to parse this back.
+   */
+  qtyLabel?: string;
   note?: string;
 };
 
@@ -67,8 +76,8 @@ export function bomRows(input: readonly Part[] | DesignState): BomRow[] {
   const terminals = parts.filter((p) => p.type === "terminal").length;
   const bends = parts.filter((p) => p.type === "bend").length;
   const ft = tubeFeet(parts);
-  const cuts = parts.filter((p) => p.type === "tube" && partLength(p) < 6).length;
-  const stock = Math.ceil(ft / 6);
+  const cuts = parts.filter((p) => p.type === "tube" && partLength(p) < TUBE_STOCK_FEET).length;
+  const stock = Math.ceil(ft / TUBE_STOCK_FEET);
   // Sleeves are counted, not placed: where two pieces meet, and every 6 ft
   // along anything longer than one stock length. See split-sleeve.ts.
   const sleeves = splitSleeveCount(parts);
@@ -86,11 +95,18 @@ export function bomRows(input: readonly Part[] | DesignState): BomRow[] {
     // its quantity is.
     row("controlBox", blowers, "one per blower unit"),
     row("terminal", terminals),
-    row(
-      "tube6",
-      stock,
-      cuts ? `${cuts} cut on-site · ${ft.toFixed(1)}ft total` : `${ft.toFixed(1)}ft total`
-    ),
+    // Kelly orders straight tube by the foot, not by the piece, so the quantity
+    // carries both: the client asked for "10/(60ft)" to mean ten 6 ft lengths
+    // (2026-09-21). The footage here is what the stock adds up to — what you buy
+    // — while the note below stays what the run measures.
+    {
+      ...row(
+        "tube6",
+        stock,
+        cuts ? `${cuts} cut on-site · ${ft.toFixed(1)}ft total` : `${ft.toFixed(1)}ft total`
+      ),
+      qtyLabel: `${stock}/(${stock * TUBE_STOCK_FEET}ft)`
+    },
     row("bend90", bends),
     row(SPLIT_SLEEVE_KEY, sleeves)
   ];
