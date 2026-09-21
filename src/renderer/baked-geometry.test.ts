@@ -5,8 +5,8 @@ import {
   buildBakedMesh,
   drawnGeometry,
   type BakedGeometry,
-  type BakedRole,
-  type BakedSplit
+  type BakedCut,
+  type BakedRole
 } from "@/renderer/baked-geometry";
 
 /**
@@ -101,14 +101,14 @@ describe("baked Kel2020 geometry", () => {
     }
   });
 
-  it("moves a split's faces into their own group without losing or repeating one", () => {
-    // The split is how a face the bake could not tell apart from its neighbours
-    // gets its own material — the mark moulded into the terminal's housing
-    // (ADR-0040). Whatever it picks, the part must still draw every triangle it
-    // had, exactly once, in contiguous groups.
-    const split: BakedSplit = {
+  it("drops a cut's faces and leaves the rest of the part whole", () => {
+    // The cut is how a face the bake could not tell apart from its neighbours
+    // stops being drawn — the lettering moulded into the terminal's housing,
+    // which a decal now covers (ADR-0050). Whatever it picks, the part must
+    // still draw every other triangle it had, exactly once, in contiguous
+    // groups, and no triangle twice.
+    const cut: BakedCut = {
       from: "body",
-      to: "mark",
       // The top half of the unit, which cuts across the housing's faces.
       pick: ({ positions, index, faces }) =>
         new Set(
@@ -118,20 +118,32 @@ describe("baked Kel2020 geometry", () => {
         )
     };
     const plain = drawnGeometry(KEL2020_TERMINAL);
-    const drawn = drawnGeometry(KEL2020_TERMINAL, split);
-    expect(drawn.index.length).toBe(plain.index.length);
-    expect([...drawn.index].sort()).toEqual([...plain.index].sort());
+    const drawn = drawnGeometry(KEL2020_TERMINAL, cut);
+    expect(drawn.index.length).toBeGreaterThan(0);
+    expect(drawn.index.length).toBeLessThan(plain.index.length);
+    // Exactly the triangles the rule picked are gone, and every other one is
+    // still there, in the order it was in. Built from the plain buffer rather
+    // than compared as a set, because the bake repeats a few triangles and a
+    // set would quietly swallow one of them going missing.
+    const positions = meshFor(KEL2020_TERMINAL).geometry.getAttribute("position");
+    const expected: number[] = [];
+    for (const group of KEL2020_TERMINAL.groups)
+      for (let face = group.start; face < group.start + group.count; face += 3) {
+        const high = [0, 1, 2].every((corner) => positions.getY(plain.index[face + corner]) > 0.5);
+        if (group.role === "body" && high) continue;
+        expected.push(plain.index[face], plain.index[face + 1], plain.index[face + 2]);
+      }
+    expect([...drawn.index]).toEqual(expected);
     let at = 0;
     for (const group of drawn.groups) {
       expect(group.start).toBe(at);
       at += group.count;
     }
     expect(at).toBe(drawn.index.length);
-    const marked = drawn.groups.filter((group) => group.role === "mark");
-    expect(marked.reduce((total, group) => total + group.count, 0)).toBeGreaterThan(0);
-    // One material for the new role, however many runs it ends up as.
+    // Still one material per role, and no role gained or lost.
     const roles = new Set(drawn.groups.map((group) => group.role));
-    const mesh = buildBakedMesh(KEL2020_TERMINAL, () => new THREE.MeshBasicMaterial(), split);
+    expect(roles).toEqual(new Set(KEL2020_TERMINAL.groups.map((group) => group.role)));
+    const mesh = buildBakedMesh(KEL2020_TERMINAL, () => new THREE.MeshBasicMaterial(), cut);
     expect((mesh.material as THREE.Material[]).length).toBe(roles.size);
   });
 

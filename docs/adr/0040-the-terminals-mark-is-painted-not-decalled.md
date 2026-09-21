@@ -4,8 +4,12 @@
 - **Date:** 2026-09-17
 - **Amended:** 2026-09-18 — the predicate below painted six characters out of seven, and is replaced
   by [ADR-0041](0041-the-terminals-mark-is-picked-by-its-panel.md), in turn replaced by
-  [ADR-0042](0042-the-marks-characters-are-found-as-pieces.md). The decision to paint the
-  moulding rather than lay a decal over it stands.
+  [ADR-0042](0042-the-marks-characters-are-found-as-pieces.md).
+- **Superseded:** 2026-09-21 by
+  [ADR-0050](0050-the-terminals-mark-is-the-artwork-on-the-mouldings-cylinder.md) — with every
+  character found whole, the moulding still would not read as cleanly as the blower's decal, so the
+  terminal wears that decal again and the moulding is hidden under it. The reading below of where
+  the real sticker sits stands, and is what the decal is now placed by.
 
 [ADR-0034](0034-the-units-carry-the-kel2020-wordmark.md) put the KEL2020 wordmark back on the blower
 and the terminal as a decal — a strip of cylinder carrying the client's artwork — on the reasoning

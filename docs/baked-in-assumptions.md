@@ -196,11 +196,15 @@ single piece inside it. The terminal's door is the visible consequence: it is th
 housing, baked as `body` along with the rest of the shell, so drawing the door see-through at the
 client's request (2026-09-17) draws the whole housing see-through. Singling the door out means
 giving it its own role in the bake and re-running it against the STEP files, which are not in the
-repository. The one way round it is `BakedSplit`
-([ADR-0040](adr/0040-the-terminals-mark-is-painted-not-decalled.md)), which lifts faces out of a
-role by where they sit on the part rather than by what the bake called them — the terminal's moulded
-KEL2020 mark is painted that way. It costs a set of measurements against the current geometry, so it
+repository. The one way round it is `BakedCut`
+([ADR-0050](adr/0050-the-terminals-mark-is-the-artwork-on-the-mouldings-cylinder.md)), which names
+faces by where they sit on the part rather than by what the bake called them, and drops them — the
+KEL2020 lettering moulded into the terminal's housing is hidden that way, so the decal that replaces
+it has a clean panel to sit on. It costs a set of measurements against the current geometry, so it
 suits a feature with a shape worth measuring and not a piece that merely wants a different colour.
+And it only ever removes: a face that needs a *different* material still needs a role of its own in
+the bake, which the four attempts at this one mark are the argument for
+([ADR-0040](adr/0040-the-terminals-mark-is-painted-not-decalled.md) through ADR-0050).
 
 **The exported PDF carries pictures.** Five rendered views are captured from the live scene and
 embedded after the parts list ([ADR-0018](adr/0018-the-exported-bom-carries-rendered-views.md)).

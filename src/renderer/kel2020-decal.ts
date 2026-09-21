@@ -16,9 +16,13 @@ import type { Vec3 } from "@/types";
  * lift its ends a tenth of an inch clear of the unit, which reads as a label
  * peeling off.
  *
- * The terminal wore one of these too until the moulded mark its own CAD carries
- * was found under it, which is a decal drawn on top of a decal; it now paints
- * the moulded one instead (ADR-0040).
+ * The terminal wears one too. It stopped for a while, because its own CAD
+ * moulds KEL2020 into the housing and the decal sat over that as a second mark,
+ * so the moulded one was painted instead (ADR-0040). Three rules for finding
+ * those faces later, the moulding still would not read as cleanly as this does:
+ * it is a tessellation, open in places and stockier than the artwork. So the
+ * moulding is cut away and the decal is back, on the cylinder the moulding
+ * stood on, which is where the real unit's sticker is (ADR-0050).
  */
 
 /** The box the artwork's ink actually fills, inside its 1575 x 366 viewBox. */
@@ -36,7 +40,7 @@ const TEXTURE_WIDTH = 1024;
  * viewing angle lets the two z-fight, and under a hundredth of an inch, so it
  * still looks painted on rather than bolted to the unit.
  */
-const STANDOFF = 0.004;
+export const STANDOFF = 0.004;
 
 /**
  * One texture for every blower and terminal in the scene, drawn the first time
