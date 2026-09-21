@@ -9,11 +9,13 @@ import {
   buildSplitSleeveMesh,
   buildTerminalMesh,
   TERMINAL_MOULDED_MARK,
+  TERMINAL_WORDMARK,
   tubeRenderSpan,
   tubeSectionJointPoints
 } from "@/renderer/design-meshes";
 import { KEL2020_TERMINAL } from "@/data/kel2020-geometry";
-import { drawnGeometry, type BakedRole } from "@/renderer/baked-geometry";
+import { buildBakedMesh, drawnGeometry, type BakedRole } from "@/renderer/baked-geometry";
+import { STANDOFF } from "@/renderer/kel2020-decal";
 import {
   beginDragDraw,
   cellFromWorldPoint,
@@ -365,61 +367,58 @@ describe("terminal materials", () => {
 });
 
 describe("the KEL2020 mark on a terminal", () => {
-  // The client saw two marks on the unit — the one moulded into the housing and
-  // a decal laid over it — and asked for one, in the colour of a real sticker
-  // (ADR-0040). So the terminal carries no decal of its own, and the moulded
-  // mark is painted instead. What is worth holding is that the faces picked out
-  // to paint are the mark: a re-bake that shifted the housing would otherwise
-  // paint a stripe of plain plastic, or nothing at all, with no test to say so.
+  // The terminal's mark is the artwork the blower wears, laid on the cylinder
+  // the CAD moulded KEL2020 onto, with the moulding itself cut away (ADR-0050).
+  // Two things have to hold and neither is visible in the shape of the mesh:
+  // the cut finds the whole moulding, or grey relief is left beside the green
+  // sticker; and the sticker lands where the moulding was, or it floats off the
+  // panel or sinks into it. Both are measured off the baked geometry, so a
+  // re-bake that moved the housing fails here rather than on the client's
+  // screen — which is how the last three attempts at this mark were found.
 
-  /** The material the terminal draws its mark in. */
-  function markMaterial(): THREE.MeshBasicMaterial {
-    const mesh = buildTerminalMesh().children.find(
-      (child): child is THREE.Mesh => child instanceof THREE.Mesh
-    )!;
-    const drawn = drawnGeometry(KEL2020_TERMINAL, TERMINAL_MOULDED_MARK);
-    const at = drawn.groups.findIndex((group) => group.role === "mark");
-    const slot = mesh.geometry.groups[at].materialIndex!;
-    return (mesh.material as THREE.Material[])[slot] as THREE.MeshBasicMaterial;
-  }
-
-  /** The terminal's one mesh, and the faces its mark group draws. */
-  function markFaces(): { x: number; y: number; z: number }[][] {
-    const mesh = buildTerminalMesh().children.find(
-      (child): child is THREE.Mesh => child instanceof THREE.Mesh
-    )!;
-    const drawn = drawnGeometry(KEL2020_TERMINAL, TERMINAL_MOULDED_MARK);
-    const position = mesh.geometry.getAttribute("position");
-    const index = mesh.geometry.getIndex()!;
-    const faces: { x: number; y: number; z: number }[][] = [];
-    for (const group of drawn.groups) {
-      if (group.role !== "mark") continue;
-      for (let face = group.start; face < group.start + group.count; face += 3)
-        faces.push(
-          [0, 1, 2].map((corner) => {
-            const vertex = index.getX(face + corner);
-            return { x: position.getX(vertex), y: position.getY(vertex), z: position.getZ(vertex) };
-          })
-        );
+  /** Corner positions of the faces the cut takes out of the housing. */
+  function mouldedCorners(): { x: number; y: number; z: number }[] {
+    const geometry = buildBakedMesh(KEL2020_TERMINAL, () => new THREE.MeshBasicMaterial()).geometry;
+    const position = geometry.getAttribute("position");
+    const positions = new Float32Array(position.count * 3);
+    for (let vertex = 0; vertex < position.count; vertex++) {
+      positions[vertex * 3] = position.getX(vertex);
+      positions[vertex * 3 + 1] = position.getY(vertex);
+      positions[vertex * 3 + 2] = position.getZ(vertex);
     }
-    return faces;
+    const index = drawnGeometry(KEL2020_TERMINAL).index;
+    const faces: number[] = [];
+    for (const group of KEL2020_TERMINAL.groups) {
+      if (group.role !== "body") continue;
+      for (let face = group.start; face < group.start + group.count; face += 3) faces.push(face);
+    }
+    const dropped = TERMINAL_MOULDED_MARK.pick({ positions, index, faces });
+    const corners: { x: number; y: number; z: number }[] = [];
+    for (const face of dropped)
+      for (let corner = 0; corner < 3; corner++) {
+        const vertex = index[face + corner];
+        corners.push({
+          x: positions[vertex * 3],
+          y: positions[vertex * 3 + 1],
+          z: positions[vertex * 3 + 2]
+        });
+      }
+    return corners;
   }
 
-  it("paints the moulded mark rather than laying a decal over it", () => {
-    // One mesh and nothing else: the decal used to be a second child here.
-    expect(buildTerminalMesh().children).toHaveLength(1);
-    const mark = markMaterial();
-    expect(mark).toBeInstanceOf(THREE.MeshBasicMaterial);
-    expect(mark.color.getHex()).toBe(VP.signal);
-    // A sticker on the housing, not another see-through layer of it.
-    expect(mark.transparent).toBe(false);
-    expect(mark.opacity).toBe(1);
-  });
+  /** Where a point sits on the cylinder the decal is wrapped on. */
+  function onDecalCylinder(point: { x: number; y: number; z: number }): {
+    radius: number;
+    angle: number;
+  } {
+    const across = point.x - TERMINAL_WORDMARK.at[0];
+    const out = point.z - TERMINAL_WORDMARK.at[2];
+    return { radius: Math.hypot(across, out), angle: Math.atan2(across, out) };
+  }
 
-  it("picks out the whole mark and only the mark", () => {
-    const faces = markFaces();
-    expect(faces.length).toBeGreaterThan(100);
-    const corners = faces.flat();
+  it("cuts the whole of the moulded mark out of the housing", () => {
+    const corners = mouldedCorners();
+    expect(corners.length).toBeGreaterThan(300);
     const across = corners.map((corner) => corner.x);
     const up = corners.map((corner) => corner.y);
     // All seven characters, the whole width of each. The lettering runs 0.371 ft
@@ -430,12 +429,11 @@ describe("the KEL2020 mark on a terminal", () => {
     // by a thousandth of a foot.
     expect(Math.max(...across) - Math.min(...across)).toBeGreaterThan(0.36);
     // And only the lettering. It stands 0.08 ft tall on a raised panel twice
-    // that, so a split that took the panel with it — the other way this can go
-    // wrong — would paint a solid green stripe across the unit instead of a
-    // mark, and would show up here as a taller band.
+    // that, so a rule that took the panel with it — the other way this can go
+    // wrong — would cut a slot out of the front of the unit, and would show up
+    // here as a taller band.
     expect(Math.max(...up) - Math.min(...up)).toBeGreaterThan(0.05);
     expect(Math.max(...up) - Math.min(...up)).toBeLessThan(0.1);
-    // All of it on the front of the housing, in the band it was measured in.
     for (const corner of corners) {
       expect(corner.z).toBeGreaterThan(0.05);
       expect(corner.y).toBeGreaterThan(0.75);
@@ -443,40 +441,105 @@ describe("the KEL2020 mark on a terminal", () => {
     }
   });
 
-  it("leaves nothing moulded in the strokes' band unpainted", () => {
-    // The width above says the mark reaches both ends. This says the same thing
-    // from the other side, and is the one a rule that shaves an end cannot pass:
-    // no face moulded onto the front of the housing between the top and bottom
-    // of the strokes is still drawn in the housing's own plastic.
+  it("leaves nothing moulded in the strokes' band still drawn", () => {
+    // The width above says the cut reaches both ends. This says the same thing
+    // from the other side, and is the one a rule that shaves an end cannot
+    // pass: no face moulded onto the front of the housing between the top and
+    // bottom of the strokes is still drawn.
     //
-    // It is bounded by the strokes rather than by whatever the split measures,
-    // so it cannot be quieted by widening that — the panel would come with it
-    // and fail the height check above.
+    // It is bounded by the strokes rather than by whatever the cut measures, so
+    // it cannot be quieted by widening that — the panel would come with it and
+    // fail the height check above.
     const mesh = buildTerminalMesh().children.find(
       (child): child is THREE.Mesh => child instanceof THREE.Mesh
     )!;
     const drawn = drawnGeometry(KEL2020_TERMINAL, TERMINAL_MOULDED_MARK);
     const position = mesh.geometry.getAttribute("position");
     const index = mesh.geometry.getIndex()!;
-    let unpainted = 0;
-    for (const group of drawn.groups) {
-      if (group.role !== "body") continue;
+    let left = 0;
+    for (const group of drawn.groups)
       for (let face = group.start; face < group.start + group.count; face += 3) {
         const corners = [0, 1, 2].map((corner) => {
           const vertex = index.getX(face + corner);
           return { y: position.getY(vertex), z: position.getZ(vertex) };
         });
-        if (corners.every(({ y, z }) => z > 0.05 && y > 0.7768 && y < 0.8587)) unpainted++;
+        if (corners.every(({ y, z }) => z > 0.05 && y > 0.7768 && y < 0.8587)) left++;
       }
-    }
-    expect(unpainted).toBe(0);
+    expect(left).toBe(0);
   });
 
-  it("draws the mark from both sides, so an open stroke is not culled hollow", () => {
-    // The characters are open shells: parts of the 2, the 0 and the 2 have no
-    // outward facet, only one turned into the unit, and culling it left bites in
-    // the strokes that the client photographed (Trello wQTcFyRn).
-    expect(markMaterial().side).toBe(THREE.DoubleSide);
+  it("lays the sticker on the cylinder the moulding stood on", () => {
+    // The moulding is the real unit's sticker, measured: where it sat is where
+    // the decal goes. Its base lies on the decal's own radius and its relief
+    // stands 0.003 ft off that, so every corner of it falls in a band that
+    // thin — which is only true if the panel really is a cylinder about this
+    // axis. It was read as not being one when the mark was picked out by relief
+    // against the housing's shell, which is a wider cylinder on a different
+    // axis (ADR-0041).
+    const corners = mouldedCorners();
+    const radii = corners.map((corner) => onDecalCylinder(corner).radius);
+    expect(Math.min(...radii)).toBeGreaterThan(TERMINAL_WORDMARK.radius - 0.001);
+    expect(Math.max(...radii)).toBeLessThan(TERMINAL_WORDMARK.radius + 0.004);
+
+    // And the sticker spans it: the same arc, at the same mid-height. Within
+    // 0.03 rad at each end, which is 0.006 ft — the moulding sits about 0.7°
+    // round from the front and the decal is wrapped symmetrically about it, so
+    // the two ends miss by that much in opposite directions.
+    const angles = corners.map((corner) => onDecalCylinder(corner).angle);
+    const surface = TERMINAL_WORDMARK.radius + STANDOFF;
+    const arc = TERMINAL_WORDMARK.width / surface;
+    expect(Math.abs(Math.max(...angles) - arc / 2)).toBeLessThan(0.03);
+    expect(Math.abs(Math.min(...angles) + arc / 2)).toBeLessThan(0.03);
+    const up = corners.map((corner) => corner.y);
+    expect((Math.min(...up) + Math.max(...up)) / 2).toBeCloseTo(TERMINAL_WORDMARK.at[1], 3);
+  });
+
+  it("keeps the sticker clear of everything the terminal still draws", () => {
+    // A decal that sinks into the surface it names is clipped by it, which is
+    // the raggedness this change is fixing rather than a new way to cause it.
+    // So nothing the terminal draws inside the sticker's own footprint may
+    // reach the sticker's surface.
+    const mesh = buildTerminalMesh().children.find(
+      (child): child is THREE.Mesh => child instanceof THREE.Mesh
+    )!;
+    const position = mesh.geometry.getAttribute("position");
+    const index = mesh.geometry.getIndex()!;
+    const surface = TERMINAL_WORDMARK.radius + STANDOFF;
+    const arc = TERMINAL_WORDMARK.width / surface;
+    const height = TERMINAL_WORDMARK.width / (1508 / 223);
+    // Across each triangle rather than at its corners: the housing's facets are
+    // coarse next to a mark an inch tall, and the panel behind the sticker is
+    // spanned by triangles whose corners are all outside it.
+    const STEPS = 16;
+    const corner = new THREE.Vector3();
+    const point = new THREE.Vector3();
+    let under = 0;
+    let blocked = 0;
+    for (let face = 0; face < index.count; face += 3) {
+      const abc = [0, 1, 2].map((at) =>
+        corner.fromBufferAttribute(position, index.getX(face + at)).clone()
+      );
+      for (let i = 0; i <= STEPS; i++)
+        for (let j = 0; i + j <= STEPS; j++) {
+          const u = i / STEPS;
+          const v = j / STEPS;
+          point
+            .copy(abc[0])
+            .multiplyScalar(1 - u - v)
+            .addScaledVector(abc[1], u)
+            .addScaledVector(abc[2], v);
+          if (Math.abs(point.y - TERMINAL_WORDMARK.at[1]) > height / 2) continue;
+          const { radius, angle } = onDecalCylinder(point);
+          if (Math.abs(angle) > arc / 2) continue;
+          under++;
+          if (radius >= surface) blocked++;
+        }
+    }
+    // The panel is behind the sticker for its whole width, so there is plenty
+    // here to clear; a footprint that had drifted off the unit would pass an
+    // empty check.
+    expect(under).toBeGreaterThan(100);
+    expect(blocked).toBe(0);
   });
 });
 

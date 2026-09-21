@@ -5,7 +5,7 @@ import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { KEL2020_BLOWER, KEL2020_TERMINAL } from "@/data/kel2020-geometry";
 import { terminalAxisIsVertical, terminalBodyDir } from "@/domain/terminal";
 import { vEq } from "@/domain/vec3";
-import { buildBakedMesh, type BakedSplit } from "@/renderer/baked-geometry";
+import { buildBakedMesh, type BakedCut } from "@/renderer/baked-geometry";
 import { buildKel2020Decal, type DecalPlacement } from "@/renderer/kel2020-decal";
 import { PORT_R, TUBE_R, v3, VP } from "@/renderer/three-utils";
 import type { Vec3 } from "@/types";
@@ -107,46 +107,47 @@ export function buildBlowerMesh({ ghost = false } = {}): THREE.Group {
 }
 
 /**
- * The KEL2020 mark the terminal already carries: moulded into the front of the
- * housing in the CAD itself, and picked out of the housing's faces so it can be
- * painted rather than left in the plastic's own colour (ADR-0040).
+ * The KEL2020 lettering moulded into the front of the terminal's housing in the
+ * CAD itself, picked out of the housing's faces and dropped from the drawing so
+ * the sticker below can take its place (ADR-0050).
  *
- * The whole mark bakes as `body` — the first zero of 2020 is a dark solid in
- * the CAD and used to arrive with the hinges and latches, until the bake
- * learned to correct that one colour (ADR-0039) — so the split has one role to
- * take from.
+ * It bakes as `body` — the first zero of 2020 is a dark solid in the CAD and
+ * used to arrive with the hinges and latches, until the bake learned to correct
+ * that one colour (ADR-0039) — so the cut has one role to take from.
  *
  * A character is a piece of its own: the CAD moulds each one as a separate
- * solid, so its triangles join up to each other and to nothing else. The mark
- * is the connected pieces of the housing that lie wholly inside the strokes'
- * own height band — y = 0.7768 to 0.8587, measured — and on the front of the
- * unit. Nothing else the housing is made of both starts and ends inside 0.08 ft
- * of height: the raised panel the lettering stands on runs y = 0.75 to 0.91
- * unbroken, and the shell runs the length of the unit.
+ * solid, so its triangles join up to each other and to nothing else. The
+ * lettering is the connected pieces of the housing that lie wholly inside the
+ * strokes' own height band — y = 0.7768 to 0.8587, measured — and on the front
+ * of the unit. Nothing else the housing is made of both starts and ends inside
+ * 0.08 ft of height: the raised panel the lettering stands on runs y = 0.75 to
+ * 0.91 unbroken, and the shell runs the length of the unit. Cutting the
+ * lettering therefore leaves that panel whole, with nothing showing through.
  *
  * Three pieces of hinge leaf do share the band. They lie flat against the side
  * of the unit and reach no further forward than z = 0.018, where the mark's
  * furthest-round character starts at z = 0.078, so a front test half way
  * between the two separates them with room to spare.
  *
- * Pieces rather than a window around the lettering, because a window has now
- * cut the mark at both ends. Relief against a cylinder fitted to the housing
+ * Pieces rather than a window around the lettering, because a window cut the
+ * mark at both ends twice over. Relief against a cylinder fitted to the housing
  * dropped the last 0 (ADR-0041), and the x span that replaced it took 0.04 ft
  * off the solid block the artwork opens the K with — read as a narrow stem
  * rather than as a missing character, so it outlived the fix for the 0
  * (ADR-0042). A piece is all of a character or none of it, so neither end can
- * be shaved.
+ * be shaved. The rule is kept as it was: it has to find the whole mark to hide
+ * the whole mark, and anything it leaves behind is grey relief beside a green
+ * sticker.
  *
  * The emblem moulded into the **back** of the housing is a piece in the same
- * band, and the front test leaves it unpainted: it is the far side of a
- * see-through unit rather than a second mark on the front (ADR-0040).
+ * band, and the front test leaves it alone: it is the far side of a see-through
+ * unit rather than a second mark on the front (ADR-0040).
  */
 const MARK_BAND = { from: 0.77, to: 0.862 } as const;
 const MARK_FRONT_Z = 0.05;
 
-export const TERMINAL_MOULDED_MARK: BakedSplit = {
+export const TERMINAL_MOULDED_MARK: BakedCut = {
   from: "body",
-  to: "mark",
   pick: ({ positions, index, faces }) => {
     // Union-find over the vertices the housing's faces share, which is what
     // "joined up" means once the bake has welded the shell into one buffer.
@@ -178,7 +179,7 @@ export const TERMINAL_MOULDED_MARK: BakedSplit = {
 
     // A piece is lettering until one of its corners leaves the band or the
     // front, so a stray triangle disqualifies a whole character rather than
-    // half-painting one.
+    // half-hiding one.
     const lettering = new Map<number, boolean>();
     for (const face of faces) {
       const piece = find(index[face]);
@@ -193,10 +194,37 @@ export const TERMINAL_MOULDED_MARK: BakedSplit = {
       lettering.set(piece, inside);
     }
 
-    const picked = new Set<number>();
-    for (const face of faces) if (lettering.get(find(index[face]))) picked.add(face);
-    return picked;
+    const dropped = new Set<number>();
+    for (const face of faces) if (lettering.get(find(index[face]))) dropped.add(face);
+    return dropped;
   }
+};
+
+/**
+ * Where the wordmark sits on a terminal: on the cylinder the CAD moulded the
+ * lettering onto, which is the real unit's sticker measured for us (ADR-0050).
+ *
+ * Every number is taken off the baked geometry rather than chosen. A circle
+ * least-squares fitted to the moulded lettering's own vertices, in the plane
+ * across the unit, sits at x = -0.0228, z = 0.0224 — the housing's axis, not
+ * the unit's — with a radial residual of ±0.0015 ft, which is the relief
+ * itself: the strokes stand 0.003 ft off a base at 0.1929 ft, and that base is
+ * the panel. So the surface the sticker goes on is a cylinder to within a
+ * thousandth of a foot, which is what the panel was thought not to be when the
+ * mark was picked out by relief against the housing's own shell (ADR-0041).
+ *
+ * The lettering spans 145.3° of that circle, centred within a degree of the
+ * front, and 0.0819 ft of height, centred at y = 0.8178. `width` is that arc
+ * measured at the decal's own surface; the height follows from the artwork's
+ * proportions rather than the moulding's, which is a twelfth stockier — the
+ * artwork is the mark Kelly Tube Systems supplied, and the moulding is only
+ * evidence of where it goes.
+ */
+export const TERMINAL_WORDMARK: DecalPlacement = {
+  radius: 0.1929,
+  width: 0.4995,
+  axis: "y",
+  at: [-0.0228, 0.8178, 0.0224]
 };
 
 /**
@@ -223,8 +251,8 @@ export const TERMINAL_MOULDED_MARK: BakedSplit = {
  * up across the run rather than into the floor — which is where it belongs,
  * since a carrier is loaded from the front while the tube leaves the end. The
  * group's origin is the centre of the cell the terminal was placed in, and the
- * KEL2020 mark is part of the housing (ADR-0040), so a terminal on its side
- * wears its mark on its side.
+ * KEL2020 mark goes on the housing in the group's own frame, so a terminal on
+ * its side wears its mark on its side.
  */
 export function buildTerminalMesh({
   axis = [0, 1, 0],
@@ -278,31 +306,6 @@ export function buildTerminalMesh({
             opacity: ghost ? 0.45 : 1
           });
         }
-        // The KEL2020 mark moulded into the housing, painted in the green a
-        // Kel2020 signs itself with: on the real unit it is a colour sticker, not
-        // relief left in the plastic (ADR-0040).
-        //
-        // Unlit, like the wordmark on the blower's drum, so the mark holds its
-        // colour wherever the unit stands; and opaque, so it reads as a sticker
-        // on the housing rather than another see-through layer of it.
-        //
-        // Drawn from both sides because the characters are open shells: the CAD
-        // leaves the outward facet off parts of the 2, the 0 and the 2, so the
-        // only triangle covering those patches is one turned into the unit, and
-        // culling it bit lumps out of the strokes (ADR-0042). Nothing is lost by
-        // keeping them — the material is unlit, so a face reads the same green
-        // whichever side of it meets the camera — and seen from behind, through a
-        // housing that is see-through at the client's request, the mark now shows
-        // faintly and mirrored, as ADR-0040 already accepted for the emblem on
-        // the back.
-        if (role === "mark") {
-          return new THREE.MeshBasicMaterial({
-            color: VP.signal,
-            side: THREE.DoubleSide,
-            transparent: ghost,
-            opacity: ghost ? 0.45 : 1
-          });
-        }
         // The housing, which is the door a carrier is loaded through: clear on the
         // real unit, so it is drawn see-through here rather than as a solid shell
         // and the barrel behind it reads through the KEL2020 mark. It keeps a
@@ -327,6 +330,12 @@ export function buildTerminalMesh({
       TERMINAL_MOULDED_MARK
     )
   );
+  // The sticker, on the cylinder the moulding it replaces stood on. Same
+  // artwork, material and green as the blower's, because the client compared
+  // the two and asked for the terminal's to read as well as the blower's
+  // (ADR-0050).
+  const decal = buildKel2020Decal(TERMINAL_WORDMARK, { ghost });
+  if (decal) g.add(decal);
   if (ghost) {
     // The arrow says which way the run leaves. The body already lies along the
     // axis, so in this frame that is simply one end or the other: +Y when the

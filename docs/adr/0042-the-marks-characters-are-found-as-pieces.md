@@ -3,8 +3,12 @@
 - **Status:** Accepted
 - **Date:** 2026-09-18
 - **Supersedes:** the predicate in
-  [ADR-0041](0041-the-terminals-mark-is-picked-by-its-panel.md); the decision in
-  [ADR-0040](0040-the-terminals-mark-is-painted-not-decalled.md) stands
+  [ADR-0041](0041-the-terminals-mark-is-picked-by-its-panel.md)
+- **Amended:** 2026-09-21 — the rule below is kept exactly as it is, but
+  [ADR-0050](0050-the-terminals-mark-is-the-artwork-on-the-mouldings-cylinder.md) cuts the faces it
+  finds out of the drawing instead of painting them, and a decal of the client's artwork takes their
+  place. Everything below about *finding* the mark still applies; the `DoubleSide` material it ends
+  with is gone with the painted faces.
 
 [ADR-0040](0040-the-terminals-mark-is-painted-not-decalled.md) paints the KEL2020 mark moulded into
 the terminal's housing by lifting its faces out of the `body` role with a `BakedSplit`. Two rules
