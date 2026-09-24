@@ -9,7 +9,11 @@ against the system's engineering rules, and get a bill of materials out.
 [ADR-0014](docs/adr/0014-ptsblite-is-the-only-product.md) why. It shows **no prices, costs
 or dollar amounts of any kind** ([ADR-0011](docs/adr/0011-lite-has-no-commercial-data-path.md)).
 
-*Avoid:* "PTSBuilder", "PTSBuilderLite" (the pre-rename name), "full version", "desktop app".
+*Avoid:* "PTSBuilder", "PTSBuilderLite" (the pre-rename name), "full version".
+
+**Desktop app** — PTSBLite installed on Windows and run outside the browser: the same product, not
+a second one ([ADR-0051](docs/adr/0051-ptsblite-also-ships-as-an-unsigned-windows-app.md)). Its
+autosaved design is separate from the website's.
 
 ## Authoritative vs. placeholder data
 
