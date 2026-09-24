@@ -28,6 +28,24 @@ smoke suite exercises.
 
 Every PR must leave `pnpm run check` green.
 
+## kardboard Sessions
+
+A kardboard Session's acceptance command is:
+
+```sh
+pnpm install --frozen-lockfile && pnpm run check && pnpm run build
+```
+
+Passing means Prettier reports every file formatted, ESLint and `tsc` print nothing, every Vitest
+file passes, and Vite ends with `✓ built`; the chunk-size warning is expected. It needs Node 24;
+pnpm switches itself to the version in `packageManager`. The container has no browser, so skip
+`pnpm run test:e2e` — the `verify` check on the pull request runs it.
+
+Cloudflare Pages builds every pull request and comments its Preview URL on it. Link that URL on
+the card. Previews are restricted rather than public ([docs/deploying.md](docs/deploying.md)).
+
+Trello is out of scope for a Session: the card on the kardboard board is the task.
+
 ## The three things most likely to be wrong
 
 **1. Authoritative spec versus placeholder data.** The 300 ft centerline cap, 6 ft tube stock,
