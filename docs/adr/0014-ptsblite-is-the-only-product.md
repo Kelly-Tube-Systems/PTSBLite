@@ -1,6 +1,9 @@
 # ADR-0014: PTSBLite is the only product
 
-- **Status:** Accepted
+- **Status:** Superseded in part by
+  [ADR-0051](0051-ptsblite-also-ships-as-an-unsigned-windows-app.md): PTSBLite also ships as an
+  unsigned Windows app, so desktop packaging and release automation are back. PTSBLite is still the
+  only product.
 - **Date:** 2026-08-16
 
 The internal Electron version of PTSBuilder has been removed from the project's scope indefinitely.

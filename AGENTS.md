@@ -4,8 +4,10 @@ Read [`CONTEXT.md`](CONTEXT.md) before changing anything under `src/domain/`. It
 vocabulary and identifies which engineering constraints are authoritative.
 
 PTSBLite is the repository's only product
-([ADR-0014](docs/adr/0014-ptsblite-is-the-only-product.md)); the README says what it is.
-Do not add Electron, desktop packaging, pricing, quotes, customer data, tax, or other commercial
+([ADR-0014](docs/adr/0014-ptsblite-is-the-only-product.md)); the README says what it is. It runs
+in the browser and as an unsigned Windows desktop app
+([ADR-0051](docs/adr/0051-ptsblite-also-ships-as-an-unsigned-windows-app.md)). Do not add a macOS
+or Linux build, code signing, pricing, quotes, customer data, tax, or other commercial
 functionality.
 
 ## Commands
