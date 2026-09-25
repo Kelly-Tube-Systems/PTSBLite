@@ -25,8 +25,8 @@ function post(body: unknown, origin: string | null = SITE): Request {
 }
 
 /** Stand in for Resend, answering every send with `status`. */
-function resend(status: number) {
-  const fetch = vi.fn(() => Promise.resolve(new Response("{}", { status })));
+function resend(status: number, body = "{}") {
+  const fetch = vi.fn(() => Promise.resolve(new Response(body, { status })));
   vi.stubGlobal("fetch", fetch);
   return fetch;
 }
@@ -102,6 +102,27 @@ describe("the contact form's email to sales", () => {
     const response = await onRequestPost({ request: post(details), env: KEY });
 
     expect(response.status).toBe(502);
+  });
+
+  it("logs a refused send without the visitor's details", async () => {
+    // Resend's message can quote the field it rejected.
+    resend(
+      422,
+      JSON.stringify({
+        statusCode: 422,
+        name: "validation_error",
+        message: "Invalid `reply_to` field: ada@example.com"
+      })
+    );
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await onRequestPost({ request: post(details), env: KEY });
+
+    const logged = log.mock.calls.flat().join(" ");
+    expect(logged).toContain("422 validation_error");
+    for (const value of Object.values(details).filter((v) => v !== "")) {
+      expect(logged).not.toContain(value);
+    }
   });
 
   it("refuses a post from another site", async () => {
