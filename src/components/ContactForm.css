@@ -1,0 +1,81 @@
+/* The Kelly Systems wordmark, drawn the way the welcome screen draws it: this
+   form is the first screen of a first visit, and the welcome screen follows it. */
+.contact__logo {
+  width: 200px;
+  aspect-ratio: 1316 / 158;
+  margin: 22px auto 18px;
+  background: var(--accent);
+  mask-image: url("../assets/kelly-systems-wordmark.svg");
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
+.contact__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+}
+
+.contact__intro {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-mut);
+}
+
+.contact__fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 10px;
+}
+
+.contact__field {
+  display: block;
+}
+
+.contact__field--wide {
+  grid-column: 1 / -1;
+}
+
+.contact__label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: var(--text-mut);
+}
+
+.contact__required {
+  margin-left: 2px;
+  color: var(--danger);
+}
+
+.contact__input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line-2);
+  background: var(--panel-2);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  box-sizing: border-box;
+}
+
+.contact__textarea {
+  resize: vertical;
+}
+
+.contact__error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--danger);
+}
+
+.contact__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 18px;
+  border-top: 1px solid var(--line);
+}

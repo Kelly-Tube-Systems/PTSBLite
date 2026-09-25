@@ -5,6 +5,9 @@
 - **Amended:** 2026-08-16 — the separate commercial product was removed by ADR-0014. With no
   commercial code left anywhere in the repository, the build-time module-graph check was removed
   as well; the boundaries below are the ones that remain live.
+- **Amended:** 2026-09-25 — [ADR-0052](0052-a-first-visit-leaves-contact-details-for-sales.md)
+  lets the first-visit contact form collect a visitor's details for Kelly's sales team. Nothing
+  else may.
 
 PTSBLite is Kelly Tube Systems' public marketing tool. The requirement remains absolute: no
 prices, costs, taxes, quotes, customer details, seller details, or dollar amounts of any kind.

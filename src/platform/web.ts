@@ -8,6 +8,11 @@ const SESSION_KEY = "ptsblite:autosave:v1";
  * migration, and a later deployment may be able to read what this one could not.
  */
 const UNREADABLE_KEY = "ptsblite:autosave:unreadable";
+/**
+ * Set once the contact form has been submitted in this browser. Only the fact
+ * is kept, never the details: they are for Kelly's sales team, not for storage.
+ */
+const CONTACT_KEY = "ptsblite:contact:v1";
 
 /**
  * The browser services used by PTSBLite.
@@ -39,6 +44,21 @@ export function webPlatform(): Platform {
           store.setItem(UNREADABLE_KEY, payload);
         }
         store.removeItem(SESSION_KEY);
+      }
+    },
+
+    contact: {
+      submitted: () => (storage()?.getItem(CONTACT_KEY) ?? null) !== null,
+      // Not sent anywhere yet. The email to sales goes through Resend once
+      // Kelly's own Cloudflare and Resend accounts exist (ADR-0052); until then
+      // submitting only opens the app.
+      submit: () => {
+        try {
+          storage()?.setItem(CONTACT_KEY, new Date().toISOString());
+        } catch {
+          // Storage refused: the visitor is let in now and asked again next visit.
+        }
+        return Promise.resolve({});
       }
     },
 

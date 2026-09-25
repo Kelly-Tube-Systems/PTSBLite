@@ -14,9 +14,12 @@ vi.mock("@/renderer/Viewport", () => ({
 
 const SESSION_KEY = "ptsblite:autosave:v1";
 const UNREADABLE_KEY = "ptsblite:autosave:unreadable";
+const CONTACT_KEY = "ptsblite:contact:v1";
 
 beforeEach(() => {
   window.localStorage.clear();
+  // Past the first-visit contact form, which has its own tests below.
+  window.localStorage.setItem(CONTACT_KEY, "2026-09-25T00:00:00.000Z");
 });
 
 afterEach(() => {
@@ -48,6 +51,31 @@ function createFirstDesign() {
 }
 
 describe("PTSBLite", () => {
+  it("asks a first visit for contact details before the welcome screen, and only once", async () => {
+    window.localStorage.removeItem(CONTACT_KEY);
+    const { unmount } = await renderApp();
+
+    expect(screen.queryByRole("button", { name: /Create design/ })).toBeNull();
+    const fill = (role: string, name: string, value: string) =>
+      fireEvent.change(screen.getByRole(role, { name }), { target: { value } });
+    fill("textbox", "First name", "Ada");
+    fill("textbox", "Last name", "Lovelace");
+    fill("textbox", "Company name", "Analytical Engines");
+    fill("textbox", "Phone number", "555-0100");
+    fill("textbox", "Email", "ada@example.com");
+    fill("combobox", "Industry", "Medical");
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+      await Promise.resolve();
+    });
+
+    expect(screen.getByRole("button", { name: /Create design/ })).toBeTruthy();
+    unmount();
+    await renderApp();
+    expect(screen.queryByRole("textbox", { name: "First name" })).toBeNull();
+    expect(screen.getByRole("button", { name: /Create design/ })).toBeTruthy();
+  });
+
   it("shows no money anywhere on screen", async () => {
     await renderApp();
     createFirstDesign();

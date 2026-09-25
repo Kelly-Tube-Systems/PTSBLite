@@ -93,3 +93,37 @@ describe("session persistence", () => {
     expect(window.localStorage.getItem(UNREADABLE_KEY)).toBe("first failure");
   });
 });
+
+describe("contact gate", () => {
+  const details = {
+    firstName: "Ada",
+    lastName: "Lovelace",
+    company: "Analytical Engines",
+    phone: "555-0100",
+    email: "ada@example.com",
+    industry: "Retail",
+    comments: ""
+  } as const;
+
+  it("remembers that this browser has submitted the form, but not what was in it", async () => {
+    const contact = webPlatform().contact;
+    expect(contact.submitted()).toBe(false);
+
+    await contact.submit(details);
+
+    expect(webPlatform().contact.submitted()).toBe(true);
+    expect(JSON.stringify({ ...window.localStorage })).not.toContain("ada@example.com");
+  });
+
+  it("lets the visitor in when storage refuses the write", async () => {
+    let result: { error?: string } = { error: "not run" };
+    withFailingWrites(new Error("denied"), () => {
+      void webPlatform()
+        .contact.submit(details)
+        .then((r) => (result = r));
+    });
+    await Promise.resolve();
+
+    expect(result).toEqual({});
+  });
+});
