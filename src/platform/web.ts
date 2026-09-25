@@ -52,16 +52,28 @@ export function webPlatform(): Platform {
     contact: {
       submitted: () => (storage()?.getItem(CONTACT_KEY) ?? null) !== null,
       details: () => readContactDetails(storage()?.getItem(CONTACT_KEY) ?? null),
-      // Not sent anywhere yet. The email to sales goes through Resend once
-      // Kelly's own Cloudflare and Resend accounts exist (ADR-0052); until then
-      // submitting only opens the app.
-      submit: (details) => {
+      // Posted to functions/api/contact.ts, which emails sales (ADR-0054). The
+      // visitor is let in only once it has gone, so a failed send is retried
+      // rather than lost.
+      submit: async (details) => {
+        let sent = false;
+        try {
+          const response = await fetch("/api/contact", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(details)
+          });
+          sent = response.ok;
+        } catch {
+          // Offline, or the request never completed. Same answer as a refusal.
+        }
+        if (!sent) return { error: "Your details could not be sent. Please try again." };
         try {
           storage()?.setItem(CONTACT_KEY, JSON.stringify(details));
         } catch {
           // Storage refused: the visitor is let in now and asked again next visit.
         }
-        return Promise.resolve({});
+        return {};
       }
     },
 

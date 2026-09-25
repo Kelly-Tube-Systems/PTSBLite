@@ -1,7 +1,10 @@
 # Deploying PTSBLite
 
-PTSBLite is a static site. It has no backend, makes no network request after load, and stores
-nothing outside the visitor's own browser.
+PTSBLite is a static site with one Pages Function, `functions/api/contact.ts`, which emails the
+first-visit contact form to sales through Resend
+([ADR-0054](adr/0054-the-contact-form-emails-sales-through-a-pages-function.md)). That post is the
+only request the page makes after load, and the app stores nothing outside the visitor's own
+browser.
 
 ## Cloudflare Pages project
 
@@ -28,6 +31,20 @@ PNPM_VERSION = 11.5.0
 `^24` in `package.json`'s `engines`, and `pnpm install` refuses outright rather than warning. It is
 a confusing failure because nothing in the log points at the version.
 
+One secret, set for **Production only**, as an encrypted variable:
+
+```
+RESEND_API_KEY = <the send-only key from Kelly's Resend account>
+```
+
+Leave it off Preview. Without it the Function sends nothing and lets the visitor in, so test
+submissions on a preview never reach sales.
+
+**Verify the sending domain in Resend before adding the secret.** Resend refuses to send from
+`kellytubesystems.com` until the DNS records its Domains page lists are in place. With the secret
+set and the domain unverified, every send fails and no first-time visitor can get past the contact
+form.
+
 ## Who can see what
 
 Production is public, from `main`. Every push that passes the required `verify` check is live.
@@ -41,8 +58,11 @@ browser before it shipped, but a branch that has not been reviewed should not ha
 `pnpm run build` runs `tsc --noEmit && vite build`, so a type error fails the deploy before
 anything is published.
 
+Pages builds `functions/` on its own, from the repository root; it is not part of `dist/`. The
+Workers flow ignores that directory, which is one more reason the project must be a Pages one.
+
 `web-public/_headers` is copied into the output. It carries the Content-Security-Policy and the
-cache rules, and explains itself — including why `connect-src 'none'` is a statement of fact rather
+cache rules, and explains itself — including why `connect-src 'self'` is a statement of fact rather
 than an aspiration.
 
 ## Before changing the hostname
@@ -69,4 +89,5 @@ pnpm preview   # serve it on http://localhost:4173
 
 `preview` serves the built output, not the dev server, so it is the closest thing to what
 Cloudflare publishes. It does **not** apply `_headers` — the CSP is only enforced once Cloudflare is
-serving it, so a policy violation will not show up locally.
+serving it, so a policy violation will not show up locally. Nor does it run the Function: `pnpm dev`
+and `pnpm preview` answer `/api/contact` themselves and send nothing.

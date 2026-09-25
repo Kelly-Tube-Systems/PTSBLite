@@ -6,6 +6,8 @@
   details, for this form only. Its rule against money stands.
 - **Amended:** 2026-09-25 — [ADR-0053](0053-the-bom-says-who-it-was-prepared-for.md) keeps the
   submitted details in the browser and prints them on the BOM.
+- **Amended:** 2026-09-25 — [ADR-0054](0054-the-contact-form-emails-sales-through-a-pages-function.md)
+  wires the email.
 
 ## Context
 

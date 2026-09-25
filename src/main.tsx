@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-// Self-hosted because the production CSP allows no network requests.
+// Self-hosted because the production CSP allows no requests to other sites.
 import "@fontsource-variable/geist/wght.css";
 import App from "@/App";
 import { webPlatform } from "@/platform/web";

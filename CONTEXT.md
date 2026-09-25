@@ -190,7 +190,7 @@ than waiting for review:
 - `src/components/` — React UI. Each component's styling sits in a colocated `.css` file beside it;
   see ADR-0009 for the rule and the few runtime-value exceptions.
 - `src/platform/` — browser services kept behind a testable boundary: session storage, PDF
-  downloads, and the details the first-visit contact form was submitted with.
+  downloads, and the first-visit contact form's post and the details it was submitted with.
 
 The repository contains no pricing, quote, seller, customer, tax, or other commercial model.
 `BomRow` cannot hold a price, the catalog loader rejects price data, and the application exports a
