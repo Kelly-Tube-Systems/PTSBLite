@@ -8,7 +8,8 @@ PTSBLite is the repository's only product
 in the browser and as an unsigned Windows desktop app
 ([ADR-0051](docs/adr/0051-ptsblite-also-ships-as-an-unsigned-windows-app.md)). Do not add a macOS
 or Linux build, code signing, pricing, quotes, customer data, tax, or other commercial
-functionality.
+functionality. The one exception is the first-visit contact form
+([ADR-0052](docs/adr/0052-a-first-visit-leaves-contact-details-for-sales.md)).
 
 ## Commands
 

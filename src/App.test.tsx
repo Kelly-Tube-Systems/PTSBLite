@@ -47,6 +47,7 @@ function stubPlatform(): Platform {
       clear: () => undefined,
       preserveUnreadable: () => undefined
     },
+    contact: { submitted: () => true, submit: () => Promise.resolve({}) },
     savePdf: vi.fn().mockResolvedValue({})
   };
 }

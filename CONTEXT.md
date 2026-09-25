@@ -189,13 +189,15 @@ than waiting for review:
   `three-utils` for the palette and GPU disposal, and `Viewport.tsx` for the React lifecycle.
 - `src/components/` — React UI. Each component's styling sits in a colocated `.css` file beside it;
   see ADR-0009 for the rule and the few runtime-value exceptions.
-- `src/platform/` — browser services kept behind a testable boundary: session storage and PDF
-  downloads.
+- `src/platform/` — browser services kept behind a testable boundary: session storage, PDF
+  downloads, and whether the first-visit contact form has been submitted.
 
 The repository contains no pricing, quote, seller, customer, tax, or other commercial model.
 `BomRow` cannot hold a price, the catalog loader rejects price data, and the application exports a
 bill of materials rather than a quote
-([ADR-0011](docs/adr/0011-lite-has-no-commercial-data-path.md)).
+([ADR-0011](docs/adr/0011-lite-has-no-commercial-data-path.md)). The first-visit contact form is
+the one place a visitor's details are collected, for Kelly's sales team
+([ADR-0052](docs/adr/0052-a-first-visit-leaves-contact-details-for-sales.md)).
 
 `DesignState` carries a `SparseGrid` of cell occupancy alongside its parts and obstacles. **These
 must agree.** A part present in one but not the other renders and appears in the BOM yet cannot be

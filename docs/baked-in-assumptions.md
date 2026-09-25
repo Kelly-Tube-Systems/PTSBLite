@@ -263,6 +263,11 @@ allows is built by hand.
 served as static files with a `connect-src 'none'` policy: nothing it does reaches the network
 after load, so there is also no error reporting from production.
 
+**The contact form sends nothing yet.** A first visit must fill it in, but submitting only records
+in the browser that it was filled in. Emailing it to sales through Resend waits on Kelly's own
+Cloudflare and Resend accounts
+([ADR-0052](adr/0052-a-first-visit-leaves-contact-details-for-sales.md)).
+
 **A styled "you have unsaved work" prompt in the browser.** A browser offers only `beforeunload`,
 whose message cannot be written or styled. Lite registers it solely while a write to storage has
 failed, because autosave means there is otherwise nothing to lose.

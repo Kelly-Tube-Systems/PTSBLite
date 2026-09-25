@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { ContactForm } from "@/components/ContactForm";
 import { ControlsLegend } from "@/components/ControlsLegend";
 import { QuickStartGuide } from "@/components/QuickStartGuide";
 import { LeftRail } from "@/components/LeftRail";
@@ -153,6 +154,9 @@ export default function App({ platform }: AppProps) {
   // pattern above (one reducer, rules stated once) rather than growing this
   // list and holding the coupling by hand.
 
+  // A first visit fills in the contact form before anything else (ADR-0052).
+  // The welcome screen waits behind it, so nothing below needs to know.
+  const [contactNeeded, setContactNeeded] = useState(() => !platform.contact.submitted());
   // Every visit starts on the welcome screen: a continue/new/delete choice when
   // a design is stored, the setup form otherwise. Null once answered. "New"
   // from the top bar reopens it, without the greeting.
@@ -782,13 +786,23 @@ export default function App({ platform }: AppProps) {
           onExport={exportBom}
         />
       )}
-      {welcome && (
-        <WelcomeScreen
-          stored={welcome.stored}
-          greeting={welcome.greeting}
-          onContinue={continueStored}
-          onCreate={createDesign}
+      {contactNeeded ? (
+        <ContactForm
+          onSubmit={async (details) => {
+            const result = await platform.contact.submit(details);
+            if (!result.error) setContactNeeded(false);
+            return result;
+          }}
         />
+      ) : (
+        welcome && (
+          <WelcomeScreen
+            stored={welcome.stored}
+            greeting={welcome.greeting}
+            onContinue={continueStored}
+            onCreate={createDesign}
+          />
+        )
       )}
       {confirm && (
         <ConfirmDialog

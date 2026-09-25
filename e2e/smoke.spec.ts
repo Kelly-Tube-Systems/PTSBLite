@@ -21,8 +21,19 @@ function collectPageErrors(page: Page): Error[] {
   return errors;
 }
 
+/**
+ * Mark the first-visit contact form as already submitted, for tests about what
+ * comes after it. Runs before every navigation, reloads included.
+ */
+async function skipContactForm(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("ptsblite:contact:v1", "2026-09-25T00:00:00.000Z");
+  });
+}
+
 /** Answer the welcome screen's setup form with its defaults. */
 async function createDesign(page: Page): Promise<void> {
+  await skipContactForm(page);
   await page.goto("/");
   await page.getByRole("button", { name: "Create design" }).click();
 }
@@ -46,7 +57,14 @@ test("boots, renders the viewport, and places a part", async ({ page }) => {
   const errors = collectPageErrors(page);
 
   await page.goto("/");
-  await expect(page.getByText("Welcome to PTSBLite")).toBeVisible();
+  // A first visit fills in the contact form before anything else.
+  await page.getByLabel("First name").fill("Ada");
+  await page.getByLabel("Last name").fill("Lovelace");
+  await page.getByLabel("Company name").fill("Analytical Engines");
+  await page.getByLabel("Phone number").fill("555-0100");
+  await page.getByLabel("Email").fill("ada@example.com");
+  await page.getByLabel("Industry").selectOption("Retail");
+  await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("button", { name: "Create design" }).click();
 
   await expect(page.locator(".viewport-canvas canvas")).toBeVisible();
@@ -225,6 +243,7 @@ test("lets a short window scroll down to the rest of the setup form", async ({ p
   // no way to scroll to it, which left the app unstartable (Trello ui0X38fE).
   const height = 320;
   await page.setViewportSize({ width: 1000, height });
+  await skipContactForm(page);
   await page.goto("/");
 
   const button = page.getByRole("button", { name: "Create design" });
