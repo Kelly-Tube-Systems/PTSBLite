@@ -6,7 +6,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/chriscorbell/PTSBLite"
+    "url": "https://github.com/Kelly-Tube-Systems/PTSBLite"
   },
   "type": "module",
   "packageManager": "pnpm@11.5.0",
