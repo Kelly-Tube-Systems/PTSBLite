@@ -489,6 +489,20 @@ describe("who the BOM was prepared for", () => {
     expect(quiet).not.toContain("Comments");
   });
 
+  it("keeps the line breaks the visitor typed in the comments", async () => {
+    const comments = "Two stations\non the second floor.\r\n\r\nCall first.";
+    const bytes = await generateBomPdf(designWith(sampleParts), { customer: { ...ada, comments } });
+    const lines = drawnLines(streamShowing(bytes, PARTS_LIST_PAGE)).map((l) => l.text);
+
+    const first = lines.indexOf("Two stations");
+    expect(lines.slice(first, first + 3)).toEqual([
+      "Two stations",
+      "on the second floor.",
+      "Call first."
+    ]);
+    expect(lines.join(" ")).not.toContain("?");
+  });
+
   it("cuts long comments short rather than running into the disclaimer", async () => {
     // The long run's parts list is the tallest the sheet draws, and the form
     // puts no limit on the comments.

@@ -364,7 +364,9 @@ function drawDisclaimer(p: Painter, bannerTop: number): number {
  *
  * Headed like the parts list, so the two read as sections of one form. The
  * comments are the only field without a natural length, so they are the one
- * cut short, with an ellipsis, when they would run into the disclaimer.
+ * cut short, with an ellipsis, when they would run into the disclaimer. Each
+ * line the visitor typed starts a new one here; blank lines are dropped, since
+ * the room is short.
  */
 function drawCustomer(p: Painter, customer: ContactDetails, top: number, floor: number): void {
   const right = PAGE_WIDTH - MARGIN_X;
@@ -398,7 +400,9 @@ function drawCustomer(p: Painter, customer: ContactDetails, top: number, floor: 
     }
   }
 
-  const comments = wrapText(p.sans, customer.comments, CUSTOMER_SIZE, measure);
+  const comments = customer.comments
+    .split(/\r?\n/)
+    .flatMap((line) => wrapText(p.sans, line, CUSTOMER_SIZE, measure));
   if (comments.length === 0) return;
   const room = Math.max(1, Math.floor((y - floor) / CUSTOMER_LEADING) + 1);
   const shown = comments.slice(0, room);
