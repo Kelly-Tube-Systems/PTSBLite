@@ -2,7 +2,7 @@ import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, type Connect, type Plugin } from "vite";
 
 // PTSBLite is the repository's only application and deployment target.
 
@@ -30,6 +30,24 @@ function buildId(): string {
   }
 }
 
+/**
+ * Stands in for functions/api/contact.ts, which only runs on Cloudflare. It
+ * answers the contact form as a deployment without a Resend key does, sending
+ * nothing, so a first visit to `pnpm dev` or `pnpm preview` gets past it.
+ */
+function contactStandIn(): Plugin {
+  const answer: Connect.NextHandleFunction = (req, res, next) => {
+    if (req.method !== "POST" || req.url !== "/api/contact") return next();
+    res.statusCode = 204;
+    res.end();
+  };
+  return {
+    name: "ptsblite-contact-stand-in",
+    configureServer: (server) => void server.middlewares.use(answer),
+    configurePreviewServer: (server) => void server.middlewares.use(answer)
+  };
+}
+
 export default defineConfig({
   root: ".",
   publicDir: resolve(__dirname, "web-public"),
@@ -47,5 +65,5 @@ export default defineConfig({
     outDir: "dist",
     emptyOutDir: true
   },
-  plugins: [react()]
+  plugins: [react(), contactStandIn()]
 });

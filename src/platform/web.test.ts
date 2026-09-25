@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { webPlatform } from "@/platform/web";
 
 const SESSION_KEY = "ptsblite:autosave:v1";
@@ -10,14 +10,15 @@ beforeEach(() => {
 });
 
 /**
- * Run `body` with `localStorage` replaced by one that throws on write.
+ * Run `body`, and anything it awaits, with `localStorage` replaced by one that
+ * throws on write.
  *
  * The whole object is swapped rather than `setItem` spied on. happy-dom's
  * storage does not survive a spy being installed and restored on it — writes
  * silently stop working for every test that follows, which shows up as a wrong
  * assertion somewhere unrelated rather than as an error here.
  */
-function withFailingWrites(error: Error, body: () => void): void {
+async function withFailingWrites(error: Error, body: () => unknown): Promise<void> {
   const original = Object.getOwnPropertyDescriptor(window, "localStorage");
   const failing = {
     getItem: () => null,
@@ -31,7 +32,7 @@ function withFailingWrites(error: Error, body: () => void): void {
   };
   Object.defineProperty(window, "localStorage", { configurable: true, value: failing });
   try {
-    body();
+    await body();
   } finally {
     if (original) Object.defineProperty(window, "localStorage", original);
   }
@@ -56,11 +57,11 @@ describe("session persistence", () => {
     expect(store.load()).toBeNull();
   });
 
-  it("reports a refused write rather than throwing", () => {
+  it("reports a refused write rather than throwing", async () => {
     const quota = new Error("full");
     quota.name = "QuotaExceededError";
 
-    withFailingWrites(quota, () => {
+    await withFailingWrites(quota, () => {
       const result = session().store("{}");
 
       // The caller keeps the design dirty and says so, so a failed write is
@@ -106,15 +107,46 @@ describe("contact gate", () => {
     comments: ""
   } as const;
 
-  it("remembers what this browser submitted, for the BOM to print", async () => {
+  /** Stand in for functions/api/contact.ts, answering every post with `status`. */
+  function contactEndpoint(status: number) {
+    const fetch = vi.fn(() => Promise.resolve(new Response(null, { status })));
+    vi.stubGlobal("fetch", fetch);
+    return fetch;
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("sends the details and remembers them, for the BOM to print", async () => {
+    const fetch = contactEndpoint(204);
     const contact = webPlatform().contact;
     expect(contact.submitted()).toBe(false);
     expect(contact.details()).toBeNull();
 
-    await contact.submit(details);
+    expect(await contact.submit(details)).toEqual({});
 
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/contact");
+    expect(JSON.parse(init.body as string)).toEqual(details);
     expect(webPlatform().contact.submitted()).toBe(true);
     expect(webPlatform().contact.details()).toEqual(details);
+  });
+
+  it("keeps the visitor at the form when the details were not sent", async () => {
+    // Letting them in would lose the details: the form never comes back.
+    contactEndpoint(502);
+    const refused = await webPlatform().contact.submit(details);
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.reject(new TypeError("Failed to fetch")))
+    );
+    const offline = await webPlatform().contact.submit(details);
+
+    expect(refused.error).toMatch(/could not be sent/i);
+    expect(offline.error).toMatch(/could not be sent/i);
+    expect(webPlatform().contact.submitted()).toBe(false);
   });
 
   it("counts a browser that stored only the time as submitted, with no details", () => {
@@ -135,13 +167,12 @@ describe("contact gate", () => {
   });
 
   it("lets the visitor in when storage refuses the write", async () => {
+    contactEndpoint(204);
     let result: { error?: string } = { error: "not run" };
-    withFailingWrites(new Error("denied"), () => {
-      void webPlatform()
-        .contact.submit(details)
-        .then((r) => (result = r));
+
+    await withFailingWrites(new Error("denied"), async () => {
+      result = await webPlatform().contact.submit(details);
     });
-    await Promise.resolve();
 
     expect(result).toEqual({});
   });

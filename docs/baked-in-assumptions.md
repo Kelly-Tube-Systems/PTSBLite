@@ -260,14 +260,14 @@ The visitor cannot ask for a run at some other height, or for a flat one; more r
 allows is built by hand.
 
 **Any collaboration, cloud, account, or telemetry surface.** Deliberately. PTSBLite is
-served as static files with a `connect-src 'none'` policy: nothing it does reaches the network
-after load, so there is also no error reporting from production.
+served as static files with a `connect-src 'self'` policy. The one request after load is the
+first-visit contact form posting to the site's own `/api/contact`
+([ADR-0054](adr/0054-the-contact-form-emails-sales-through-a-pages-function.md)); nothing else
+reaches the network, so there is also no error reporting from production.
 
-**The contact form and the BOM are emailed to no one yet.** A first visit must fill in the form,
-but submitting only keeps the details in the browser, for the BOM to print
-([ADR-0053](adr/0053-the-bom-says-who-it-was-prepared-for.md)). Emailing the form, and the BOM
-when a design is finalized, to sales through Resend waits on Kelly's own Cloudflare and Resend
-accounts ([ADR-0052](adr/0052-a-first-visit-leaves-contact-details-for-sales.md)).
+**The BOM is emailed to no one.** The contact form goes to sales through Resend
+([ADR-0054](adr/0054-the-contact-form-emails-sales-through-a-pages-function.md)), but a finalized
+design's BOM only downloads. Emailing it too is not built.
 
 **A styled "you have unsaved work" prompt in the browser.** A browser offers only `beforeunload`,
 whose message cannot be written or styled. Lite registers it solely while a write to storage has

@@ -2,15 +2,16 @@
 #
 # A real header rather than a meta tag, which cannot set `frame-ancestors`.
 #
-# `connect-src 'none'` is not aspirational. Fonts are self-hosted through
+# `connect-src 'self'` is not aspirational. Fonts are self-hosted through
 # @fontsource-variable/geist, the parts catalog is bundled from
 # src/data/parts.json, designs autosave to localStorage, and the BOM PDF is
-# generated in the page. Nothing here makes a network request after load, so if
-# this policy ever needs loosening, something has been added that should have
-# been discussed first.
+# generated in the page. The one request after load is the first-visit contact
+# form posting to this site's own /api/contact (ADR-0054), so if this policy
+# ever needs loosening further, something has been added that should have been
+# discussed first.
 
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Cross-Origin-Opener-Policy: same-origin
