@@ -40,7 +40,7 @@ export default defineConfig({
         test: {
           name: "domain",
           environment: "node",
-          include: ["src/**/*.test.ts"],
+          include: ["src/**/*.test.ts", "functions/**/*.test.ts"],
           exclude: [PLATFORM_TESTS]
         }
       },

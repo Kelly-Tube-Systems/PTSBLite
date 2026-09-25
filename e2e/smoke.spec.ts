@@ -64,7 +64,11 @@ test("boots, renders the viewport, and places a part", async ({ page }) => {
   await page.getByLabel("Phone number").fill("555-0100");
   await page.getByLabel("Email").fill("ada@example.com");
   await page.getByLabel("Industry").selectOption("Retail");
+  // `pnpm preview` answers for the Pages Function, so this proves the page
+  // posts the details to it and the CSP lets it.
+  const posted = page.waitForRequest("**/api/contact");
   await page.getByRole("button", { name: "Continue" }).click();
+  expect((await posted).postDataJSON()).toMatchObject({ email: "ada@example.com" });
   await page.getByRole("button", { name: "Create design" }).click();
 
   await expect(page.locator(".viewport-canvas canvas")).toBeVisible();

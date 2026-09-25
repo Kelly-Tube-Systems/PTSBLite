@@ -27,6 +27,7 @@ beforeEach(() => {
 afterEach(() => {
   window.localStorage.clear();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 /** One stock length of straight tube, for the BOM rows that count feet. */
@@ -55,6 +56,11 @@ function createFirstDesign() {
 describe("PTSBLite", () => {
   it("asks a first visit for contact details before the welcome screen, and only once", async () => {
     window.localStorage.removeItem(CONTACT_KEY);
+    // Stands in for functions/api/contact.ts accepting the details.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(new Response(null, { status: 204 })))
+    );
     const { unmount } = await renderApp();
 
     expect(screen.queryByRole("button", { name: /Create design/ })).toBeNull();
@@ -66,12 +72,9 @@ describe("PTSBLite", () => {
     fill("textbox", "Phone number", "555-0100");
     fill("textbox", "Email", "ada@example.com");
     fill("combobox", "Industry", "Medical");
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-      await Promise.resolve();
-    });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
-    expect(screen.getByRole("button", { name: /Create design/ })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: /Create design/ })).toBeTruthy();
     unmount();
     await renderApp();
     expect(screen.queryByRole("textbox", { name: "First name" })).toBeNull();
