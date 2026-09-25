@@ -40,7 +40,7 @@ Deployment settings, and how the Windows app is released, are in
 | `src/data/` | The part catalog, and the Kel2020 geometry baked out of KTS's CAD |
 | `tools/` | Hand-run authoring scripts, outside the app and its dependencies |
 | `functions/` | The Cloudflare Pages Functions that email the contact form and each downloaded BOM to sales |
-| `desktop/` | The Windows app: its Electron main process, installer config, and smoke test |
+| `desktop/` | The Windows app: its Electron main process and preload script, installer config, and smoke test |
 | `web-public/` | Production headers copied into the static build |
 | `docs/adr/` | Decisions with lasting consequences |
 

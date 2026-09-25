@@ -87,6 +87,37 @@ test("opens on the welcome screen, from the origin its autosave lives in", async
   await app.close();
 });
 
+test("gives the page its line to the update check", async () => {
+  // The update prompt is the page's, so a copy whose preload or handlers broke
+  // would download updates and never offer them. Updates are off here, so
+  // updateReady waits and installUpdate does nothing; an unanswered call would
+  // reject at once instead.
+  const { app, page, errors } = await launch(freshProfile());
+  await expect(page.getByRole("button", { name: "Create design" })).toBeVisible();
+
+  const answers = await page.evaluate(async () => {
+    const bridge = window.ptsblite;
+    if (!bridge) return "no bridge";
+    const waiting = await Promise.race([
+      bridge.updateReady().then(
+        (version) => `offered ${version}`,
+        (error: Error) => `refused: ${error.message}`
+      ),
+      new Promise<string>((resolve) => setTimeout(() => resolve("waiting"), 1000))
+    ]);
+    const install = await bridge.installUpdate().then(
+      () => "answered",
+      (error: Error) => `refused: ${error.message}`
+    );
+    return `${waiting}, ${install}`;
+  });
+  expect(answers).toBe("waiting, answered");
+  await expect(page.getByRole("dialog", { name: "Update ready" })).toHaveCount(0);
+
+  expect(errors).toEqual([]);
+  await app.close();
+});
+
 test("keeps the design across a restart", async () => {
   const profile = freshProfile();
   const first = await launch(profile);

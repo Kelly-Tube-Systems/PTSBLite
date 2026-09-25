@@ -1,0 +1,20 @@
+.update-prompt__icon {
+  display: flex;
+  color: var(--accent);
+}
+
+.update-prompt__message {
+  padding: 18px 18px 4px;
+  font-size: 13px;
+  color: var(--text-mut);
+  line-height: 1.5;
+}
+
+.update-prompt__message p {
+  margin: 0 0 8px;
+}
+
+.update-prompt__lead {
+  color: var(--text);
+  font-weight: 600;
+}
