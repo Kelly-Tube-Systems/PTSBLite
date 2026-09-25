@@ -58,8 +58,10 @@ export async function onRequestPost({
     })
   });
   if (!sent.ok) {
-    // The status and Resend's reason reach the Function's logs, not the visitor.
-    console.error(`Resend refused the contact email: ${sent.status} ${await sent.text()}`);
+    // Only the status and Resend's error name reach the Function's logs. Its
+    // message can quote the fields it rejected, and the visitor's details must
+    // not be kept anywhere but their browser and the email itself.
+    console.error(`Resend refused the contact email: ${sent.status} ${await errorName(sent)}`);
     return status(502);
   }
   return status(204);
@@ -86,6 +88,17 @@ function emailText(details: ContactDetails): string {
     "Comments:",
     details.comments.trim() === "" ? "(none)" : details.comments
   ].join("\n");
+}
+
+/** Resend's machine-readable error name, such as `validation_error`, and nothing else. */
+async function errorName(response: Response): Promise<string> {
+  try {
+    const { name } = (await response.json()) as { name?: unknown };
+    if (typeof name === "string" && /^[a-z_]+$/.test(name)) return name;
+  } catch {
+    // Not JSON: there is no name to report.
+  }
+  return "unknown_error";
 }
 
 function oneLine(text: string): string {
