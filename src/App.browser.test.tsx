@@ -56,14 +56,14 @@ describe("PTSBLite", () => {
     const { unmount } = await renderApp();
 
     expect(screen.queryByRole("button", { name: /Create design/ })).toBeNull();
-    const fill = (name: string, value: string) =>
-      fireEvent.change(screen.getByLabelText(name), { target: { value } });
-    fill("First name", "Ada");
-    fill("Last name", "Lovelace");
-    fill("Company name", "Analytical Engines");
-    fill("Phone number", "555-0100");
-    fill("Email", "ada@example.com");
-    fill("Industry", "Medical");
+    const fill = (role: string, name: string, value: string) =>
+      fireEvent.change(screen.getByRole(role, { name }), { target: { value } });
+    fill("textbox", "First name", "Ada");
+    fill("textbox", "Last name", "Lovelace");
+    fill("textbox", "Company name", "Analytical Engines");
+    fill("textbox", "Phone number", "555-0100");
+    fill("textbox", "Email", "ada@example.com");
+    fill("combobox", "Industry", "Medical");
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Continue" }));
       await Promise.resolve();
@@ -72,7 +72,7 @@ describe("PTSBLite", () => {
     expect(screen.getByRole("button", { name: /Create design/ })).toBeTruthy();
     unmount();
     await renderApp();
-    expect(screen.queryByLabelText("First name")).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "First name" })).toBeNull();
     expect(screen.getByRole("button", { name: /Create design/ })).toBeTruthy();
   });
 

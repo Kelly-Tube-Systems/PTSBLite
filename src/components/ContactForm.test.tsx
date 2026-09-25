@@ -3,17 +3,20 @@ import { describe, expect, it, vi } from "vitest";
 import { ContactForm } from "@/components/ContactForm";
 import { INDUSTRIES } from "@/platform/types";
 
-const REQUIRED = ["First name", "Last name", "Company name", "Phone number", "Email", "Industry"];
+const REQUIRED = ["First name", "Last name", "Company name", "Phone number", "Email"];
+
+/** Fields are found by accessible name, which leaves out the required mark. */
+const industry = () => screen.getByRole<HTMLSelectElement>("combobox", { name: "Industry" });
 
 function fillIn() {
   const fill = (name: string, value: string) =>
-    fireEvent.change(screen.getByLabelText(name), { target: { value } });
+    fireEvent.change(screen.getByRole("textbox", { name }), { target: { value } });
   fill("First name", " Ada ");
   fill("Last name", "Lovelace");
   fill("Company name", "Analytical Engines");
   fill("Phone number", "555-0100");
   fill("Email", "ada@example.com");
-  fill("Industry", "Bar / Restaurant");
+  fireEvent.change(industry(), { target: { value: "Bar / Restaurant" } });
 }
 
 async function submit() {
@@ -28,21 +31,32 @@ describe("ContactForm", () => {
     render(<ContactForm onSubmit={vi.fn()} />);
 
     for (const name of REQUIRED) {
-      expect(screen.getByLabelText(name)).toHaveProperty("required", true);
+      expect(screen.getByRole("textbox", { name })).toHaveProperty("required", true);
     }
-    expect(screen.getByLabelText("Additional comments (optional)")).toHaveProperty(
+    expect(industry()).toHaveProperty("required", true);
+    expect(screen.getByRole("textbox", { name: "Additional comments (optional)" })).toHaveProperty(
       "required",
       false
     );
-    expect(screen.getByLabelText("Email")).toHaveProperty("type", "email");
+    expect(screen.getByRole("textbox", { name: "Email" })).toHaveProperty("type", "email");
+  });
+
+  it("marks exactly the required fields with an asterisk", () => {
+    render(<ContactForm onSubmit={vi.fn()} />);
+
+    const labels = Array.from(document.querySelectorAll("label"));
+    expect(labels).toHaveLength(REQUIRED.length + 2);
+    for (const label of labels) {
+      const control = label.querySelector<HTMLInputElement>("input, select, textarea");
+      const mark = label.querySelector(".contact__required");
+      expect(mark?.textContent === "*").toBe(control?.required);
+    }
   });
 
   it("offers the client's industries in the client's order", () => {
     render(<ContactForm onSubmit={vi.fn()} />);
 
-    const options = Array.from(screen.getByLabelText<HTMLSelectElement>("Industry").options).filter(
-      (option) => !option.disabled
-    );
+    const options = Array.from(industry().options).filter((option) => !option.disabled);
     expect(options.map((option) => option.value)).toEqual([...INDUSTRIES]);
   });
 

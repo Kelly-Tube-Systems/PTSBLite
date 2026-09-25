@@ -23,6 +23,15 @@ export type ContactFormProps = {
   onSubmit: (details: ContactDetails) => Promise<{ error?: string }>;
 };
 
+/** The red asterisk on a required field's label. The input's own `required` tells assistive tech. */
+function RequiredMark() {
+  return (
+    <span className="contact__required" aria-hidden="true">
+      *
+    </span>
+  );
+}
+
 /**
  * The form a visitor fills in before using the app for the first time
  * (ADR-0052). It cannot be dismissed. Every field is required except the
@@ -78,12 +87,15 @@ export function ContactForm({ onSubmit }: ContactFormProps) {
         </div>
         <div className="contact__body">
           <p className="contact__intro">
-            Tell us a little about yourself to start planning your system.
+            Please submit the required information below before proceeding to the builder.
           </p>
           <div className="contact__fields">
             {TEXT_FIELDS.map(({ key, label, type, autoComplete }) => (
               <label key={key} className="contact__field">
-                <span className="contact__label">{label}</span>
+                <span className="contact__label">
+                  {label}
+                  <RequiredMark />
+                </span>
                 <input
                   className="contact__input"
                   name={key}
@@ -96,7 +108,10 @@ export function ContactForm({ onSubmit }: ContactFormProps) {
               </label>
             ))}
             <label className="contact__field">
-              <span className="contact__label">Industry</span>
+              <span className="contact__label">
+                Industry
+                <RequiredMark />
+              </span>
               <select
                 className="contact__input"
                 name="industry"

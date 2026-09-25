@@ -46,6 +46,11 @@
   color: var(--text-mut);
 }
 
+.contact__required {
+  margin-left: 2px;
+  color: var(--danger);
+}
+
 .contact__input {
   width: 100%;
   padding: 8px;
