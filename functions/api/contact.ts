@@ -68,8 +68,10 @@ export async function sendToSales(
     body: JSON.stringify({ from: FROM, to: [env.CONTACT_TO || SALES], ...email })
   });
   if (!sent.ok) {
-    // The status and Resend's reason reach the Function's logs, not the visitor.
-    console.error(`Resend refused the ${what} email: ${sent.status} ${await sent.text()}`);
+    // Only the status and Resend's error name reach the Function's logs. Its
+    // message can quote the fields it rejected, and the visitor's details must
+    // not be kept anywhere but their browser and the email itself.
+    console.error(`Resend refused the ${what} email: ${sent.status} ${await errorName(sent)}`);
     return status(502);
   }
   return status(204);
@@ -99,6 +101,17 @@ export function detailLines(details: ContactDetails): string[] {
     "Comments:",
     details.comments.trim() === "" ? "(none)" : details.comments
   ];
+}
+
+/** Resend's machine-readable error name, such as `validation_error`, and nothing else. */
+async function errorName(response: Response): Promise<string> {
+  try {
+    const { name } = (await response.json()) as { name?: unknown };
+    if (typeof name === "string" && /^[a-z_]+$/.test(name)) return name;
+  } catch {
+    // Not JSON: there is no name to report.
+  }
+  return "unknown_error";
 }
 
 export function oneLine(text: string): string {
