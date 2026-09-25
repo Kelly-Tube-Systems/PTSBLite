@@ -6,6 +6,9 @@ first-visit contact form to sales through Resend
 only request the page makes after load, and the app stores nothing outside the visitor's own
 browser.
 
+Production is **https://ptsblite.kellytubesystems.com**, a CNAME to `ptsblite-2kg.pages.dev` in
+Kelly's own DNS. The Pages project and the Resend account both belong to Kelly Tube Systems.
+
 ## Cloudflare Pages project
 
 Created through **Workers & Pages → Create → Pages → Connect to Git**. Not the Workers flow, which
@@ -67,12 +70,13 @@ than an aspiration.
 
 ## Before changing the hostname
 
-**Pick the final hostname before telling anyone about the tool.**
+**The hostname is `ptsblite.kellytubesystems.com`, and it is permanent.**
 
 A visitor's design autosaves to `localStorage`, which is scoped to the origin
-([ADR-0012](adr/0012-lite-persists-a-session-not-files.md)). Moving from `*.pages.dev` to a custom
-domain, or renaming the project, makes every stored design unreachable — silently, because the new
-origin simply has nothing in it. There is no migration path and there is nothing to warn with.
+([ADR-0012](adr/0012-lite-persists-a-session-not-files.md)). Moving to another hostname makes every
+stored design unreachable — silently, because the new origin simply has nothing in it. There is no
+migration path and there is nothing to warn with. The same goes for anyone using the
+`ptsblite-2kg.pages.dev` address directly: it serves the same build, but its designs are its own.
 
 ## What the deployed build calls itself
 
