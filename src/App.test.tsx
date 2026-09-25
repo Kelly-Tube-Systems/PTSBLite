@@ -48,7 +48,8 @@ function stubPlatform(): Platform {
       preserveUnreadable: () => undefined
     },
     contact: { submitted: () => true, details: () => null, submit: () => Promise.resolve({}) },
-    savePdf: vi.fn().mockResolvedValue({})
+    savePdf: vi.fn().mockResolvedValue({}),
+    emailBom: vi.fn().mockResolvedValue({})
   };
 }
 

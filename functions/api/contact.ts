@@ -6,7 +6,7 @@ import { readContactDetails, type ContactDetails } from "../../src/domain/contac
  * the browser, so the Resend key never reaches the page.
  */
 
-type Env = {
+export type Env = {
   /** A send-only key from Kelly's Resend account. Set on Production only. */
   RESEND_API_KEY?: string;
   /**
@@ -37,8 +37,26 @@ export async function onRequestPost({
   const details = body.length <= MAX_BODY ? readContactDetails(body) : null;
   if (!details || !complete(details)) return status(400);
 
-  // Previews and any deployment without the key open the app and send
-  // nothing, so a preview's test submissions never reach sales.
+  return sendToSales(env, "contact", {
+    reply_to: details.email,
+    subject: oneLine(
+      `PTSBLite contact: ${details.firstName} ${details.lastName}, ${details.company}`
+    ),
+    text: emailText(details)
+  });
+}
+
+/**
+ * Sends `email` from PTSBLite to sales, or to `CONTACT_TO` while it is set, and
+ * answers the page: 204 once Resend has taken it, 502 when Resend refuses.
+ */
+export async function sendToSales(
+  env: Env,
+  what: string,
+  email: Record<string, unknown>
+): Promise<Response> {
+  // Previews and any deployment without the key answer as if it had gone and
+  // send nothing, so a preview's test submissions never reach sales.
   if (!env.RESEND_API_KEY) return status(204);
 
   const sent = await fetch("https://api.resend.com/emails", {
@@ -47,25 +65,17 @@ export async function onRequestPost({
       Authorization: `Bearer ${env.RESEND_API_KEY}`,
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({
-      from: FROM,
-      to: [env.CONTACT_TO || SALES],
-      reply_to: details.email,
-      subject: oneLine(
-        `PTSBLite contact: ${details.firstName} ${details.lastName}, ${details.company}`
-      ),
-      text: emailText(details)
-    })
+    body: JSON.stringify({ from: FROM, to: [env.CONTACT_TO || SALES], ...email })
   });
   if (!sent.ok) {
     // The status and Resend's reason reach the Function's logs, not the visitor.
-    console.error(`Resend refused the contact email: ${sent.status} ${await sent.text()}`);
+    console.error(`Resend refused the ${what} email: ${sent.status} ${await sent.text()}`);
     return status(502);
   }
   return status(204);
 }
 
-function complete(details: ContactDetails): boolean {
+export function complete(details: ContactDetails): boolean {
   const { comments: _optional, industry: _checked, ...required } = details;
   return (
     Object.values(required).every((value) => value.trim() !== "") &&
@@ -74,9 +84,12 @@ function complete(details: ContactDetails): boolean {
 }
 
 function emailText(details: ContactDetails): string {
+  return ["A visitor filled in the PTSBLite contact form.", "", ...detailLines(details)].join("\n");
+}
+
+/** The details as the contact email lists them, for the BOM email to list the same way. */
+export function detailLines(details: ContactDetails): string[] {
   return [
-    "A visitor filled in the PTSBLite contact form.",
-    "",
     `Name: ${details.firstName} ${details.lastName}`,
     `Company: ${details.company}`,
     `Phone: ${details.phone}`,
@@ -85,13 +98,13 @@ function emailText(details: ContactDetails): string {
     "",
     "Comments:",
     details.comments.trim() === "" ? "(none)" : details.comments
-  ].join("\n");
+  ];
 }
 
-function oneLine(text: string): string {
+export function oneLine(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
-function status(code: number): Response {
+export function status(code: number): Response {
   return new Response(null, { status: code });
 }

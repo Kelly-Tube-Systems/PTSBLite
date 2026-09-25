@@ -4,6 +4,8 @@
 - **Date:** 2026-09-25
 - **Supersedes:** [ADR-0052](0052-a-first-visit-leaves-contact-details-for-sales.md) where it kept
   only the fact that the contact form was submitted. The rest of it stands.
+- **Amended:** 2026-09-25 — [ADR-0055](0055-every-bom-download-is-emailed-to-sales.md) emails each
+  downloaded BOM, with these details, to sales.
 
 ## Context
 

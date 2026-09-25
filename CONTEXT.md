@@ -190,7 +190,8 @@ than waiting for review:
 - `src/components/` — React UI. Each component's styling sits in a colocated `.css` file beside it;
   see ADR-0009 for the rule and the few runtime-value exceptions.
 - `src/platform/` — browser services kept behind a testable boundary: session storage, PDF
-  downloads, and the first-visit contact form's post and the details it was submitted with.
+  downloads and their email to sales, and the first-visit contact form's post and the details it
+  was submitted with.
 
 The repository contains no pricing, quote, seller, customer, tax, or other commercial model.
 `BomRow` cannot hold a price, the catalog loader rejects price data, and the application exports a
@@ -199,7 +200,8 @@ bill of materials rather than a quote
 the one place a visitor's details are collected, for Kelly's sales team
 ([ADR-0052](docs/adr/0052-a-first-visit-leaves-contact-details-for-sales.md)), and the BOM prints
 them as who it was prepared for
-([ADR-0053](docs/adr/0053-the-bom-says-who-it-was-prepared-for.md)).
+([ADR-0053](docs/adr/0053-the-bom-says-who-it-was-prepared-for.md)) when each download is emailed
+to sales ([ADR-0055](docs/adr/0055-every-bom-download-is-emailed-to-sales.md)).
 
 `DesignState` carries a `SparseGrid` of cell occupancy alongside its parts and obstacles. **These
 must agree.** A part present in one but not the other renders and appears in the BOM yet cannot be

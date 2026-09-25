@@ -108,7 +108,8 @@ describe("PTSBLite", () => {
       })
     );
     const savePdf = vi.fn<Platform["savePdf"]>().mockResolvedValue({});
-    render(<App platform={{ ...webPlatform(), savePdf }} />);
+    const emailBom = vi.fn<Platform["emailBom"]>().mockResolvedValue({});
+    render(<App platform={{ ...webPlatform(), savePdf, emailBom }} />);
     createFirstDesign();
     fireEvent.click(screen.getByRole("button", { name: "Finalize" }));
     fireEvent.click(screen.getByRole("button", { name: /Download PDF/ }));
@@ -117,6 +118,31 @@ describe("PTSBLite", () => {
     const text = extractText(savePdf.mock.calls[0][0]);
     expect(text).toContain("Ada Lovelace");
     expect(text).toContain("ada@example.com");
+    // The same document goes to sales, with the same details beside it.
+    await waitFor(() => expect(emailBom).toHaveBeenCalledOnce());
+    const [bytes, filename, customer] = emailBom.mock.calls[0];
+    expect(bytes).toBe(savePdf.mock.calls[0][0]);
+    expect(filename).toBe(savePdf.mock.calls[0][1]);
+    expect(customer).toMatchObject({ email: "ada@example.com" });
+  });
+
+  it("downloads the BOM without waiting on its email, and says when the email fails", async () => {
+    const savePdf = vi.fn<Platform["savePdf"]>().mockResolvedValue({});
+    let refuse: (result: { error?: string }) => void = () => undefined;
+    const emailBom = vi.fn<Platform["emailBom"]>(
+      () => new Promise((resolve) => (refuse = resolve))
+    );
+    render(<App platform={{ ...webPlatform(), savePdf, emailBom }} />);
+    createFirstDesign();
+    fireEvent.click(screen.getByRole("button", { name: "Finalize" }));
+    fireEvent.click(screen.getByRole("button", { name: /Download PDF/ }));
+
+    await waitFor(() => expect(savePdf).toHaveBeenCalledOnce());
+    // The dialog is ready for another download while the email is still out.
+    await waitFor(() => expect(screen.getByRole("button", { name: /Download PDF/ })).toBeTruthy());
+    act(() => refuse({ error: "The email failed." }));
+
+    expect(await screen.findByText("The email failed.")).toBeTruthy();
   });
 
   it("offers a BOM export from Finalize", async () => {

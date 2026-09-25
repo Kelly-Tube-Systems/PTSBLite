@@ -22,4 +22,10 @@ export type Platform = {
   session: SessionStore;
   contact: ContactGate;
   savePdf: (bytes: Uint8Array, suggestedName: string) => Promise<{ error?: string }>;
+  /** Email a downloaded BOM to sales, with who it was prepared for when known (ADR-0055). */
+  emailBom: (
+    bytes: Uint8Array,
+    filename: string,
+    customer: ContactDetails | null
+  ) => Promise<{ error?: string }>;
 };

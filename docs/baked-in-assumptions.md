@@ -260,14 +260,17 @@ The visitor cannot ask for a run at some other height, or for a flat one; more r
 allows is built by hand.
 
 **Any collaboration, cloud, account, or telemetry surface.** Deliberately. PTSBLite is
-served as static files with a `connect-src 'self'` policy. The one request after load is the
+served as static files with a `connect-src 'self'` policy. The only requests after load are the
 first-visit contact form posting to the site's own `/api/contact`
-([ADR-0054](adr/0054-the-contact-form-emails-sales-through-a-pages-function.md)); nothing else
-reaches the network, so there is also no error reporting from production.
+([ADR-0054](adr/0054-the-contact-form-emails-sales-through-a-pages-function.md)) and each BOM
+download posting to `/api/bom`
+([ADR-0055](adr/0055-every-bom-download-is-emailed-to-sales.md)); nothing else reaches the
+network, so there is also no error reporting from production.
 
-**The BOM is emailed to no one.** The contact form goes to sales through Resend
-([ADR-0054](adr/0054-the-contact-form-emails-sales-through-a-pages-function.md)), but a finalized
-design's BOM only downloads. Emailing it too is not built.
+**A BOM email that fails is not retried.** Every BOM download is also emailed to sales
+([ADR-0055](adr/0055-every-bom-download-is-emailed-to-sales.md)), but only once: if that send fails,
+the visitor is told and keeps their download, and sales never gets that copy unless they download
+again. Nothing stops a script posting PDFs to `/api/bom` either; Turnstile is the follow-up.
 
 **A styled "you have unsaved work" prompt in the browser.** A browser offers only `beforeunload`,
 whose message cannot be written or styled. Lite registers it solely while a write to storage has

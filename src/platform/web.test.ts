@@ -177,3 +177,62 @@ describe("contact gate", () => {
     expect(result).toEqual({});
   });
 });
+
+describe("emailing a BOM", () => {
+  const pdf = new TextEncoder().encode("%PDF-1.7 a BOM");
+  const details = {
+    firstName: "Ada",
+    lastName: "Lovelace",
+    company: "Analytical Engines",
+    phone: "555-0100",
+    email: "ada@example.com",
+    industry: "Retail",
+    comments: ""
+  } as const;
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("posts the PDF, its name, and who it was prepared for", async () => {
+    const fetch = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })));
+    vi.stubGlobal("fetch", fetch);
+
+    expect(await webPlatform().emailBom(pdf, "BOM.pdf", details)).toEqual({});
+
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/bom");
+    const body = JSON.parse(init.body as string) as { pdf: string };
+    expect(body).toMatchObject({ filename: "BOM.pdf", contact: details });
+    expect(atob(body.pdf)).toBe("%PDF-1.7 a BOM");
+  });
+
+  it("encodes a PDF too large to spread into one call", async () => {
+    const fetch = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })));
+    vi.stubGlobal("fetch", fetch);
+    const large = new Uint8Array(1_000_000).fill(0x41);
+
+    await webPlatform().emailBom(large, "BOM.pdf", null);
+
+    const [, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect((JSON.parse(init.body as string) as { pdf: string }).pdf).toBe(
+      btoa("A".repeat(1_000_000))
+    );
+  });
+
+  it("reports an email that did not go", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(new Response(null, { status: 502 })))
+    );
+    const refused = await webPlatform().emailBom(pdf, "BOM.pdf", null);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.reject(new TypeError("Failed to fetch")))
+    );
+    const offline = await webPlatform().emailBom(pdf, "BOM.pdf", null);
+
+    expect(refused.error).toMatch(/downloaded, but it could not be sent/);
+    expect(offline.error).toBe(refused.error);
+  });
+});
