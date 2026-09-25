@@ -1,3 +1,4 @@
+import { readContactDetails } from "@/domain/contact-details";
 import type { Platform } from "@/platform/types";
 
 /** One design, one origin. See ADR-0012. */
@@ -9,8 +10,9 @@ const SESSION_KEY = "ptsblite:autosave:v1";
  */
 const UNREADABLE_KEY = "ptsblite:autosave:unreadable";
 /**
- * Set once the contact form has been submitted in this browser. Only the fact
- * is kept, never the details: they are for Kelly's sales team, not for storage.
+ * Set once the contact form has been submitted in this browser, to what was
+ * submitted, so the BOM can print who it was prepared for (ADR-0053). Builds
+ * before that stored only the time, which still counts as submitted.
  */
 const CONTACT_KEY = "ptsblite:contact:v1";
 
@@ -49,12 +51,13 @@ export function webPlatform(): Platform {
 
     contact: {
       submitted: () => (storage()?.getItem(CONTACT_KEY) ?? null) !== null,
+      details: () => readContactDetails(storage()?.getItem(CONTACT_KEY) ?? null),
       // Not sent anywhere yet. The email to sales goes through Resend once
       // Kelly's own Cloudflare and Resend accounts exist (ADR-0052); until then
       // submitting only opens the app.
-      submit: () => {
+      submit: (details) => {
         try {
-          storage()?.setItem(CONTACT_KEY, new Date().toISOString());
+          storage()?.setItem(CONTACT_KEY, JSON.stringify(details));
         } catch {
           // Storage refused: the visitor is let in now and asked again next visit.
         }

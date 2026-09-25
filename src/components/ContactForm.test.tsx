@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ContactForm } from "@/components/ContactForm";
-import { INDUSTRIES } from "@/platform/types";
+import { INDUSTRIES } from "@/domain/contact-details";
 
 const REQUIRED = ["First name", "Last name", "Company name", "Phone number", "Email"];
 

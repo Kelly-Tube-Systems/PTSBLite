@@ -84,7 +84,9 @@ export type Painter = {
  * `font` at `size`.
  *
  * Measured on the sanitized text, since that is what is drawn: a character the
- * encoding replaces is not the width of the one it replaced.
+ * encoding replaces is not the width of the one it replaced. Split first,
+ * though: a line break or tab is whitespace to break on, and sanitized it would
+ * be a "?" joining two words.
  *
  * A word wider than the measure takes a line of its own and overhangs rather
  * than being hyphenated or cut. Nothing the document typesets is that long, and
@@ -94,7 +96,7 @@ export type Painter = {
 export function wrapText(font: PDFFont, text: string, size: number, maxWidth: number): string[] {
   const lines: string[] = [];
   let line = "";
-  for (const word of sanitize(text).split(/\s+/).filter(Boolean)) {
+  for (const word of text.split(/\s+/).filter(Boolean).map(sanitize)) {
     const candidate = line === "" ? word : `${line} ${word}`;
     if (line !== "" && font.widthOfTextAtSize(candidate, size) > maxWidth) {
       lines.push(line);

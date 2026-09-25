@@ -3,6 +3,7 @@ import { webPlatform } from "@/platform/web";
 
 const SESSION_KEY = "ptsblite:autosave:v1";
 const UNREADABLE_KEY = "ptsblite:autosave:unreadable";
+const CONTACT_KEY = "ptsblite:contact:v1";
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -105,14 +106,32 @@ describe("contact gate", () => {
     comments: ""
   } as const;
 
-  it("remembers that this browser has submitted the form, but not what was in it", async () => {
+  it("remembers what this browser submitted, for the BOM to print", async () => {
     const contact = webPlatform().contact;
     expect(contact.submitted()).toBe(false);
+    expect(contact.details()).toBeNull();
 
     await contact.submit(details);
 
     expect(webPlatform().contact.submitted()).toBe(true);
-    expect(JSON.stringify({ ...window.localStorage })).not.toContain("ada@example.com");
+    expect(webPlatform().contact.details()).toEqual(details);
+  });
+
+  it("counts a browser that stored only the time as submitted, with no details", () => {
+    // What builds before ADR-0053 stored. Asking that visitor again would be
+    // the form twice; their BOM goes without the details instead.
+    window.localStorage.setItem(CONTACT_KEY, "2026-09-25T00:00:00.000Z");
+
+    expect(webPlatform().contact.submitted()).toBe(true);
+    expect(webPlatform().contact.details()).toBeNull();
+  });
+
+  it("reads no details from a stored value that is not the form's", () => {
+    window.localStorage.setItem(CONTACT_KEY, JSON.stringify({ ...details, industry: "Mining" }));
+    expect(webPlatform().contact.details()).toBeNull();
+
+    window.localStorage.setItem(CONTACT_KEY, JSON.stringify({ ...details, email: 7 }));
+    expect(webPlatform().contact.details()).toBeNull();
   });
 
   it("lets the visitor in when storage refuses the write", async () => {

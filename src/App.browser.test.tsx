@@ -4,8 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "@/App";
 import { serializeDesign } from "@/domain/design-file";
 import { designFromScene, emptyDesign } from "@/domain/design-state";
+import type { Platform } from "@/platform/types";
 import { webPlatform } from "@/platform/web";
 import { ROOM_LIMITS } from "@/domain/sparse-grid";
+import { extractText } from "@/test/pdf-text";
 import type { Part } from "@/types";
 
 vi.mock("@/renderer/Viewport", () => ({
@@ -87,6 +89,31 @@ describe("PTSBLite", () => {
     expect(text).not.toMatch(/\bSubtotal\b/);
     expect(text).not.toMatch(/Quote total/);
     expect(text).not.toMatch(/\bEACH\b/);
+  });
+
+  it("prints the visitor's contact details on the BOM it exports", async () => {
+    window.localStorage.setItem(
+      CONTACT_KEY,
+      JSON.stringify({
+        firstName: "Ada",
+        lastName: "Lovelace",
+        company: "Analytical Engines",
+        phone: "555-0100",
+        email: "ada@example.com",
+        industry: "Medical",
+        comments: ""
+      })
+    );
+    const savePdf = vi.fn<Platform["savePdf"]>().mockResolvedValue({});
+    render(<App platform={{ ...webPlatform(), savePdf }} />);
+    createFirstDesign();
+    fireEvent.click(screen.getByRole("button", { name: "Finalize" }));
+    fireEvent.click(screen.getByRole("button", { name: /Download PDF/ }));
+
+    await waitFor(() => expect(savePdf).toHaveBeenCalledOnce());
+    const text = extractText(savePdf.mock.calls[0][0]);
+    expect(text).toContain("Ada Lovelace");
+    expect(text).toContain("ada@example.com");
   });
 
   it("offers a BOM export from Finalize", async () => {
