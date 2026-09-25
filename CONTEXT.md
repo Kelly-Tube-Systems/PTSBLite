@@ -193,10 +193,11 @@ than waiting for review:
 - `src/platform/` — browser services kept behind a testable boundary: session storage, PDF
   downloads and their email to sales, and the first-visit contact form's post and the details it
   was submitted with. `desktop.ts` is the desktop app's version, which keeps the storage and the
-  download and sends nothing.
+  download and sends nothing, and types the bridge its preload script hands the page.
+  `src/desktop.tsx` renders the desktop app's page: the app, and its update prompt.
 - `desktop/` — outside `src/`: the desktop app's Electron main process, which serves the page,
-  sets its security policy and runs the update check, plus the installer config and the desktop
-  smoke test.
+  sets its security policy and runs the update check; the preload script through which the page
+  offers a downloaded update; the installer config; and the desktop smoke test.
 
 The repository contains no pricing, quote, seller, customer, tax, or other commercial model.
 `BomRow` cannot hold a price, the catalog loader rejects price data, and the application exports a

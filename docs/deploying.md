@@ -132,9 +132,10 @@ Choose *More info*, then *Run anyway*. It installs without further questions int
 `%LOCALAPPDATA%\Programs\PTSBLite`, with no administrator prompt, and opens the app.
 
 **Updating.** An installed copy checks this repository's releases when it starts and every four
-hours after that. It downloads a newer version in the background, then asks whether to restart
-now or later. "Later" installs it the next time the app closes. Updates are downloaded by the app
-itself, so SmartScreen does not ask again. With no connection the check fails quietly.
+hours after that. It downloads a newer version in the background, then asks, in one of the app's
+own dialogs, whether to restart now or later. "Later" installs it the next time the app closes.
+Updates are downloaded by the app itself, so SmartScreen does not ask again. With no connection
+the check fails quietly.
 
 **What must never change,** or every installed copy loses its design or stops updating:
 

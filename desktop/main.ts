@@ -1,10 +1,12 @@
 import { isAbsolute, join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
-import { app, BrowserWindow, dialog, Menu, net, protocol, type MessageBoxOptions } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, net, protocol } from "electron";
 import { autoUpdater } from "electron-updater";
+import type { DesktopBridge } from "../src/platform/desktop";
 
 // The Windows app's main process (ADR-0051): one window showing the page that
-// `vite build --mode desktop` put beside this file, and the update check.
+// `vite build --mode desktop` put beside this file, and the update check. The
+// page offers a downloaded update itself, through preload.ts.
 
 /**
  * Where the page is served from. Autosave lives in `localStorage`, which is
@@ -75,7 +77,8 @@ function openWindow(): void {
     height: 900,
     // The page's own background, so the window does not flash white while it loads.
     backgroundColor: "#05070a",
-    show: false
+    show: false,
+    webPreferences: { preload: join(__dirname, "preload.cjs") }
   });
   // A planner wants the whole screen. Maximizing shows the window too.
   window.once("ready-to-show", () => window.maximize());
@@ -107,8 +110,17 @@ function openWindow(): void {
 }
 
 /**
- * Look for a newer release on this repository's GitHub Releases, download it in
- * the background, and offer to restart into it (ADR-0051). With no network the
+ * The version of the first update downloaded this session. The page asks for it
+ * as soon as it loads, which may be before or after the download finishes; a
+ * promise answers both. It never settles when no update arrives.
+ */
+let updateDownloaded: (version: string) => void = () => undefined;
+const updateReady = new Promise<string>((resolve) => (updateDownloaded = resolve));
+let installable = false;
+
+/**
+ * Look for a newer release on this repository's GitHub Releases and download it
+ * in the background, for the page to offer (ADR-0051). With no network the
  * check fails quietly and the app carries on.
  */
 function watchForUpdates(): void {
@@ -116,13 +128,12 @@ function watchForUpdates(): void {
   // turns this off, or a test run could install a real release.
   if (!app.isPackaged || process.env.PTSBLITE_NO_UPDATES) return;
 
-  const offered = new Set<string>();
   autoUpdater.on("error", (error) => console.error("PTSBLite: update check failed", error));
   autoUpdater.on("update-downloaded", ({ version }) => {
-    // A copy left open finds the same download again on its next check.
-    if (offered.has(version)) return;
-    offered.add(version);
-    void offerRestart(version);
+    installable = true;
+    // A copy left open finds the same download again on its next check; only
+    // the first is offered.
+    updateDownloaded(version);
   });
 
   // Failures arrive on the error event as well; this only stops them escaping as unhandled.
@@ -131,25 +142,25 @@ function watchForUpdates(): void {
   setInterval(check, UPDATE_CHECK_INTERVAL_MS);
 }
 
-async function offerRestart(version: string): Promise<void> {
-  const options: MessageBoxOptions = {
-    type: "info",
-    title: "Update ready",
-    message: `PTSBLite ${version} is ready to install.`,
-    detail:
-      "Restart now to update. Your design is saved and will be there when PTSBLite reopens. " +
-      "If you choose Later, the update installs the next time you close PTSBLite.",
-    buttons: ["Restart now", "Later"],
-    defaultId: 0,
-    cancelId: 1,
-    noLink: true
-  };
-  const [window] = BrowserWindow.getAllWindows();
-  const { response } = window
-    ? await dialog.showMessageBox(window, options)
-    : await dialog.showMessageBox(options);
-  // Silent, because this user has already said yes, and reopened afterwards.
-  if (response === 0) autoUpdater.quitAndInstall(true, true);
+/** Answer one of the page's DesktopBridge calls, from the app's own page only. */
+function answer<K extends keyof DesktopBridge>(
+  channel: K,
+  handler: () => ReturnType<DesktopBridge[K]> | Awaited<ReturnType<DesktopBridge[K]>>
+): void {
+  ipcMain.handle(channel, (event) => {
+    if (!event.senderFrame?.url.startsWith(`${ORIGIN}/`)) {
+      throw new Error(`PTSBLite: refused ${channel} from outside the app`);
+    }
+    return handler();
+  });
+}
+
+function answerThePage(): void {
+  answer("updateReady", () => updateReady);
+  answer("installUpdate", () => {
+    // Silent, because the user has already said yes, and reopened afterwards.
+    if (installable) autoUpdater.quitAndInstall(true, true);
+  });
 }
 
 // One copy at a time: two windows would take turns overwriting the one
@@ -171,6 +182,7 @@ if (!app.requestSingleInstanceLock()) {
 
   void app.whenReady().then(() => {
     protocol.handle(SCHEME, servePage);
+    answerThePage();
     openWindow();
     watchForUpdates();
   });
