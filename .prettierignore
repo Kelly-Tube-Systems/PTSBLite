@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-desktop/
 pnpm-lock.yaml
 
 # Prose is hand-wrapped; reflowing it churns the ADRs and CONTEXT.md for no gain.

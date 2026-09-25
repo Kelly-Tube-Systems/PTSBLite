@@ -1,2 +1,7 @@
 allowBuilds:
   esbuild: true
+  # Neither is needed by the Windows app (ADR-0051). Electron has no build step of its own: it
+  # downloads its binary the first time it runs, so installing for the website never fetches it.
+  # electron-winstaller is Squirrel.Windows support, and the app ships an NSIS installer.
+  electron: false
+  electron-winstaller: false

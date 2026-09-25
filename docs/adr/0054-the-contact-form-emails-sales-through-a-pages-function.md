@@ -4,6 +4,8 @@
 - **Date:** 2026-09-25
 - **Supersedes:** [ADR-0052](0052-a-first-visit-leaves-contact-details-for-sales.md) where it built
   the form before the email was wired. The rest of it stands.
+- **Amended:** 2026-09-25 — [ADR-0056](0056-the-windows-app-works-offline-and-sends-nothing.md)
+  leaves the form out of the Windows app, which therefore never posts to the Function.
 
 ## Context
 

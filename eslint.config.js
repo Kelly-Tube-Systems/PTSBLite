@@ -4,7 +4,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist/**", "node_modules/**"] },
+  { ignores: ["dist/**", "dist-desktop/**", "node_modules/**"] },
 
   js.configs.recommended,
   // Type-aware rules: worth the slower run here because the interesting bugs in
@@ -99,9 +99,9 @@ export default tseslint.config(
     }
   },
 
-  // Build config runs in Node.
+  // Build config runs in Node, and so does the Windows app's main process.
   {
-    files: ["*.config.ts", "*.config.js"],
+    files: ["*.config.ts", "*.config.js", "desktop/**"],
     languageOptions: { globals: globals.node }
   },
 

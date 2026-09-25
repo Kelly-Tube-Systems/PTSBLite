@@ -25,7 +25,11 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm test"
+    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm test",
+    "build:desktop": "tsc --noEmit && vite build --mode desktop --outDir dist-desktop/app/renderer && vite build --config desktop/vite.config.ts",
+    "desktop": "pnpm run build:desktop && electron dist-desktop/app/main.cjs",
+    "package:desktop": "pnpm run build:desktop && electron-builder --config desktop/electron-builder.yml --publish never",
+    "test:desktop": "playwright test --config desktop/playwright.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -37,6 +41,9 @@
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
+    "electron-updater": "^6.8.9",
     "eslint": "^10.11.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.12.0",

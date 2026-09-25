@@ -10,6 +10,9 @@ requests the page makes after load, and the app stores nothing outside the visit
 Production is **https://ptsblite.kellytubesystems.com**, a CNAME to `ptsblite-2kg.pages.dev` in
 Kelly's own DNS. The Pages project and the Resend account both belong to Kelly Tube Systems.
 
+The same commit also ships as a Windows app, released on GitHub rather than Cloudflare. See
+[The Windows app](#the-windows-app) below.
+
 ## Cloudflare Pages project
 
 Created through **Workers & Pages → Create → Pages → Connect to Git**. Not the Workers flow, which
@@ -100,3 +103,62 @@ pnpm preview   # serve it on http://localhost:4173
 Cloudflare publishes. It does **not** apply `_headers` — the CSP is only enforced once Cloudflare is
 serving it, so a policy violation will not show up locally. Nor does it run the Functions: `pnpm dev`
 and `pnpm preview` answer `/api/contact` and `/api/bom` themselves and send nothing.
+
+## The Windows app
+
+PTSBLite also ships as an unsigned Windows app
+([ADR-0051](adr/0051-ptsblite-also-ships-as-an-unsigned-windows-app.md)): the same page in an
+Electron window, installed per user, with no contact form and no emails, so it works offline
+([ADR-0056](adr/0056-the-windows-app-works-offline-and-sends-nothing.md)). Nothing about it
+touches the website. The website's build does not include the desktop code and comes out
+byte-for-byte what it was before the Windows app existed.
+
+**Every push to `main` releases it.** The `windows` job in `.github/workflows/ci.yml` runs after
+`verify` on a Windows runner. It builds the installer, runs the smoke test in `desktop/` against
+the packaged app, and publishes a GitHub Release tagged `v<version>` with three files:
+`PTSBLite-Setup.exe`, its `.blockmap`, and `latest.yml`. On a pull request it builds and tests
+without publishing. If the job fails, nothing is released and installed copies stay where they
+are.
+
+**The version only goes up.** It is `major.minor` from `package.json` followed by the number of
+commits on `main`, so the 300th commit releases `0.1.300`. An installed copy updates to any
+release with a higher version, so never rewrite `main`'s history or lower `package.json`'s version.
+
+**The download link never changes:**
+https://github.com/Kelly-Tube-Systems/PTSBLite/releases/latest/download/PTSBLite-Setup.exe
+
+**Installing.** The installer is not code-signed, so Windows shows "Windows protected your PC".
+Choose *More info*, then *Run anyway*. It installs without further questions into
+`%LOCALAPPDATA%\Programs\PTSBLite`, with no administrator prompt, and opens the app.
+
+**Updating.** An installed copy checks this repository's releases when it starts and every four
+hours after that. It downloads a newer version in the background, then asks whether to restart
+now or later. "Later" installs it the next time the app closes. Updates are downloaded by the app
+itself, so SmartScreen does not ask again. With no connection the check fails quietly.
+
+**What must never change,** or every installed copy loses its design or stops updating:
+
+- the page's origin, `app://ptsblite`, in `desktop/main.ts` (autosave lives there, as on the
+  website);
+- `name` in `package.json`, which names the folder the design is kept in, `%APPDATA%\ptsblite`;
+- `appId` in `desktop/electron-builder.yml`;
+- the `publish` block in `desktop/electron-builder.yml`, which is written into every copy as
+  where it looks for updates.
+
+**Guard release access.** Updates carry no signature, so anyone who can publish a Release on this
+repository can ship code to every installed copy (ADR-0051).
+
+### Building it locally
+
+On Windows:
+
+```sh
+pnpm run desktop         # build and open the app, unpackaged
+pnpm run package:desktop # build the installer into dist-desktop/release/
+pnpm run test:desktop    # smoke-test the packaged app
+```
+
+A local package is versioned from `package.json` as it stands. The smoke test sets
+`PTSBLITE_NO_UPDATES`, which stops the app checking for updates, and gives each run its own
+profile. Without that variable, a packaged copy older than the latest release would download that
+release and install it on your machine when it closes.

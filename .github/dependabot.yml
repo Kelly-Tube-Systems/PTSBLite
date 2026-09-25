@@ -34,6 +34,12 @@ updates:
       # Held: CI and Cloudflare Pages use Node 24.
       - dependency-name: "@types/node"
         update-types: [version-update:semver-major]
+      # Held: a major may stop the unsigned Windows app updating, and nothing in
+      # CI would notice. Check it by hand first (ADR-0051).
+      - dependency-name: electron-builder
+        update-types: [version-update:semver-major]
+      - dependency-name: electron-updater
+        update-types: [version-update:semver-major]
 
   # Actions are grouped without splitting majors, unlike npm above. An Actions
   # major is usually a runner or Node bump rather than an API change, and they

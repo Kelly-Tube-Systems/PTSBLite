@@ -1,0 +1,39 @@
+# The Windows app (ADR-0051). `pnpm run package:desktop` builds the installer into
+# dist-desktop/release/; CI publishes it on every merge to main.
+appId: com.kellytubesystems.ptsblite
+productName: PTSBLite
+
+directories:
+  # icon.ico, which electron-builder finds here by name.
+  buildResources: desktop/build
+  output: dist-desktop/release
+
+# The page and the bundled main process are everything the app needs.
+files:
+  - dist-desktop/app/**
+  # Cloudflare's headers, copied in with the rest of web-public/. The main process sets its own.
+  - "!dist-desktop/app/renderer/_headers"
+extraMetadata:
+  main: dist-desktop/app/main.cjs
+# Nothing native to rebuild.
+npmRebuild: false
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+
+nsis:
+  # One click and per user: no questions and no administrator prompt. Installed under
+  # %LOCALAPPDATA%\Programs, which is what lets an update install without asking.
+  oneClick: true
+  perMachine: false
+  # The same name on every release, so .../releases/latest/download/PTSBLite-Setup.exe is always
+  # the newest installer.
+  artifactName: PTSBLite-Setup.${ext}
+
+# Written into every installed copy as where it looks for updates.
+publish:
+  provider: github
+  owner: Kelly-Tube-Systems
+  repo: PTSBLite

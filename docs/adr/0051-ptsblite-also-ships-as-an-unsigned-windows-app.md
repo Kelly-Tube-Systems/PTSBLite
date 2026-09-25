@@ -5,6 +5,8 @@
 - **Supersedes:** [ADR-0014](0014-ptsblite-is-the-only-product.md) where it removed desktop
   packaging and release automation. Its other half, that PTSBLite is the repository's only product,
   stands.
+- **Amended:** 2026-09-25 — [ADR-0056](0056-the-windows-app-works-offline-and-sends-nothing.md)
+  leaves the contact form and the BOM email out of the Windows app, so it works offline.
 
 ## Context
 
