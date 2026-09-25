@@ -30,7 +30,7 @@ Deployment settings are in [docs/deploying.md](docs/deploying.md).
 | `src/platform/` | Browser storage, downloads, and the contact form's post |
 | `src/data/` | The part catalog, and the Kel2020 geometry baked out of KTS's CAD |
 | `tools/` | Hand-run authoring scripts, outside the app and its dependencies |
-| `functions/` | The Cloudflare Pages Function that emails the contact form to sales |
+| `functions/` | The Cloudflare Pages Functions that email the contact form and each downloaded BOM to sales |
 | `web-public/` | Production headers copied into the static build |
 | `docs/adr/` | Decisions with lasting consequences |
 

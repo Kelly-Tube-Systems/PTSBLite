@@ -99,8 +99,32 @@ export function webPlatform(): Platform {
         // download if the object URL disappears in the same one.
         setTimeout(() => URL.revokeObjectURL(url), 30_000);
       }
+    },
+
+    // Posted to functions/api/bom.ts, which emails sales (ADR-0055).
+    emailBom: async (bytes, filename, customer) => {
+      try {
+        const response = await fetch("/api/bom", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pdf: base64(bytes), filename, contact: customer })
+        });
+        if (response.ok) return {};
+      } catch {
+        // Offline, or the request never completed. Same answer as a refusal.
+      }
+      return { error: "Your BOM downloaded, but it could not be sent to Kelly Tube Systems." };
     }
   };
+}
+
+/** Chunked, because spreading a whole PDF into one `fromCharCode` call overflows the stack. */
+function base64(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
 }
 
 /**

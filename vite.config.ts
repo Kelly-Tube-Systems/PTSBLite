@@ -31,18 +31,21 @@ function buildId(): string {
 }
 
 /**
- * Stands in for functions/api/contact.ts, which only runs on Cloudflare. It
- * answers the contact form as a deployment without a Resend key does, sending
- * nothing, so a first visit to `pnpm dev` or `pnpm preview` gets past it.
+ * Stands in for functions/api/contact.ts and bom.ts, which only run on
+ * Cloudflare. It answers them as a deployment without a Resend key does,
+ * sending nothing, so a first visit to `pnpm dev` or `pnpm preview` gets past
+ * the contact form and a BOM download reports no failed email.
  */
-function contactStandIn(): Plugin {
+function emailStandIn(): Plugin {
   const answer: Connect.NextHandleFunction = (req, res, next) => {
-    if (req.method !== "POST" || req.url !== "/api/contact") return next();
+    if (req.method !== "POST" || !["/api/contact", "/api/bom"].includes(req.url ?? "")) {
+      return next();
+    }
     res.statusCode = 204;
     res.end();
   };
   return {
-    name: "ptsblite-contact-stand-in",
+    name: "ptsblite-email-stand-in",
     configureServer: (server) => void server.middlewares.use(answer),
     configurePreviewServer: (server) => void server.middlewares.use(answer)
   };
@@ -65,5 +68,5 @@ export default defineConfig({
     outDir: "dist",
     emptyOutDir: true
   },
-  plugins: [react(), contactStandIn()]
+  plugins: [react(), emailStandIn()]
 });

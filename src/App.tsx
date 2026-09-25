@@ -172,6 +172,7 @@ export default function App({ platform }: AppProps) {
     storedSession.status === "unreadable" ? UNREADABLE_SESSION_MESSAGE : null
   );
   const [exportError, setExportError] = useState<string | null>(null);
+  const [bomEmailError, setBomEmailError] = useState<string | null>(null);
   const [finalizeOpen, setFinalizeOpen] = useState(false);
   // The View menu's two settings: which angle the camera was last sent to, and
   // the visitor's own answer on height markers, null while the armed tool is
@@ -458,13 +459,22 @@ export default function App({ platform }: AppProps) {
       // Taken now rather than held from earlier: the design on screen when the
       // PDF is asked for is the one the document should show.
       const views = captureRef.current?.() ?? [];
+      const customer = platform.contact.details();
       const bytes = await generateBomPdf(design, {
         productName: PRODUCT_NAME,
         views,
-        customer: platform.contact.details() ?? undefined
+        customer: customer ?? undefined
       });
-      const result = await platform.savePdf(bytes, bomFilename());
+      const filename = bomFilename();
+      const result = await platform.savePdf(bytes, filename);
       setExportError(result.error ? `Export failed: ${result.error}` : null);
+      // Every download also goes to sales (ADR-0055). Started only once the
+      // download has been handed over, and never awaited, so the visitor's
+      // copy neither waits on the email nor fails with it.
+      setBomEmailError(null);
+      void platform.emailBom(bytes, filename, customer).then((sent) => {
+        if (sent.error) setBomEmailError(sent.error);
+      });
     } catch (err) {
       setExportError(`Export failed: ${String(err)}`);
     }
@@ -752,7 +762,7 @@ export default function App({ platform }: AppProps) {
             obstacleKind={obstacleKind}
             onObstacleKindChange={setObstacleKind}
             autoBuilding={autoBuilding}
-            errorFlash={errorFlash ?? autosaveError ?? exportError}
+            errorFlash={errorFlash ?? autosaveError ?? exportError ?? bomEmailError}
             obstacleDraft={obstacleDraft}
             obstacleMaxHeight={obstacleMaxHeight}
             onObstacleHeightChange={setObstacleHeight}

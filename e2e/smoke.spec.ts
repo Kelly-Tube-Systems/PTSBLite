@@ -109,12 +109,18 @@ test("exports the BOM PDF through the real download path", async ({ page }) => {
   expect(firstRow!.y + firstRow!.height).toBeLessThanOrEqual(body!.y + body!.height);
 
   const downloadPromise = page.waitForEvent("download");
+  // `pnpm preview` answers for the Pages Function, so this proves the same PDF
+  // is posted to it for sales and the CSP lets it.
+  const emailed = page.waitForRequest("**/api/bom");
   // Exercises the WebGL view capture, pdf-lib, and the object-URL download.
   await page.getByRole("button", { name: "Download PDF" }).click();
   const download = await downloadPromise;
   // The document's own title, dated the day it was taken, with the date's
   // slashes turned into something a file name can hold.
   expect(download.suggestedFilename()).toMatch(/^Kelly Systems PTSBLite BOM \d\d-\d\d-\d\d\.pdf$/);
+  const posted = (await emailed).postDataJSON() as { pdf: string; filename: string };
+  expect(posted.filename).toBe(download.suggestedFilename());
+  expect(Buffer.from(posted.pdf, "base64").subarray(0, 5).toString()).toBe("%PDF-");
 
   expect(errors).toEqual([]);
 });

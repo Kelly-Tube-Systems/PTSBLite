@@ -1,10 +1,11 @@
 # Deploying PTSBLite
 
-PTSBLite is a static site with one Pages Function, `functions/api/contact.ts`, which emails the
-first-visit contact form to sales through Resend
-([ADR-0054](adr/0054-the-contact-form-emails-sales-through-a-pages-function.md)). That post is the
-only request the page makes after load, and the app stores nothing outside the visitor's own
-browser.
+PTSBLite is a static site with two Pages Functions, both emailing sales through Resend:
+`functions/api/contact.ts` sends the first-visit contact form
+([ADR-0054](adr/0054-the-contact-form-emails-sales-through-a-pages-function.md)), and
+`functions/api/bom.ts` sends each BOM PDF a visitor downloads
+([ADR-0055](adr/0055-every-bom-download-is-emailed-to-sales.md)). Those two posts are the only
+requests the page makes after load, and the app stores nothing outside the visitor's own browser.
 
 Production is **https://ptsblite.kellytubesystems.com**, a CNAME to `ptsblite-2kg.pages.dev` in
 Kelly's own DNS. The Pages project and the Resend account both belong to Kelly Tube Systems.
@@ -40,12 +41,12 @@ One secret, set for **Production only**, as an encrypted variable:
 RESEND_API_KEY = <the send-only key from Kelly's Resend account>
 ```
 
-Leave it off Preview. Without it the Function sends nothing and lets the visitor in, so test
-submissions on a preview never reach sales.
+Leave it off Preview. Without it both Functions send nothing: the visitor is let in and the BOM
+still downloads, so test submissions and downloads on a preview never reach sales.
 
 To test Production without sales seeing it, add a plain variable `CONTACT_TO` with your own address
-and redeploy. The email goes there instead of to sales. So does every real visitor's, so delete it
-and redeploy as soon as the test is done.
+and redeploy. The contact and BOM emails go there instead of to sales. So does every real
+visitor's, so delete it and redeploy as soon as the test is done.
 
 **Verify the sending domain in Resend before adding the secret.** Resend refuses to send from
 `kellytubesystems.com` until the DNS records its Domains page lists are in place. With the secret
@@ -97,5 +98,5 @@ pnpm preview   # serve it on http://localhost:4173
 
 `preview` serves the built output, not the dev server, so it is the closest thing to what
 Cloudflare publishes. It does **not** apply `_headers` — the CSP is only enforced once Cloudflare is
-serving it, so a policy violation will not show up locally. Nor does it run the Function: `pnpm dev`
-and `pnpm preview` answer `/api/contact` themselves and send nothing.
+serving it, so a policy violation will not show up locally. Nor does it run the Functions: `pnpm dev`
+and `pnpm preview` answer `/api/contact` and `/api/bom` themselves and send nothing.
