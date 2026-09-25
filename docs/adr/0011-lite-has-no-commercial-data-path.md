@@ -8,6 +8,8 @@
 - **Amended:** 2026-09-25 — [ADR-0052](0052-a-first-visit-leaves-contact-details-for-sales.md)
   lets the first-visit contact form collect a visitor's details for Kelly's sales team. Nothing
   else may.
+- **Amended:** 2026-09-25 — [ADR-0053](0053-the-bom-says-who-it-was-prepared-for.md) prints
+  those details on the BOM, as who it was prepared for.
 
 PTSBLite is Kelly Tube Systems' public marketing tool. The requirement remains absolute: no
 prices, costs, taxes, quotes, customer details, seller details, or dollar amounts of any kind.

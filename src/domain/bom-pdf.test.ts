@@ -3,6 +3,7 @@ import { PDFDict, PDFDocument, PDFName } from "pdf-lib";
 import { extractStreams, extractText } from "@/test/pdf-text";
 import { KELLY_WORDMARK_PATHS } from "@/data/kelly-systems-wordmark";
 import { generateBomPdf } from "@/domain/bom-pdf";
+import type { ContactDetails } from "@/domain/contact-details";
 import { designFromScene, emptyDesign } from "@/domain/design-state";
 import { bomRows } from "@/domain/parts";
 import { ACCENT, MARGIN_X } from "@/domain/pdf-typesetting";
@@ -440,5 +441,76 @@ describe("the views appended to a BOM", () => {
     const text = extractText(Buffer.from(bytes));
     expect(text).toContain("North-west");
     expect(text).toContain("Top-down");
+  });
+});
+
+describe("who the BOM was prepared for", () => {
+  const ada: ContactDetails = {
+    firstName: "Ada",
+    lastName: "Lovelace",
+    company: "Analytical Engines",
+    phone: "555-0100",
+    email: "ada@example.com",
+    industry: "Medical",
+    comments: "Two stations on the second floor."
+  };
+
+  it("prints every detail the contact form took", async () => {
+    const text = extractText(await generateBomPdf(designWith(sampleParts), { customer: ada }));
+    expect(text).toContain("PREPARED FOR");
+    for (const value of [
+      "Ada Lovelace",
+      "Analytical Engines",
+      "555-0100",
+      "ada@example.com",
+      "Medical",
+      "Two stations on the second floor."
+    ]) {
+      expect(text).toContain(value);
+    }
+  });
+
+  it("prints it on the parts list page", async () => {
+    const bytes = await generateBomPdf(designWith(sampleParts), {
+      customer: ada,
+      views: [shot("Front")]
+    });
+    expect(streamShowing(bytes, "ada@example.com")).toBe(streamShowing(bytes, PARTS_LIST_PAGE));
+  });
+
+  it("leaves the space blank without details, and without comments prints none", async () => {
+    const without = extractText(await generateBomPdf(designWith(sampleParts)));
+    expect(without).not.toContain("PREPARED FOR");
+
+    const quiet = extractText(
+      await generateBomPdf(designWith(sampleParts), { customer: { ...ada, comments: "" } })
+    );
+    expect(quiet).toContain("Ada Lovelace");
+    expect(quiet).not.toContain("Comments");
+  });
+
+  it("cuts long comments short rather than running into the disclaimer", async () => {
+    // The long run's parts list is the tallest the sheet draws, and the form
+    // puts no limit on the comments.
+    const longRun: Part[] = [
+      { id: "b1", type: "blower", cell: [-140, 0, 0], dir: [1, 0, 0] },
+      { id: "t1", type: "terminal", cell: [-139, 0, 0], axis: [1, 0, 0] },
+      { id: "u1", type: "tube", from: [-137, 0, 0], to: [139, 0, 0] },
+      { id: "t2", type: "terminal", cell: [140, 0, 0], axis: [1, 0, 0] }
+    ];
+    const comments = "We need a system for every floor of the building. ".repeat(40);
+    const bytes = await generateBomPdf(
+      designWith(longRun, { room: { width: 300, depth: 300, height: 12 } }),
+      { customer: { ...ada, comments } }
+    );
+    const lines = drawnLines(streamShowing(bytes, PARTS_LIST_PAGE));
+    const disclaimerTop = Math.max(
+      ...lines.filter((l) => l.text.startsWith("The BOM is to give")).map((l) => l.y)
+    );
+    const commentLines = lines.filter((l) => l.text.startsWith("We need a system"));
+
+    expect(commentLines.length).toBeGreaterThan(1);
+    expect(commentLines.at(-1)?.text.endsWith("\x85")).toBe(true);
+    expect(Math.min(...commentLines.map((l) => l.y))).toBeGreaterThan(disclaimerTop);
   });
 });

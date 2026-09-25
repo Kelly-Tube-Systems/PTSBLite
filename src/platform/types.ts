@@ -1,3 +1,5 @@
+import type { ContactDetails } from "@/domain/contact-details";
+
 export type SessionStoreResult = { ok: true } | { ok: false; error: string };
 
 export type SessionStore = {
@@ -8,25 +10,11 @@ export type SessionStore = {
   preserveUnreadable: () => void;
 };
 
-/** The industries the contact form offers, in the order the client listed them. */
-export const INDUSTRIES = ["Retail", "Dispensary", "Medical", "Bar / Restaurant", "Other"] as const;
-
-export type Industry = (typeof INDUSTRIES)[number];
-
-/** What the first-visit contact form collects. Only `comments` may be empty. See ADR-0052. */
-export type ContactDetails = {
-  firstName: string;
-  lastName: string;
-  company: string;
-  phone: string;
-  email: string;
-  industry: Industry;
-  comments: string;
-};
-
 export type ContactGate = {
   /** True once this browser has submitted the contact form. */
   submitted: () => boolean;
+  /** What this browser submitted, for the BOM to print. Null when it kept none (ADR-0053). */
+  details: () => ContactDetails | null;
   submit: (details: ContactDetails) => Promise<{ error?: string }>;
 };
 

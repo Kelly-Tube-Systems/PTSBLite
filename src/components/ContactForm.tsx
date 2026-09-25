@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Modal } from "@/components/Modal";
-import { INDUSTRIES, type ContactDetails, type Industry } from "@/platform/types";
+import { INDUSTRIES, type ContactDetails, type Industry } from "@/domain/contact-details";
 import "@/components/ContactForm.css";
 
 type TextField = Exclude<keyof ContactDetails, "industry" | "comments">;

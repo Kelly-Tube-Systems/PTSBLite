@@ -458,7 +458,11 @@ export default function App({ platform }: AppProps) {
       // Taken now rather than held from earlier: the design on screen when the
       // PDF is asked for is the one the document should show.
       const views = captureRef.current?.() ?? [];
-      const bytes = await generateBomPdf(design, { productName: PRODUCT_NAME, views });
+      const bytes = await generateBomPdf(design, {
+        productName: PRODUCT_NAME,
+        views,
+        customer: platform.contact.details() ?? undefined
+      });
       const result = await platform.savePdf(bytes, bomFilename());
       setExportError(result.error ? `Export failed: ${result.error}` : null);
     } catch (err) {

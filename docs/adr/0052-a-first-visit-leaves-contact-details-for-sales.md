@@ -4,6 +4,8 @@
 - **Date:** 2026-09-25
 - **Supersedes:** [ADR-0011](0011-lite-has-no-commercial-data-path.md) where it forbade customer
   details, for this form only. Its rule against money stands.
+- **Amended:** 2026-09-25 — [ADR-0053](0053-the-bom-says-who-it-was-prepared-for.md) keeps the
+  submitted details in the browser and prints them on the BOM.
 
 ## Context
 

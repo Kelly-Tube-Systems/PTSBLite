@@ -21,6 +21,7 @@ import {
   wordmarkHeight,
   wrapText
 } from "@/domain/pdf-typesetting";
+import type { ContactDetails } from "@/domain/contact-details";
 import { MAX_CENTERLINE_FEET } from "@/domain/validation";
 import type { DesignState } from "@/types";
 
@@ -38,6 +39,12 @@ export type BomPdfOptions = {
    * of. Empty, and the document is the parts list alone.
    */
   views?: BomPdfView[];
+  /**
+   * Who the document was prepared for: what the visitor gave the first-visit
+   * contact form (ADR-0053). Absent, and the space under the parts list stays
+   * blank.
+   */
+  customer?: ContactDetails;
 };
 
 /**
@@ -123,6 +130,15 @@ const DISCLAIMER_SIZE = 7.5;
 const DISCLAIMER_LEADING = 10;
 /** Between the disclaimer's last baseline and the top edge of the banner. */
 const DISCLAIMER_BANNER_GAP = 16;
+
+/** From the rule under the parts list to the "Prepared for" heading's baseline. */
+const CUSTOMER_TOP_GAP = 30;
+/** Where the values start, clear of the widest label. */
+const CUSTOMER_LABEL_WIDTH = 70;
+const CUSTOMER_SIZE = 10;
+const CUSTOMER_LEADING = 14;
+/** The least room left between the last comment line and the disclaimer. */
+const CUSTOMER_DISCLAIMER_GAP = 20;
 
 /**
  * Render a design's bill of materials to PDF bytes.
@@ -221,7 +237,15 @@ export async function generateBomPdf(
   });
 
   const bannerTop = await drawTaglineBanner(doc, page);
-  drawDisclaimer(p, bannerTop);
+  const disclaimerTop = drawDisclaimer(p, bannerTop);
+  if (options.customer) {
+    drawCustomer(
+      p,
+      options.customer,
+      y - CUSTOMER_TOP_GAP,
+      disclaimerTop + CUSTOMER_DISCLAIMER_GAP
+    );
+  }
 
   drawText(p, `Generated with ${productName}`, MARGIN_X, MARGIN_TOP - 20, {
     size: 8,
@@ -314,10 +338,14 @@ async function drawTaglineBanner(doc: PDFDocument, page: PDFPage): Promise<numbe
  * Grey and small, so it reads as a footnote about the parts list rather than as
  * a line of it. It is a note about what the tool can express, not terms of sale:
  * the document still carries no prices (ADR-0011).
+ *
+ * Returns the top of its first line, which is as far down as the "Prepared
+ * for" block may reach.
  */
-function drawDisclaimer(p: Painter, bannerTop: number): void {
+function drawDisclaimer(p: Painter, bannerTop: number): number {
   const lines = wrapText(p.italic, DISCLAIMER, DISCLAIMER_SIZE, DISCLAIMER_WIDTH);
-  let baseline = bannerTop + DISCLAIMER_BANNER_GAP + (lines.length - 1) * DISCLAIMER_LEADING;
+  const firstBaseline = bannerTop + DISCLAIMER_BANNER_GAP + (lines.length - 1) * DISCLAIMER_LEADING;
+  let baseline = firstBaseline;
   for (const line of lines) {
     drawCenteredText(p, line, PAGE_WIDTH / 2, baseline, {
       size: DISCLAIMER_SIZE,
@@ -325,6 +353,60 @@ function drawDisclaimer(p: Painter, bannerTop: number): void {
       color: DIM
     });
     baseline -= DISCLAIMER_LEADING;
+  }
+  return firstBaseline + DISCLAIMER_SIZE;
+}
+
+/**
+ * Who the BOM was prepared for, in the blank space between the parts list and
+ * the disclaimer: the details the visitor gave the first-visit contact form,
+ * so a BOM that reaches Kelly's sales team says whose it is (ADR-0053).
+ *
+ * Headed like the parts list, so the two read as sections of one form. The
+ * comments are the only field without a natural length, so they are the one
+ * cut short, with an ellipsis, when they would run into the disclaimer.
+ */
+function drawCustomer(p: Painter, customer: ContactDetails, top: number, floor: number): void {
+  const right = PAGE_WIDTH - MARGIN_X;
+  let y = top;
+  p.page.drawRectangle({
+    x: MARGIN_X - 6,
+    y: y - 5,
+    width: right - MARGIN_X + 12,
+    height: 18,
+    color: BAND
+  });
+  drawText(p, "PREPARED FOR", MARGIN_X, y, { size: 8, color: MUT });
+  y -= 18;
+
+  const valueX = MARGIN_X + CUSTOMER_LABEL_WIDTH;
+  const measure = right - valueX;
+  const fields: [string, string][] = [
+    ["Name", `${customer.firstName} ${customer.lastName}`],
+    ["Company", customer.company],
+    ["Phone", customer.phone],
+    ["Email", customer.email],
+    ["Industry", customer.industry]
+  ];
+  for (const [label, value] of fields) {
+    const lines = wrapText(p.sans, value, CUSTOMER_SIZE, measure);
+    if (lines.length === 0) continue;
+    drawText(p, label, MARGIN_X, y, { size: 8, color: MUT });
+    for (const line of lines) {
+      drawText(p, line, valueX, y, { size: CUSTOMER_SIZE });
+      y -= CUSTOMER_LEADING;
+    }
+  }
+
+  const comments = wrapText(p.sans, customer.comments, CUSTOMER_SIZE, measure);
+  if (comments.length === 0) return;
+  const room = Math.max(1, Math.floor((y - floor) / CUSTOMER_LEADING) + 1);
+  const shown = comments.slice(0, room);
+  if (shown.length < comments.length) shown[shown.length - 1] += "…";
+  drawText(p, "Comments", MARGIN_X, y, { size: 8, color: MUT });
+  for (const line of shown) {
+    drawText(p, line, valueX, y, { size: CUSTOMER_SIZE });
+    y -= CUSTOMER_LEADING;
   }
 }
 
