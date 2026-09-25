@@ -45,3 +45,80 @@ jobs:
       # that executes the app: WebGL, real localStorage, real downloads.
       - name: Browser smoke test
         run: pnpm run test:e2e
+
+  # The Windows app (ADR-0051), from the same commit as the website. A pull
+  # request builds and tests it; a push to main also publishes it as a GitHub
+  # Release, which is where every installed copy looks for its next update.
+  windows:
+    needs: verify
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    # Releases go out one at a time and in order: installed copies take the
+    # newest, so an older build must never publish after a newer one.
+    concurrency:
+      group: windows-${{ github.event_name == 'push' && 'release' || github.ref }}
+      cancel-in-progress: ${{ github.event_name != 'push' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The version counts the commits on main.
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # An installed copy updates to any release with a higher version, so the
+      # version may only ever go up: major.minor from package.json, then the
+      # number of commits on main.
+      - name: Version
+        shell: bash
+        run: |
+          base="$(node -p "require('./package.json').version.split('.').slice(0, 2).join('.')")"
+          echo "VERSION=${base}.$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
+
+      - name: Build the Windows app
+        run: pnpm run build:desktop
+
+      - name: Package the installer
+        shell: bash
+        run: >-
+          pnpm exec electron-builder --config desktop/electron-builder.yml --publish never
+          "-c.extraMetadata.version=${VERSION}"
+
+      # Every release installs itself on every copy, so one that does not boot
+      # must never be published.
+      - name: Windows app smoke test
+        run: pnpm run test:desktop
+
+      - name: Publish the release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="$(mktemp)"
+          {
+            echo "Built from $(git rev-parse --short HEAD): $(git log -1 --format=%s)"
+            echo
+            echo "Installed copies update themselves. To install PTSBLite for the first time, download"
+            echo "**PTSBLite-Setup.exe** and run it. The app is not code-signed, so Windows shows"
+            echo "\"Windows protected your PC\": choose **More info**, then **Run anyway**. Updates do not ask again."
+          } > "$notes"
+          # Tagged v<version>, which is what electron-updater compares.
+          gh release create "v${VERSION}" \
+            dist-desktop/release/PTSBLite-Setup.exe \
+            dist-desktop/release/PTSBLite-Setup.exe.blockmap \
+            dist-desktop/release/latest.yml \
+            --target "$GITHUB_SHA" \
+            --title "PTSBLite ${VERSION}" \
+            --notes-file "$notes"

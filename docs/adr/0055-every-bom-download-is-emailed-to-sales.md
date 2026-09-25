@@ -4,6 +4,8 @@
 - **Date:** 2026-09-25
 - **Supersedes:** [ADR-0053](0053-the-bom-says-who-it-was-prepared-for.md) where it said the
   details are sent nowhere. They now travel with each BOM to sales. The rest of it stands.
+- **Amended:** 2026-09-25 — [ADR-0056](0056-the-windows-app-works-offline-and-sends-nothing.md)
+  leaves the email out of the Windows app. Its downloads go nowhere but the user's own disk.
 
 ## Context
 

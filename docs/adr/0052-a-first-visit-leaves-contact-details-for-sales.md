@@ -8,6 +8,8 @@
   submitted details in the browser and prints them on the BOM.
 - **Amended:** 2026-09-25 — [ADR-0054](0054-the-contact-form-emails-sales-through-a-pages-function.md)
   wires the email.
+- **Amended:** 2026-09-25 — [ADR-0056](0056-the-windows-app-works-offline-and-sends-nothing.md)
+  leaves the form out of the Windows app.
 
 ## Context
 

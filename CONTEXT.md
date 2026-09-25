@@ -13,7 +13,8 @@ or dollar amounts of any kind** ([ADR-0011](docs/adr/0011-lite-has-no-commercial
 
 **Desktop app** — PTSBLite installed on Windows and run outside the browser: the same product, not
 a second one ([ADR-0051](docs/adr/0051-ptsblite-also-ships-as-an-unsigned-windows-app.md)). Its
-autosaved design is separate from the website's.
+autosaved design is separate from the website's. It has no contact form, emails nothing, and works
+offline ([ADR-0056](docs/adr/0056-the-windows-app-works-offline-and-sends-nothing.md)).
 
 ## Authoritative vs. placeholder data
 
@@ -191,7 +192,11 @@ than waiting for review:
   see ADR-0009 for the rule and the few runtime-value exceptions.
 - `src/platform/` — browser services kept behind a testable boundary: session storage, PDF
   downloads and their email to sales, and the first-visit contact form's post and the details it
-  was submitted with.
+  was submitted with. `desktop.ts` is the desktop app's version, which keeps the storage and the
+  download and sends nothing.
+- `desktop/` — outside `src/`: the desktop app's Electron main process, which serves the page,
+  sets its security policy and runs the update check, plus the installer config and the desktop
+  smoke test.
 
 The repository contains no pricing, quote, seller, customer, tax, or other commercial model.
 `BomRow` cannot hold a price, the catalog loader rejects price data, and the application exports a

@@ -10,7 +10,9 @@ in the browser and as an unsigned Windows desktop app
 or Linux build, code signing, pricing, quotes, customer data, tax, or other commercial
 functionality. The one exception is the first-visit contact form
 ([ADR-0052](docs/adr/0052-a-first-visit-leaves-contact-details-for-sales.md)), whose details the
-BOM prints ([ADR-0053](docs/adr/0053-the-bom-says-who-it-was-prepared-for.md)).
+BOM prints ([ADR-0053](docs/adr/0053-the-bom-says-who-it-was-prepared-for.md)). The Windows app
+leaves the form and the BOM email out and sends nothing
+([ADR-0056](docs/adr/0056-the-windows-app-works-offline-and-sends-nothing.md)).
 
 ## Commands
 
@@ -21,12 +23,23 @@ pnpm dev        # browser development server
 pnpm run build  # production build into dist/
 pnpm preview    # serve the production build
 pnpm run test:e2e # Playwright smoke suite against the production build (real Chromium)
+
+# Windows only
+pnpm run desktop         # build and open the Windows app, unpackaged
+pnpm run package:desktop # build the installer into dist-desktop/release/
+pnpm run test:desktop    # smoke-test the packaged Windows app
 ```
 
 happy-dom has no WebGL, downloads, or meaningful storage behavior. `pnpm run test:e2e` covers the
 basics in a real browser — boot, render, place, autosave/restore, PDF export — and CI runs it after
 the build. Still check the production build by hand when your change is visual or outside what the
 smoke suite exercises.
+
+Every push to `main` also releases the Windows app to every installed copy; the `windows` job in
+CI builds, smoke-tests and publishes it
+([docs/deploying.md](docs/deploying.md#the-windows-app)). Changes to the page reach it without any
+extra work. Anything under `desktop/`, or anything that makes the page connect to the network,
+needs that job green on the pull request first.
 
 Every PR must leave `pnpm run check` green.
 
@@ -41,7 +54,8 @@ pnpm install --frozen-lockfile && pnpm run check && pnpm run build
 Passing means Prettier reports every file formatted, ESLint and `tsc` print nothing, every Vitest
 file passes, and Vite ends with `✓ built`; the chunk-size warning is expected. It needs Node 24;
 pnpm switches itself to the version in `packageManager`. The container has no browser, so skip
-`pnpm run test:e2e` — the `verify` check on the pull request runs it.
+`pnpm run test:e2e` — the `verify` check on the pull request runs it. Nor is it Windows, so skip
+the desktop commands too; the `windows` check runs them.
 
 Cloudflare Pages builds every pull request and comments its Preview URL on it. Link that URL on
 the card. Previews are restricted rather than public ([docs/deploying.md](docs/deploying.md)).
