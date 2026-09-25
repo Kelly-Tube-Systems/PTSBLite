@@ -60,6 +60,18 @@ describe("the contact form's email to sales", () => {
     expect(email.text).toContain("Two floors.");
   });
 
+  it("sends to CONTACT_TO instead of sales while it is set", async () => {
+    const fetch = resend(200);
+
+    await onRequestPost({
+      request: post(details),
+      env: { ...KEY, CONTACT_TO: "tester@example.com" }
+    });
+
+    const [, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(init.body as string)).toMatchObject({ to: ["tester@example.com"] });
+  });
+
   it("keeps a line break typed into a name out of the subject", async () => {
     const fetch = resend(200);
 

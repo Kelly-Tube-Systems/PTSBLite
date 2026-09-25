@@ -9,9 +9,14 @@ import { readContactDetails, type ContactDetails } from "../../src/domain/contac
 type Env = {
   /** A send-only key from Kelly's Resend account. Set on Production only. */
   RESEND_API_KEY?: string;
+  /**
+   * Sends the email here instead of to sales, to test a deployment without
+   * sales seeing it. Every visitor's details go here while it is set.
+   */
+  CONTACT_TO?: string;
 };
 
-const TO = "sales@kellytubesystems.com";
+const SALES = "sales@kellytubesystems.com";
 /** Must be on a domain verified in Kelly's Resend account, or Resend refuses the send. */
 const FROM = "PTSBLite <ptsblite@kellytubesystems.com>";
 /** Far more than the form can hold; anything larger is not the form. */
@@ -44,7 +49,7 @@ export async function onRequestPost({
     },
     body: JSON.stringify({
       from: FROM,
-      to: [TO],
+      to: [env.CONTACT_TO || SALES],
       reply_to: details.email,
       subject: oneLine(
         `PTSBLite contact: ${details.firstName} ${details.lastName}, ${details.company}`
