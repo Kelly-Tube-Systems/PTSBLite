@@ -43,6 +43,10 @@ RESEND_API_KEY = <the send-only key from Kelly's Resend account>
 Leave it off Preview. Without it the Function sends nothing and lets the visitor in, so test
 submissions on a preview never reach sales.
 
+To test Production without sales seeing it, add a plain variable `CONTACT_TO` with your own address
+and redeploy. The email goes there instead of to sales. So does every real visitor's, so delete it
+and redeploy as soon as the test is done.
+
 **Verify the sending domain in Resend before adding the secret.** Resend refuses to send from
 `kellytubesystems.com` until the DNS records its Domains page lists are in place. With the secret
 set and the domain unverified, every send fails and no first-time visitor can get past the contact
