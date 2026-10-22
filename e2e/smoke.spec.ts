@@ -278,3 +278,51 @@ test("lets a short window scroll down to the rest of the setup form", async ({ p
   await button.click();
   await expect(page.locator(".viewport-canvas canvas")).toBeVisible();
 });
+
+test("moves the placement ghost without compiling shaders", async ({ page }) => {
+  // The ghost is rebuilt on every square the pointer crosses. Freeing the old
+  // one before the new one was drawn made three.js delete its shaders and
+  // compile them again for the next, and Windows compiles them slowly enough
+  // that the ghost trailed the pointer by half a second — the client could not
+  // put a part on the square being aimed at. Only a real browser compiles
+  // shaders, so only here can the count be taken.
+  await page.addInitScript(() => {
+    const counted = window as typeof window & { programsLinked: number };
+    counted.programsLinked = 0;
+    const prototype = WebGL2RenderingContext.prototype;
+    const link = Object.getOwnPropertyDescriptor(prototype, "linkProgram")!
+      .value as WebGL2RenderingContext["linkProgram"];
+    Object.defineProperty(prototype, "linkProgram", {
+      value(this: WebGL2RenderingContext, program: WebGLProgram) {
+        counted.programsLinked++;
+        link.call(this, program);
+      }
+    });
+  });
+  const programsLinked = () =>
+    page.evaluate(() => (window as typeof window & { programsLinked: number }).programsLinked);
+  const nextFrame = () =>
+    page.evaluate(
+      () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)))
+    );
+
+  await createDesign(page);
+  await page.getByRole("button", { name: "Build", exact: true }).click();
+  await page.getByRole("button", { name: "Blower Unit", exact: true }).click();
+  const box = await page.locator(".viewport-canvas canvas").boundingBox();
+  expect(box).not.toBeNull();
+  const centre = { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
+
+  // The first ghost compiles what it is drawn with. That is a one-off.
+  await page.mouse.move(centre.x, centre.y);
+  await nextFrame();
+  const compiled = await programsLinked();
+
+  // Hops of 20px cross a square at the opening zoom, and a frame between each
+  // lets every one be drawn rather than coalesced into the last.
+  for (let hop = 1; hop <= 10; hop++) {
+    await page.mouse.move(centre.x + hop * 20, centre.y + hop * 10);
+    await nextFrame();
+  }
+  expect(await programsLinked()).toBe(compiled);
+});

@@ -225,6 +225,8 @@ type ViewportState = {
   /** Re-picks the cell under the pointer and reports it if it changed. */
   rehover?: () => void;
   requestRender?: () => void;
+  /** Frees an object detached from the scene once the next frame is drawn. */
+  retire?: (object: THREE.Object3D) => void;
   /** How far the camera may pull back, derived from the current build area. */
   maxDistance?: number;
   /** Re-sizes every height marker for the current camera distance. */
@@ -455,7 +457,26 @@ export function Viewport({
       raf = requestAnimationFrame(() => {
         raf = 0;
         renderer.render(scene3, camera);
+        for (const object of retired.splice(0)) disposeObject(object);
       });
+    };
+
+    /**
+     * Take something out of the scene now and free it after the next frame.
+     *
+     * three.js deletes a compiled shader when the last material using it is
+     * disposed. The ghost, its floor shadow and its height marker are rebuilt
+     * on every cell the pointer crosses, so freeing the old ones before the new
+     * ones were drawn threw their shaders away each time, and the next frame
+     * compiled them again. Windows compiles WebGL shaders slowly enough that
+     * the ghost fell half a second behind the pointer, and the client could
+     * not get a part onto the square being aimed at. Drawn first, the new
+     * materials pick up the shaders the old ones are still holding.
+     */
+    const retired: THREE.Object3D[] = [];
+    const retire = (object: THREE.Object3D) => {
+      retired.push(object);
+      requestRender();
     };
 
     /**
@@ -620,6 +641,7 @@ export function Viewport({
       portsGroup,
       hoverPlane,
       requestRender,
+      retire,
       syncMarkers,
       capture,
       rehover
@@ -787,6 +809,7 @@ export function Viewport({
 
     stateRef.current.cleanup = () => {
       if (raf) cancelAnimationFrame(raf);
+      for (const object of retired.splice(0)) disposeObject(object);
       ro.disconnect();
       dom.removeEventListener("mousedown", onDown);
       window.removeEventListener("mousemove", onMove);
@@ -808,9 +831,9 @@ export function Viewport({
   useEffect(() => {
     const s = stateRef.current;
     if (!s.partsGroup || !s.sleevesGroup || !s.obstaclesGroup) return;
-    clearGroup(s.partsGroup);
-    clearGroup(s.sleevesGroup);
-    clearGroup(s.obstaclesGroup);
+    clearGroup(s.partsGroup, s.retire);
+    clearGroup(s.sleevesGroup, s.retire);
+    clearGroup(s.obstaclesGroup, s.retire);
     for (const o of scene.obstacles ?? []) {
       s.obstaclesGroup.add(buildObstacleMesh(o.min, o.max, { penetrable: o.penetrable }));
     }
@@ -862,7 +885,7 @@ export function Viewport({
     if (!s.scene3) return;
     if (s.groundGroup) {
       s.scene3.remove(s.groundGroup);
-      disposeObject(s.groundGroup);
+      (s.retire ?? disposeObject)(s.groundGroup);
     }
     const area = { width: areaWidth, depth: areaDepth, height: areaHeight };
     const ground = buildGround(area, activeFloor === 2);
@@ -935,7 +958,7 @@ export function Viewport({
     // Clearing the group is itself a visible change, so the render request below
     // is outside the `if` — a ghost that has just been dismissed must be
     // repainted away.
-    clearGroup(s.ghostGroup);
+    clearGroup(s.ghostGroup, s.retire);
     let mesh: THREE.Group | null = null;
     if (ghost) {
       if (ghost.type === "blower") {
@@ -1000,7 +1023,7 @@ export function Viewport({
   useEffect(() => {
     const s = stateRef.current;
     if (!s.overlayGroup) return;
-    clearGroup(s.overlayGroup);
+    clearGroup(s.overlayGroup, s.retire);
     for (const cell of landingCells) {
       s.overlayGroup.add(buildLandingCellHighlight(cell, tool));
     }
@@ -1017,7 +1040,7 @@ export function Viewport({
   useEffect(() => {
     const s = stateRef.current;
     if (!s.planeGroup || !s.hoverPlane) return;
-    clearGroup(s.planeGroup);
+    clearGroup(s.planeGroup, s.retire);
     // The pointer casts onto the storey's floor, so this moves only when the
     // floor does. An elevation key leaves it alone, which is what keeps the
     // ghost over the square being aimed at as the height changes (ADR-0035).
@@ -1041,7 +1064,7 @@ export function Viewport({
     const s = stateRef.current;
     if (!s.portsGroup) return;
     const group = s.portsGroup;
-    clearGroup(group);
+    clearGroup(group, s.retire);
     for (const marker of portMarkers) {
       group.add(buildPortGlow(marker));
     }
