@@ -151,14 +151,19 @@ function disposeMaterial(material: THREE.Material): void {
   material.dispose();
 }
 
-/** Detach and dispose every child of `group`, leaving the group itself in place. */
-
-/** Detach and dispose every child of `group`, leaving the group itself in place. */
-export function clearGroup(group: THREE.Group): void {
+/**
+ * Detach every child of `group`, leaving the group itself in place, and hand
+ * each to `dispose` — straight to `disposeObject` unless the caller would
+ * rather free them later.
+ */
+export function clearGroup(
+  group: THREE.Group,
+  dispose: (object: THREE.Object3D) => void = disposeObject
+): void {
   while (group.children.length > 0) {
     const child = group.children[0];
     group.remove(child);
-    disposeObject(child);
+    dispose(child);
   }
 }
 
